@@ -5,6 +5,7 @@ import warnings
 
 import h2o
 from h2o import telemetry as _telemetry
+from h2o import enterprise as _enterprise
 from h2o.base import Keyed
 from h2o.display import H2ODisplay, display, format_to_html, format_to_multiline, format_user_tips, print2 as print
 from h2o.exceptions import H2OValueError, H2OTypeError
@@ -1222,6 +1223,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :returns: name of the POJO file written.
         """
+        _enterprise.block("POJO download")
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
         path = path.rstrip("/")
@@ -1237,6 +1239,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
         
         :returns: name of the MOJO file written.
         """
+        _enterprise.block("MOJO export")
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
 
@@ -1279,6 +1282,7 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns str: the path of the saved model
         """
+        _enterprise.block("MOJO export")
         assert_is_type(path, str)
         assert_is_type(force, bool)
         if not self.have_mojo:

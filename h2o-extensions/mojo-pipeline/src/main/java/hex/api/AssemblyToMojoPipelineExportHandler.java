@@ -12,6 +12,7 @@ import water.rapids.Assembly;
 public class AssemblyToMojoPipelineExportHandler extends Handler {
   @SuppressWarnings("unused")
   public StreamingSchema fetchMojoPipeline(final int version, final AssemblyV99 ass) {
+    water.EnterpriseGate.block("MOJO export");
     Assembly assembly = DKV.getGet(ass.assembly_id);
     if (assembly == null) {
       throw new IllegalArgumentException("Assembly doesn't exist in DKV. It must be fitted first.");

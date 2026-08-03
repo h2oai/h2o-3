@@ -1569,6 +1569,10 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     ...                    training_frame = h2o_df)
     >>> h2o.download_pojo(binomial_fit, path='', get_jar=False)
     """
+    # Gated here as well as in ModelBase.download_pojo: H2OAutoML.download_pojo calls this
+    # module-level function directly, and without this it would surface the raw server 412
+    # instead of the friendly notice its download_mojo counterpart shows.
+    _enterprise.block("POJO download")
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(get_jar, bool)

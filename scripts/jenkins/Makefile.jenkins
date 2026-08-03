@@ -55,6 +55,7 @@ test-package-r:
 		h2o-assemblies/genmodel/build/libs/genmodel.jar \
 		scripts/run.py scripts/jenkins/hadoop/ \
 		$(JENKINS_MAKEFILE_PATH) tests/runitSmokeTestList tests/runitAutoMLList \
+		tests/runitEnterpriseGateExcludeList \
 		scripts/validate_r_cmd_check_output.R scripts/validate_r_cmd_check_output.py \
 		h2o-3-DESCRIPTION
 
@@ -81,6 +82,19 @@ lookup-explain-tests: init-lookup
 lookup-mojo-to-assembly-tests: init-lookup
 	find h2o-r/tests -name '*h2oassembly_download_mojo*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*h2oassembly_download_mojo*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
+# Tests parked while the H2O-3 Enterprise paywall blocks MOJO/POJO extraction. Appended to
+# .lookup.txt for the targets that pass it as --excludelist (run.py accepts only one such
+# file). See tests/pyunitEnterpriseGateExcludeList for why these are parked, not deleted.
+#
+# Split per language on purpose: test-package-py ships only tests/pyunit*List and
+# test-package-r only tests/runitEnterpriseGateExcludeList, so a target that cat'd both
+# would fail in whichever workspace is missing the other language's list.
+lookup-enterprise-gate-excludes-r: init-lookup
+	cat tests/runitEnterpriseGateExcludeList >>h2o-r/tests/.lookup.txt
+
+lookup-enterprise-gate-excludes-py: init-lookup
+	cat tests/pyunitEnterpriseGateExcludeList >>h2o-py/tests/.lookup.txt
 
 lookup-demos-tests: init-lookup
 	mkdir h2o-{r,py}/tests/testdir_demos
@@ -147,22 +161,24 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.deeplearning.vignette.py
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
+# Parked: the GLM vignette downloads a POJO/MOJO, which the H2O-3 Enterprise paywall
+# blocks. See tests/pyunitEnterpriseGateExcludeList.
+#	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
 test-py-demos:
 ###	Explicit upgrade of pandas and numpy due to "TypeError: Cannot interpret '<attribute 'dtype' of 'numpy.generic' objects>' as a data type" in 
 ###	Predict_w_Unseen_Categorical_Levels.ipynb, isax2.ipynb, kmeans_aic_bic_diagnostics.ipynb, plift_random_forest_compare_causalml.ipynb, uplift_drf_demo.ipynb
 	test "$$CI" != "true" || pip install -U pandas==1.0.5 numpy==1.20.2
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g --excludelist new-scikit
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && cat new-scikit ../../tests/pyunitEnterpriseGateExcludeList >.excludelist.txt && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g --excludelist .excludelist.txt
 	
 test-py-demos-new-scikit:
 	test "$$CI" != "true" || pip install scikit-learn==1.0.2
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 1 --baseport 56789 --jvm.xmx 10g --testlist new-scikit
 
 test-pyunit-demos:
-	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
+	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g --excludelist ../../../tests/pyunitEnterpriseGateExcludeList
 
-test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests lookup-mojo-to-assembly-tests
+test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests lookup-mojo-to-assembly-tests lookup-enterprise-gate-excludes-py
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --excludelist .lookup.txt
 
 test-pyunit-explain: lookup-explain-tests
@@ -171,7 +187,7 @@ test-pyunit-explain: lookup-explain-tests
 test-pyunit-mojo2: lookup-mojo-to-assembly-tests
 	export MOJO2_VERSION="2.7.11.1" && cd h2o-py/tests/ && \
 	wget https://repo1.maven.org/maven2/ai/h2o/mojo2-runtime/$$MOJO2_VERSION/mojo2-runtime-$$MOJO2_VERSION.jar -O /tmp/mojo2-runtime.jar && \
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && ../../scripts/run.py --jvm.cp /tmp/mojo2-runtime.jar --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && ../../scripts/run.py --jvm.cp /tmp/mojo2-runtime.jar --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt --excludelist ../../tests/pyunitEnterpriseGateExcludeList
 
 test-pyunit-single-node:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 4g --testlist ../../tests/pyunitSingleNodeList
@@ -180,7 +196,7 @@ test-pyunit-xgboost-stress:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 4g --testlist ../../tests/pyunitXGBoostStressTestList
 
 test-pyunit-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 2 --jvm.xmx 4g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 2 --jvm.xmx 4g --testlist .lookup.txt --excludelist ../../tests/pyunitEnterpriseGateExcludeList
 
 test-pyunit-automl-smoke-noxgb: lookup-automl-smoke-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
@@ -190,10 +206,10 @@ test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
 
 
 test-pyunit-medium-large:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g --excludelist ../../tests/pyunitEnterpriseGateExcludeList
 
 test-pyunit-xlarge:
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize x --numclouds 1 --numnodes 1 --jvm.xmx 30g
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize x --numclouds 1 --numnodes 1 --jvm.xmx 30g --excludelist ../../tests/pyunitEnterpriseGateExcludeList
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
@@ -207,20 +223,20 @@ test-r-smoke:
 test-r-init:
 	cd h2o-r/tests/testdir_jira && ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" R -f h2o.init_test_HOQE-16.R
 
-test-r-small: lookup-automl-tests lookup-demos-tests lookup-explain-tests
+test-r-small: lookup-automl-tests lookup-demos-tests lookup-explain-tests lookup-enterprise-gate-excludes-r
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 	
 test-r-explain: lookup-explain-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
 test-r-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt --excludelist ../../tests/runitEnterpriseGateExcludeList
 
 test-r-automl-smoke-noxgb: lookup-automl-smoke-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
 
 test-r-medium-large:
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g --excludelist ../../tests/runitEnterpriseGateExcludeList
 
 test-r-datatable:
 	export NO_GCE_CHECK=True && cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
@@ -239,7 +255,9 @@ test-r-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --wipeall --norun
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.deeplearning.vignette.R
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.gbm.vignette.R
-	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.glm.vignette.R
+# Parked: the GLM vignette downloads a POJO/MOJO, which the H2O-3 Enterprise paywall
+# blocks. See tests/pyunitEnterpriseGateExcludeList.
+#	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.glm.vignette.R
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --jvm.xmx 15g --test rbooklet.r.vignette.R
 
 test-r-demos-small:
