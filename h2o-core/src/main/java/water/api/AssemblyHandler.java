@@ -37,5 +37,14 @@ public class AssemblyHandler extends Handler {
     return ass;
   }
 
-  public AssemblyV99 toJava(int version, AssemblyV99 ass) { return ass; }
+  /**
+   * Backs {@code GET /99/Assembly.java/...}. The POJO text itself is produced later, by
+   * {@code RequestServer.serveSchema}'s {@code case java:} branch calling
+   * {@link Assembly#toJava(String)} on the returned schema - so the Enterprise check has to
+   * live here, at the handler, to fail the request before that happens.
+   */
+  public AssemblyV99 toJava(int version, AssemblyV99 ass) {
+    water.EnterpriseGate.block("POJO download");
+    return ass;
+  }
 }

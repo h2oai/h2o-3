@@ -922,6 +922,11 @@ def send_algo_score(h2o_version, algo, family, outcome, duration_ms, n_rows, att
 
 @_never_raises
 def send_mojo_download(h2o_version, algo, family, outcome, compressed_size_bytes, attributes=None):
+    """Fire one `event=mojo_download` POST.
+
+    ``mojo_size_bucket`` is required by the receiver, so a no-artifact outcome passes
+    0 - it buckets to ``<100KB``, as the error path already does.
+    """
     if _telemetry_disabled():
         return
     payload = {

@@ -431,16 +431,17 @@ as.data.frame.H2OSegmentModels <- function(x, ...) {
 #' fr <- as.h2o(iris)
 #' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
 #'
-#' h2o.download_pojo(my_model)  # print the model to screen
+#' # POJO download requires H2O-3 Enterprise and is blocked in H2O-3 OSS.
+#' try(h2o.download_pojo(my_model))  # print the model to screen
 #' # h2o.download_pojo(my_model, getwd())  # save the POJO and jar file to the current working
 #' #                                         directory, NOT RUN
 #' # h2o.download_pojo(my_model, getwd(), get_jar = FALSE )  # save only the POJO to the current
 #' #                                                           working directory, NOT RUN
-#' h2o.download_pojo(my_model, getwd())  # save to the current working directory
+#' try(h2o.download_pojo(my_model, getwd()))  # save to the current working directory
 #' }
 #' @export
 h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_name="") {
-  
+  .h2o.enterprise.block("POJO download")
   if (inherits(model, "H2OAutoML")) {
     model <- model@leader
   }
@@ -516,11 +517,13 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
-#' h2o.download_mojo(my_model)  # save to the current working directory
+#' # MOJO export requires H2O-3 Enterprise and is blocked in H2O-3 OSS.
+#' try(h2o.download_mojo(my_model))  # save to the current working directory
 #' }
 #' @export
 h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename="") {
-  
+  .h2o.enterprise.block("MOJO export")
+
   if (inherits(model, "H2OAutoML")) {
     model <- model@leader
   }
