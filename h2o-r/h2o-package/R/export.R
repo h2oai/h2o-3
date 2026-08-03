@@ -317,6 +317,7 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' }
 #' @export
 h2o.save_mojo <- function(object, path="", force=FALSE, filename="") {
+  .h2o.enterprise.block("MOJO export")
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")

@@ -18,6 +18,9 @@ public class ProtobufPipelineWriter implements StreamWriter {
     }
     @Override
     public void writeTo(OutputStream os, StreamWriteOption... options) {
+        // The MOJO 2 pipeline holds only munging steps, no model - but it is still a .mojo zip
+        // handed to the caller, so it falls under the same Enterprise gate as model MOJOs.
+        water.EnterpriseGate.blockUnlessTestHarness("MOJO export");
         ZipOutputStream zos = new ZipOutputStream(os);
         try {
             zos.putNextEntry(new ZipEntry("mojo/"));

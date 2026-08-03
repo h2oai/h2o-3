@@ -6822,6 +6822,9 @@ h2o.get_seed <- get_seed.H2OModel
 #'
 #' @examples
 #' \dontrun{
+#' # This example needs a MOJO on disk, and MOJO export requires H2O-3 Enterprise,
+#' # so the body cannot run on H2O-3 OSS.
+#' if (FALSE) {
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
@@ -6840,6 +6843,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' # Perform scoring with the generic model
 #' generic_model_predictions  <- h2o.predict(generic_model, data)
 #' }
+#' }
 #' @export
 h2o.genericModel <- function(mojo_file_path, model_id=NULL){
   h2o.generic(path = mojo_file_path)
@@ -6857,6 +6861,9 @@ h2o.genericModel <- function(mojo_file_path, model_id=NULL){
 #'
 #' @examples
 #' \dontrun{
+#' # This example needs a MOJO on disk, and MOJO export requires H2O-3 Enterprise,
+#' # so the body cannot run on H2O-3 OSS.
+#' if (FALSE) {
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
@@ -6873,6 +6880,7 @@ h2o.genericModel <- function(mojo_file_path, model_id=NULL){
 #'
 #' # Perform scoring with the generic model
 #' predictions  <- h2o.predict(mojo_model, data)
+#' }
 #' }
 #' @export
 h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
@@ -6893,6 +6901,9 @@ h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
 #'
 #' @examples
 #' \dontrun{
+#' # This example needs a MOJO on disk, and MOJO export requires H2O-3 Enterprise,
+#' # so the body cannot run on H2O-3 OSS.
+#' if (FALSE) {
 #'
 #' # Import default Iris dataset as H2O frame
 #' data <- as.h2o(iris)
@@ -6910,6 +6921,7 @@ h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
 #'
 #' # Perform scoring with the generic model
 #' predictions  <- h2o.predict(mojo_model, data)
+#' }
 #' }
 #' @export
 h2o.upload_mojo <- function(mojo_local_file_path, model_id=NULL){

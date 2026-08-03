@@ -71,7 +71,21 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    *    (extra model files written by the subclasses)
    * Each domain file is a plain text file with one line per category (not quoted).
    */
-  @Override public void writeTo(OutputStream os, StreamWriteOption... option) {
+  @Override public final void writeTo(OutputStream os, StreamWriteOption... option) {
+    water.EnterpriseGate.blockUnlessTestHarness("MOJO export");
+    writeToUnchecked(os, option);
+  }
+
+  /**
+   * Serializes the MOJO without the H2O-3 Enterprise check, and is the method subclasses
+   * override to change how the MOJO is laid out. Callers must not invoke it to hand a MOJO to
+   * a user - that has to go through {@link #writeTo(OutputStream, StreamWriteOption...)},
+   * which is final so that the Enterprise check cannot be overridden away. The one exception
+   * is the in-cluster POJO/MOJO scoring self-check ({@link Model#testJavaScoring}), which
+   * round-trips a model through a MOJO only to verify that MOJO scoring agrees with in-cluster
+   * scoring - those bytes never leave the node.
+   */
+  protected void writeToUnchecked(OutputStream os, StreamWriteOption... option) {
     ZipOutputStream zos = new ZipOutputStream(os);
     try {
       writeTo(zos);

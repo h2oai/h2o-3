@@ -1,0 +1,84 @@
+# R tests parked while the H2O-3 Enterprise paywall blocks MOJO/POJO extraction.
+#
+# These tests download a MOJO or POJO and score with it to verify that artifact scoring
+# agrees with in-cluster scoring. water.EnterpriseGate now blocks that in the OSS build,
+# so they cannot pass as written. The test code is intentionally kept as-is: once the
+# genmodel/MOJO tooling moves to its own subrepo and ships to Enterprise customers, these
+# come back and get tested properly against a build that is allowed to export.
+#
+# Do not "fix" these by asserting the block fires - that would delete the scoring coverage
+# they exist for.
+
+
+runit_automl_mojo.R
+runit_automl_pojo.R
+
+runit_DRF_javapredict_30kcat.R
+runit_DRF_javapredict_cars_rand.R
+runit_DRF_javapredict_chess_2x2x1000_rand.R
+runit_DRF_javapredict_iris_rand.R
+runit_DRF_javapredict_smallcat.R
+runit_GBM_javapredict_cars.R
+runit_GBM_javapredict_chess_2x2x1000_rand.R
+runit_GBM_javapredict_iris.R
+runit_GBM_javapredict_iris_pub426.R
+runit_GBM_javapredict_iris_rand.R
+runit_GBM_javapredict_prostate_regression.R
+runit_GBM_javapredict_smtrees_regression.R
+runit_GBM_javapredict_titanic_rand.R
+runit_GBM_quantile.R
+runit_GLM_javapredict_airlines.R
+runit_GLM_javapredict_prostate.R
+runit_GLM_mojo_control_variables.R
+runit_GLM_mojo_control_vars_offset.R
+runit_PUBDEV_5339_mojo_import_export.R
+runit_PUBDEV_5529_leaf_node_assign_drf_mojo.R
+runit_PUBDEV_5529_leaf_node_assign_gbm_mojo.R
+runit_PUBDEV_5858_glrmIterNumber.R
+runit_PUBDEV_6037_fractionalbinomial_mojo.R
+runit_PUBDEV_7185_quasibinomial_gam_MOJO.R
+runit_PUBDEV_7860_binomial_gam_TP_CS_MOJO.R
+runit_PUBDEV_8330_fractionalbinomial_glm_MOJO_offset.R
+runit_PUBDEV_8330_quasibinomial_glm_MOJO_offset.R
+runit_PUBDEV_8330_tweedie_glm_MOJO_offset.R
+runit_coxph_mojo_interactions.R
+runit_download_mojo_filename.R
+runit_generic_encodings.r
+runit_generic_model.r
+runit_generic_model_mojo_deeplearning.R
+runit_generic_model_mojo_drf.R
+runit_generic_model_mojo_gbm.R
+runit_generic_model_mojo_glm.R
+runit_generic_model_mojo_irf.R
+runit_generic_model_mojo_stackedensemble.R
+runit_generic_model_mojo_upliftdrf.R
+runit_generic_model_mojo_xgboost.R
+runit_generic_mojo_convenience.R
+runit_generic_mojo_model_ids.R
+runit_gh_15697_mojo_offset_cv.R
+runit_hexdev_692_pojo_model_prediction.R
+runit_isoforextended_genmodel.R
+runit_mojo.R
+runit_mojo_predict.R
+runit_pojo.R
+runit_predict_json.R
+runit_pubdev_4711_supported_export_formats.R
+runit_pubdev_6617_setInvNumNA.R
+runit_pubdev_6778.R
+runit_pubdev_7334_generic_scoring.R
+runit_pubdev_8945_coxph_all_interactions_mojo.R
+runit_saveMojo.R
+runit_save_mojo_filename.R
+runit_targetencoder_model.R
+runit_uplift_rf_mojo.R
+
+runit_DL_javapredict_iris_large.R
+runit_DRF_javapredict_czechboard_large.R
+runit_PUBDEV_5008_ordinal_glm_mojo_large.R
+runit_PUBDEV_5058_PUBDEV_5723_glrm_mojo_large.R
+runit_PUBDEV_5303_multinomial_glm_mojo_large.R
+runit_PUBDEV_5355_binomial_glm_mojo_large.R
+runit_PUBDEV_7185_binomial_gam_mojo_large.R
+runit_pubdev_4531_large.R
+runit_pubdev_5351_pca_mojo_large.R
+runit_pubdex_4457_predict_pojo_large.R

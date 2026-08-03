@@ -32,7 +32,7 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
     }
 
     @Override
-    public void writeTo(final OutputStream os, StreamWriteOption... options) {
+    protected void writeToUnchecked(final OutputStream os, StreamWriteOption... options) {
         try (final InputStream inputStream = _mojoBytes.openStream(null); OutputStream outputStream = os) {
             IOUtils.copyStream(inputStream, outputStream);
         } catch (IOException e) {

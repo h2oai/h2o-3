@@ -135,6 +135,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   }
 
   public StreamingSchema fetchJavaCode(int version, ModelsV3 s) {
+    water.EnterpriseGate.block("POJO download");
     final Model model = getFromDKV("key", s.model_id.key());
     if (!model.havePojo()) {
       throw H2O.unimpl(String.format("%s does not support export to POJO", model._parms.fullName()));
@@ -146,6 +147,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchMojo(int version, ModelsV3 s) {
+    water.EnterpriseGate.block("MOJO export");
     Model model = getFromDKV("key", s.model_id.key());
     if (!model.haveMojo()) {
       throw H2O.unimpl(String.format("%s does not support export to MOJO", model._parms.fullName()));
@@ -295,6 +297,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelExportV3 exportMojo(int version, ModelExportV3 mexport) {
+    water.EnterpriseGate.block("MOJO export");
     Model model = getFromDKV("model_id", mexport.model_id.key());
     try {
       URI targetUri = model.exportMojo(mexport.dir, mexport.force); // mexport.dir: Really file, not dir

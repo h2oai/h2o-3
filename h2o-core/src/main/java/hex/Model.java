@@ -2510,6 +2510,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final SBPrintStream toJava(OutputStream os, boolean preview, boolean verboseCode) {
+    water.EnterpriseGate.blockUnlessTestHarness("POJO download");
+    return toJavaUnchecked(os, preview, verboseCode);
+  }
+
+  /**
+   * Generates the POJO without the H2O-3 Enterprise check. Reserved for the in-cluster
+   * POJO/MOJO scoring self-check ({@link #testJavaScoring}), which compiles the POJO in
+   * memory to verify it agrees with in-cluster scoring - the source never leaves the node.
+   */
+  final String toJavaUnchecked(boolean preview, boolean verboseCode) {
+    ByteArrayOutputStream os = new ByteArrayOutputStream(Short.MAX_VALUE);
+    /* ignore returned stream */ toJavaUnchecked(os, preview, verboseCode);
+    return os.toString();
+  }
+
+  final SBPrintStream toJavaUnchecked(OutputStream os, boolean preview, boolean verboseCode) {
     if (preview /* && toJavaCheckTooBig() */) {
       os = new LineLimitOutputStreamWrapper(os, 1000);
     }
@@ -2870,7 +2886,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // First try internal POJO via fast double[] API
       if (havePojo) {
         try {
-          String java_text = toJava(preview, true);
+          String java_text = toJavaUnchecked(preview, true);
           Class clz = JCodeGen.compile(modelName,java_text);
           genmodel = (GenModel)clz.newInstance();
         } catch (Exception e) {
@@ -2917,10 +2933,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (i == 1 && !haveMojo) continue;
         if (i == 1) {  // MOJO
           final String filename = modelName + ".zip";
-          StreamingSchema ss = new StreamingSchema(getMojo(), filename);
+          ModelMojoWriter mojo = getMojo();
+          StreamingSchema ss = new StreamingSchema(mojo, filename);
           try {
             FileOutputStream os = new FileOutputStream(ss.getFilename());
-            ss.getStreamWriter().writeTo(os);
+            // Unchecked on purpose: this is the in-cluster scoring self-check, not an export.
+            mojo.writeToUnchecked(os);
             os.close();
             genmodel = MojoModel.load(filename, true);
             checkSerializable((MojoModel) genmodel);
@@ -3465,7 +3483,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (! haveMojo())
       throw new IllegalStateException("Model doesn't support MOJOs.");
     try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-      this.getMojo().writeTo(os);
+      // Unchecked on purpose: this backs the in-memory toMojo() conversion, so the bytes stay
+      // on the node and are never handed to a caller. Going through the gated writeTo would
+      // pass CI (the check is inert under the test harness) and then throw on real clusters.
+      this.getMojo().writeToUnchecked(os);
       return MojoReaderBackendFactory.createReaderBackend(
               new ByteArrayInputStream(os.toByteArray()), MojoReaderBackendFactory.CachingStrategy.MEMORY);
     }
