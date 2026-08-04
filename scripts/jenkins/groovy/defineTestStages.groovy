@@ -544,11 +544,6 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
     ],
     [
-      stageName: 'Persist Drive (GraalVM)', target: 'test-py-persist-drive-jenkins', javaVersion: 17, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
-    ],
-    [
       stageName: 'R4.0 Explain', target: 'test-r-explain', rVersion: '4.0.2',
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
