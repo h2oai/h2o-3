@@ -6,9 +6,6 @@ test.grid.resume <- function() {
 
   ntrees_opts <- c(100, 200)
   learn_rate_opts <- c(0.01, 0.02)
-  # Dedicated directory, not tempdir() itself: the emptiness check below must
-  # assert that H2O cleaned up its own recovery files, not that nothing else in
-  # the R session ever wrote to the shared session temp dir.
   export_dir <- tempfile("grid_recovery")
   dir.create(export_dir)
 
