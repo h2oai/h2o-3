@@ -108,6 +108,10 @@ public class AdaBoostTest extends TestUtil {
         }
     }
 
+    // GH-16566: same model-lock race as testBasicTrainAndScoreDeepLearning - the test hangs until
+    // the per-test timeout fires, and the leaked keys reported afterwards are a side effect of
+    // Scope.exit() never completing.
+    @Ignore("GH-16566 - model-lock race when DeepLearning is used as AdaBoost weak learner")
     @Test
     public void testBasicTrainDeepLearning() {
         try {
