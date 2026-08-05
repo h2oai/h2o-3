@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.Assume;
 import water.*;
+import water.junit.TestTimeout;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -211,7 +212,10 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
+    // Constrained k-means runs a min-cost-flow solve per iteration, which on this dataset legitimately
+    // needs more than the 10 minute default per-test timeout.
     @Test
+    @TestTimeout(seconds = 1800)
     public void testWeatherChicagoConstrained() {
         Assume.assumeTrue(H2O.getCloudSize() == 1); // don't test in multi-node, not worth it - this tests already takes a long time
         KMeansModel kmm = null, kmm2 = null;

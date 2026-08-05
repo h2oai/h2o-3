@@ -20,6 +20,7 @@ import water.api.StreamingSchema;
 import water.fvec.*;
 import water.init.NetworkInit;
 import water.junit.Priority;
+import water.junit.TestTimeout;
 import water.junit.rules.RulesPriorities;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
@@ -429,10 +430,28 @@ public class TestUtil extends Iced {
    * Per-test timeout. Any single test exceeding this limit fails with TestTimedOutException instead
    * of hanging the whole JVM (which was previously killing entire Jenkins stages with SIGTERM).
    * Configurable via -Dtest.timeout.seconds=N; default is 600 (10 minutes).
+   *
+   * Individual long-running tests can opt out of the default with {@link TestTimeout}, which takes
+   * precedence over the system property.
    */
   @Rule
-  transient public Timeout globalTimeout = Timeout.seconds(
-      Long.parseLong(System.getProperty("test.timeout.seconds", "600")));
+  transient public TestRule globalTimeout = new TestRule() {
+
+    @Override
+    public Statement apply(Statement base, Description description) {
+      return Timeout.seconds(timeoutSeconds(description)).apply(base, description);
+    }
+
+    private long timeoutSeconds(Description description) {
+      TestTimeout override = description.getAnnotation(TestTimeout.class);
+      if (override == null && description.getTestClass() != null) {
+        override = description.getTestClass().getAnnotation(TestTimeout.class);
+      }
+      return override != null
+          ? override.seconds()
+          : Long.parseLong(System.getProperty("test.timeout.seconds", "600"));
+    }
+  };
 
   /**
    * Execute this rule before each test to print test name and test class
