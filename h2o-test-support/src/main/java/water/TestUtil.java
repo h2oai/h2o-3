@@ -427,9 +427,14 @@ public class TestUtil extends Iced {
   public static Description CURRENT_TEST_DESCRIPTION;
 
   /**
+   * Default per-test timeout in seconds.
+   */
+  public static final int DEFAULT_TEST_TIMEOUT_SECONDS = 600;
+
+  /**
    * Per-test timeout. Any single test exceeding this limit fails with TestTimedOutException instead
    * of hanging the whole JVM (which was previously killing entire Jenkins stages with SIGTERM).
-   * Configurable via -Dtest.timeout.seconds=N; default is 600 (10 minutes).
+   * Configurable via -Dtest.timeout.seconds=N; defaults to {@link #DEFAULT_TEST_TIMEOUT_SECONDS}.
    *
    * Individual long-running tests can opt out of the default with {@link TestTimeout}, which takes
    * precedence over the system property.
@@ -449,7 +454,8 @@ public class TestUtil extends Iced {
       }
       return override != null
           ? override.seconds()
-          : Long.parseLong(System.getProperty("test.timeout.seconds", "600"));
+          : Long.parseLong(System.getProperty("test.timeout.seconds",
+              String.valueOf(DEFAULT_TEST_TIMEOUT_SECONDS)));
     }
   };
 

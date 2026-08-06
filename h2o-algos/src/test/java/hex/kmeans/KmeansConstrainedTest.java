@@ -212,8 +212,6 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
-    // Constrained k-means runs a min-cost-flow solve per iteration, which on this dataset legitimately
-    // needs more than the 10 minute default per-test timeout.
     @Test
     @TestTimeout(seconds = 1800)
     public void testWeatherChicagoConstrained() {
