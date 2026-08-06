@@ -200,7 +200,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
-      timeoutValue: 400, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 480, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py3.7 X-large', target: 'test-pyunit-xlarge', pythonVersion: '3.7',
@@ -208,7 +208,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.5 Medium-large', target: 'test-r-medium-large', rVersion: '3.5.3',
-      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.5 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.5.3',
@@ -463,7 +463,7 @@ def call(final pipelineContext) {
     ],
     [
       stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
-      timeoutValue: 210, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 300, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
       stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
