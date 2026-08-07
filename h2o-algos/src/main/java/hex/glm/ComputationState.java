@@ -197,17 +197,22 @@ public final class ComputationState {
     GLMGradientInfo ginfo = new GLMGradientSolver(_job, _parms, _dinfo, 0, activeBC(), _modelBetaInfo,
             _penaltyMatrix, _gamColIndices).getGradient(expandedBeta);  // gradient obtained with zero penalty
     updateState(expandedBeta, ginfo);
-    // make sure model._betaCndCheckpoint is of the right size
+    // Rebuild the resume candidate beta from the last submodel rather than from the stored
+    // model._betaCndCheckpoint: that vector is in the solver's active-column basis, so scattering it through
+    // the submodel's non-zero index set (idxs) is invalid whenever the two bases differ.
+    // Clone, because when idxs == null expandedBeta *is* the submodel's beta array and genInitBeta() hands
+    // _betaCndCheckpoint to the solver, which mutates it in place - aliasing would corrupt the stored
+    // coefficients.
     if (model._betaCndCheckpoint != null) {
-      if (_activeData._activeCols == null || (_activeData._activeCols.length != model._betaCndCheckpoint.length)) {
-        double[] betaCndCheckpoint = modelOutput._submodels[submodelInd].idxs == null
-                ? model._betaCndCheckpoint
-                : ArrayUtils.expandAndScatter(model._betaCndCheckpoint, coefLen,
-                modelOutput._submodels[submodelInd].idxs); // expand betaCndCheckpoint out
-        if (_activeData._activeCols != null) // contract the betaCndCheckpoint to the right activeCol length
-          betaCndCheckpoint = extractSubRange(betaCndCheckpoint.length, 0, activeData()._activeCols, betaCndCheckpoint);
-        model._betaCndCheckpoint = betaCndCheckpoint;  
-      }
+      model._betaCndCheckpoint = _activeData._activeCols == null
+              ? expandedBeta.clone()
+              : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
+      assert model._betaCndCheckpoint != expandedBeta :
+              "betaCndCheckpoint must not alias the submodel beta: the solver mutates betaCnd in place";
+      assert model._betaCndCheckpoint.length == (_activeData._activeCols == null
+              ? expandedBeta.length : _activeData._activeCols.length) :
+              "betaCndCheckpoint must be in the solver's active-column basis, got length "
+                      + model._betaCndCheckpoint.length;
     }
   }
   

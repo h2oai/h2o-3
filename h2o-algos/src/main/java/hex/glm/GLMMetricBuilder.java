@@ -89,13 +89,17 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
+      // Defence in depth: every GLM scoring path currently routes through GLMScore, which already passes 0 for the
+      // offset when _useRemoveOffsetEffects is set (GLMScore.map), so this is a no-op today. It keeps null_deviance on
+      // the same scale as the offset-removed residual_deviance baked into ds should a non-GLMScore caller ever appear.
+      double effectiveOffset = gm._useRemoveOffsetEffects ? 0 : offset;
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
-        add2(yact[0], ds, weight, offset);
+        add2(yact[0], ds, weight, effectiveOffset);
       else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
               _glmf._family.equals(Family.fractionalbinomial))
-        add2(yact[0], ds[2], weight, offset);
+        add2(yact[0], ds[2], weight, effectiveOffset);
       else
-        add2(yact[0], ds[0], weight, offset);
+        add2(yact[0], ds[0], weight, effectiveOffset);
     }
     return ds;
   }

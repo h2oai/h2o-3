@@ -94,8 +94,43 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sk;
   }
   
+  /**
+   * Fills the cross-validation slot of a ScoringInfo and sets the cross_validation flag from whether it was actually
+   * filled. ScoringInfo.scoreKeepers() prefers scored_xval whenever the flag is set, so the two must stay in step:
+   * a set flag with an unfilled scored_xval yields an all-NaN series that silently disables metric-based early
+   * stopping. GLM only has cross-validation metrics after the main model is scored, so during training this leaves
+   * the flag false.
+   */
+  private void setCrossValidationScore(ScoringInfo info) {
+    if (_output._cross_validation_metrics != null) {
+      info.scored_xval = new ScoreKeeper(Double.NaN);
+      info.scored_xval.fillFrom(_output._cross_validation_metrics);
+      info.cross_validation = true;
+    } else {
+      info.cross_validation = false;
+    }
+  }
+
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
-  
+
+  /**
+   * Drops every scoring-history series carried over from a checkpoint. Needed when the checkpointed history cannot be
+   * restored (a lambda_search format flip, or a checkpoint carrying no history at all): deepClone keeps the ScoringInfo
+   * arrays, but the tables this run republishes start at higher iterations, so combineScoringHistory would take its
+   * "glm history is ahead" branch and emit rows whose lambda/predictors/deviance_* cells are all null - which a further
+   * checkpoint continuation then cannot parse back.
+   */
+  void discardScoringHistory() {
+    scoringInfo = null;
+    _unrestrictedModelScoringInfo = null;
+    _restrictedModelScoringInfoContrVals = null;
+    _restrictedModelScoringInfoRO = null;
+    _output._scoring_history = null;
+    _output._scoring_history_unrestricted_model = null;
+    _output._scoring_history_restricted_model_contr_vals = null;
+    _output._scoring_history_restricted_model_ro = null;
+  }
+
   public void addScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
     if (scoringInfo != null && (((GLMScoringInfo) scoringInfo[scoringInfo.length-1]).iterations() >= iter)) {  // no duplication
       return;
@@ -103,7 +138,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    // scoreKeepers() returns scored_xval whenever this flag is set, so the flag must not be set unless scored_xval
+    // is actually populated - otherwise ScoreKeeper.stopEarly gets an all-NaN series and silently never triggers,
+    // and Model.mse()/auc()/... report NaN via last_scored(). Mirrors hex.Model:1405-1408. During GLM training
+    // _cross_validation_metrics is null (CV metrics are built afterwards in cv_mainModelScores), so in practice this
+    // resolves to false and early stopping correctly falls back to validation/training metrics.
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -141,7 +181,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -179,7 +219,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -217,7 +257,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1;
+    setCrossValidationScore(currInfo);
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -445,6 +485,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       rp._p_values = new double[N][];
       rp._std_errs = new double[N][];
     }
+    // The explained-deviance ratios below divide a Submodel deviance by a null deviance from the model metrics,
+    // so both must be on the same scale. remove_offset_effects makes the *reported* metrics offset-removed while
+    // both Submodel deviances stay offset-included (devianceTrain is the fit deviance; devianceValid feeds submodel
+    // selection, so it must keep the offset - see computeSubmodel). Mixing the two scales stops producing a fraction
+    // at all, so both numerators need the unrestricted metrics - and report NaN when those are absent, rather than
+    // falling back to metrics on the other scale. Derived models built by MakeGLMModelHandler carry
+    // _remove_offset_effects but never populate the unrestricted slots.
+    ModelMetrics trainMetrics = _output._training_metrics;
+    ModelMetrics validMetrics = _output._validation_metrics;
+    if (_parms._remove_offset_effects) {
+      trainMetrics = _output._training_metrics_unrestricted_model;
+      validMetrics = _output._validation_metrics_unrestricted_model;
+    }
     for (int i = 0; i < N; ++i) {
       Submodel sm = _output._submodels[i];
       rp._lambdas[i] = sm.lambda_value;
@@ -460,9 +513,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         rp._p_values[i] = sm.pValues(rp._z_values[i], _output._training_metrics.residual_degrees_of_freedom());
         rp._std_errs[i] = sm.stdErr(rp._z_values[i], rp._coefficients[i]);
       }
-      rp._explained_deviance_train[i] = 1 - (_output._training_metrics._nobs*sm.devianceTrain)/((GLMMetrics)_output._training_metrics).null_deviance();
+      rp._explained_deviance_train[i] = trainMetrics == null ? Double.NaN
+              : 1 - (trainMetrics._nobs*sm.devianceTrain)/((GLMMetrics)trainMetrics).null_deviance();
       if (rp._explained_deviance_valid != null)
-        rp._explained_deviance_valid[i] = 1 - _output._validation_metrics._nobs*sm.devianceValid /((GLMMetrics)_output._validation_metrics).null_deviance();
+        rp._explained_deviance_valid[i] = validMetrics == null ? Double.NaN
+                : 1 - validMetrics._nobs*sm.devianceValid /((GLMMetrics)validMetrics).null_deviance();
     }
     return rp;
   }
@@ -582,7 +637,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   public static class GLMParameters extends Model.Parameters {
-    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver"};
+    // _remove_offset_effects is pinned because the scoring-history slots are wired from it at build start
+    // (see GLM.restrictedHistoryIsMain), so flipping it desynchronizes which slot the restore reads.
+    // _lambda_search is deliberately NOT pinned: it only decides the stored tables' format, which
+    // GLM.restoreScoringHistoryFromCheckpoint detects and handles, and pinning it would break the legitimate
+    // "fit fast, then refine with lambda_search" continuation for every GLM user.
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = {"_response_column", "_family", "_solver", "_remove_offset_effects"};
     final static double LOG2PI = Math.log(2 * Math.PI);
     public enum MissingValuesHandling {
       MeanImputation, PlugValues, Skip
@@ -848,12 +908,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
           if (_interactions != null || _interaction_pairs != null) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
-          }
-          if (_lambda_search) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
-          }
-          if (_fold_column != null || _nfolds > 0) {
-              glm.error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
           }
         }
     }
@@ -1541,6 +1595,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double [] beta;
     public double[] zValues;
     public boolean dispersionEstimated;
+    // Offset-removed holdout deviance for this submodel, set only when remove_offset_effects=true.
+    // Under cross-validation it lets cv_computeAndSetOptimalParameters aggregate an offset-removed
+    // per-lambda xval deviance the same way devianceValid feeds the unrestricted one.
+    public double devianceValidRestricted = Double.NaN;
 
 
     public double [] getBeta(double [] beta) {
@@ -1632,6 +1690,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
   public boolean _useRemoveOffsetEffects = false;
+  // Provenance for a make_derived_model() output: the source model this was derived from (key *and* checksum,
+  // since a model_id can be retrained in place), plus the view it exposes. Lets a repeated derive call at the same
+  // dest key verify it is re-deriving the same view from the same source fit (idempotent) rather than silently
+  // returning an unrelated or stale model.
+  public Key<GLMModel> _derivedFromModelId = null;
+  public long _derivedFromModelChecksum = 0;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1689,6 +1753,30 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     public DataInfo getDinfo() { return _dinfo; }
+
+    /**
+     * Retags the single placeholder submodel this output was constructed with (see MakeGLMModelHandler's derived
+     * models) with the lambda/alpha the source model was selected at, so lambda_best()/alpha_best() report the
+     * real regularization strength instead of 0. The deviances stay NaN on purpose: a derived model does not
+     * recompute a per-lambda path, and the source's deviances are offset-included, so reusing them would put
+     * explained_deviance_* on a different scale from the metrics this model reports.
+     *
+     * Note this deliberately does NOT adopt the source's whole submodel array, even though the fit is identical:
+     * the source's submodel betas are in the standardized space, while a derived output's DataInfo carries
+     * TransformType.NONE because its _global_beta is already denormalized (see MakeGLMModelHandler). Sharing the
+     * array would therefore leave every submodel beta un-denormalized, corrupting coef() and returning a
+     * wrong-scale getRegularizationPath(). A derived model consequently carries no regularization path; read it
+     * from the source model instead.
+     */
+    public void retagDerivedSubmodel(double lambda, double alpha) {
+      if (_submodels.length != 1)
+        return;   // only the derived-model output has a single placeholder submodel to retag
+      Submodel placeholder = _submodels[0];
+      _submodels = new Submodel[]{new Submodel(lambda, alpha,
+              placeholder.getBeta(MemoryManager.malloc8d(_totalBetaLength)), placeholder.iteration,
+              Double.NaN, Double.NaN, _totalBetaLength, null, false)};
+    }
+
     public int bestSubmodelIndex() { return _selected_submodel_idx; }
     public double lambda_selected(){
       return _submodels[_selected_submodel_idx].lambda_value;
@@ -1718,6 +1806,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public TwoDimTable _scoring_history_unrestricted_model;
     public ModelMetrics _training_metrics_unrestricted_model;
     public ModelMetrics _validation_metrics_unrestricted_model;
+
+    // CV with-offset (unrestricted) view; populated when _remove_offset_effects=true and CV is enabled.
+    public ModelMetrics _cross_validation_metrics_unrestricted_model;
+    public TwoDimTable _cross_validation_metrics_summary_unrestricted_model;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id_unrestricted_model;
+    // Per-fold unrestricted holdout predictions; non-null only when keep_cross_validation_predictions=true.
+    public Key<Frame>[] _cross_validation_predictions_unrestricted_model;
 
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
@@ -2559,6 +2654,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   }
 
   @Override
+  public void deleteCrossValidationPreds() {
+      super.deleteCrossValidationPreds();
+      GLMOutput out = (GLMOutput) _output;
+      // Per-fold unrestricted predictions — non-null only when keep_cross_validation_predictions=true.
+      if (out._cross_validation_predictions_unrestricted_model != null) {
+          int count = Keyed.removeAll(out._cross_validation_predictions_unrestricted_model);
+          if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
+      }
+      Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+  }
+
+  @Override
   public GLMMojoWriter getMojo() {
     return new GLMMojoWriter(this);
   }
@@ -2609,6 +2716,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
+    GLMOutput out = (GLMOutput) _output;
+    // _training/_validation_metrics_unrestricted_model are Keyed but not tracked in _model_metrics,
+    // so they must be removed explicitly.
+    if (out._training_metrics_unrestricted_model != null)
+      Keyed.remove(out._training_metrics_unrestricted_model._key, fs, true);
+    if (out._validation_metrics_unrestricted_model != null)
+      Keyed.remove(out._validation_metrics_unrestricted_model._key, fs, true);
     Keyed.remove(_output._regression_influence_diagnostics, fs, cascade);
     return fs;
   }

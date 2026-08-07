@@ -76,6 +76,9 @@ public abstract class GLMTask  {
     long _nobs;
     double _likelihood;
     boolean _removeOffsetEffects;
+    // Second, offset-removed deviance accumulator, filled only when alsoComputeOffsetRemoved() was called.
+    private boolean _alsoOffsetRemoved;
+    double _resDevOffsetRemoved = 0;
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta) {
       super(null,dinfo, jobKey);
@@ -89,7 +92,9 @@ public abstract class GLMTask  {
         _glmf = new GLMWeightsFun(parms);
         _beta = beta;
         _removeOffsetEffects = removeOffsetEffects;
-        _sparseOffset = _sparse ? (!_removeOffsetEffects ? GLM.sparseOffset(_beta,_dinfo) : 0) : 0;
+        // sparseOffset corrects for numeric standardization in sparse data — it is independent of
+        // the offset column, so it must be computed regardless of _removeOffsetEffects.
+        _sparseOffset = _sparse ? GLM.sparseOffset(_beta, _dinfo) : 0;
     }
     
     private transient GLMWeights _glmw;
@@ -100,16 +105,37 @@ public abstract class GLMTask  {
     public void chunkInit() {
       _glmw = new GLMWeights();
     }
+    /**
+     * Also accumulate the offset-removed deviance during the same traversal.  Callers that need both offset views
+     * of the same beta (offset-included for submodel selection, offset-removed for the restricted scoring history)
+     * would otherwise run two identical full-frame passes; the linear predictor is the expensive part and it is
+     * shared.  Only meaningful when this task is not already removing the offset.
+     */
+    public GLMResDevTask alsoComputeOffsetRemoved() {
+      assert !_removeOffsetEffects : "this task already removes the offset; the second view would be a duplicate";
+      _alsoOffsetRemoved = true;
+      return this;
+    }
+
     @Override
     protected void processRow(Row r) {
-      _glmf.computeWeights(r.response(0), r.innerProduct(_beta) + _sparseOffset, _removeOffsetEffects ? 0 : r.offset, r.weight, _glmw);
+      double eta = r.innerProduct(_beta) + _sparseOffset;
+      _glmf.computeWeights(r.response(0), eta, _removeOffsetEffects ? 0 : r.offset, r.weight, _glmw);
       _resDev += _glmw.dev;
       _likelihood += _glmw.l;
       ++_nobs;
+      if (_alsoOffsetRemoved) {
+        _glmf.computeWeights(r.response(0), eta, 0, r.weight, _glmw);
+        _resDevOffsetRemoved += _glmw.dev;
+      }
     }
-    @Override public void reduce(GLMResDevTask gt) {_nobs += gt._nobs; _resDev += gt._resDev; _likelihood += gt._likelihood;}
+    @Override public void reduce(GLMResDevTask gt) {
+      _nobs += gt._nobs; _resDev += gt._resDev; _likelihood += gt._likelihood;
+      _resDevOffsetRemoved += gt._resDevOffsetRemoved;
+    }
     public double avgDev(){return _resDev/_nobs;}
     public double dev(){return _resDev;}
+    public double avgDevOffsetRemoved(){return _resDevOffsetRemoved/_nobs;}
 
   }
 

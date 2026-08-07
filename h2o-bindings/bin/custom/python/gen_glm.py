@@ -316,33 +316,104 @@ def class_extensions():
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-    def make_unrestricted_glm_model(self, dest=None):
+    @property
+    def cross_validation_metrics_unrestricted_model(self):
         """
-        Make unrestricted GLM model when control variables are defined.
+        Cross-validation metrics for the with-offset (unrestricted) view.
 
-        Needs to be passed source model trained with control variables enabled. 
-
-        :param dest: (optional) destination key
+        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns a ``dict``
+        (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or
+        ``None`` when the model was not trained with both ``remove_offset_effects=True`` and
+        cross-validation.
 
         :examples:
 
-        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects=True,
-        ...                                   offset_column="VOL",
-        ...                                   control_variables=["PSA"])
-        >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,8],
-        ...         y=1)
-        >>> p = m.model_performance(d)
-        >>> print(p)
-        >>> m2 = m.make_unrestricted_glm_model(dest="unrestricted_glm")
-        >>> p2 = m2.model_performance(d)
-        >>> print(p2)
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> # Offset-removed CV deviance (main CV slot)
+        >>> restricted_dev = m.model_performance(xval=True).residual_deviance()
+        >>> # With-offset CV deviance (unrestricted slot)
+        >>> unrestricted_dev = m.cross_validation_metrics_unrestricted_model["residual_deviance"]
         """
-        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
-            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
+        return self._model_json.get("output", {}).get("cross_validation_metrics_unrestricted_model")
+
+    @property
+    def cross_validation_metrics_summary_unrestricted_model(self):
+        """
+        Cross-validation metrics summary table for the with-offset (unrestricted) view.
+
+        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
+        ``H2OTwoDimTable``, or ``None`` when the model was not trained with both
+        ``remove_offset_effects=True`` and cross-validation.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> m.cross_validation_metrics_summary_unrestricted_model
+        """
+        return self._model_json.get("output", {}).get("cross_validation_metrics_summary_unrestricted_model")
+
+    @property
+    def scoring_history_unrestricted_model(self):
+        """
+        Scoring history for the with-offset (unrestricted) view.
+
+        Available when ``remove_offset_effects=True`` or ``control_variables`` was set; ``None``
+        otherwise. Returns an ``H2OTwoDimTable``. Under ``lambda_search`` this is the per-lambda
+        deviance that ``lambda_best`` selection is based on, while :meth:`scoring_history` reports
+        the offset-removed view.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   lambda_search=True, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> # Offset-removed per-lambda history
+        >>> m.scoring_history()
+        >>> # With-offset per-lambda history - the deviance lambda selection uses
+        >>> m.scoring_history_unrestricted_model
+        """
+        return self._model_json.get("output", {}).get("scoring_history_unrestricted_model")
+
+    def make_unrestricted_glm_model(self, dest=None):
+        """
+        Create a derived model exposing the with-offset (unrestricted) view of the source model.
+
+        The source model must have been trained with ``remove_offset_effects=True`` or
+        ``control_variables`` set. The derived model's training, validation, and CV metrics
+        reflect the unrestricted view (offset effects and ``control_variables`` effects both
+        included); its coefficients are identical to the source model.
+
+        :param dest: optional destination key for the derived model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> # Offset-removed view (main CV metrics)
+        >>> print(m.model_performance(xval=True).residual_deviance())
+        >>> # Unrestricted (with-offset) view as a standalone model
+        >>> m2 = m.make_unrestricted_glm_model()
+        >>> print(m2.model_performance(xval=True).residual_deviance())
+        """
+        if self.actual_params["control_variables"] is None and not self.actual_params.get("remove_offset_effects"):
+            raise H2OValueError("Source model must be trained with control_variables or remove_offset_effects=True.")
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
@@ -356,42 +427,57 @@ def class_extensions():
 
     def make_derived_glm_model(self, dest=None, remove_control_variables_effects=False, remove_offset_effects=False):
         """
-        Make derived GLM model when control variables or remove offset effects are defined.
+        Create a derived model that excludes the effects of one feature — ``control_variables`` or
+        the offset — from a source model trained with either or both features. Exactly one set of
+        effects can be excluded per call; the other effects (if the source model has them) remain
+        included.
 
-        Needs to be passed source model trained with control variables enabled or remove offset effects enabled. 
+        When both ``remove_control_variables_effects=False`` and ``remove_offset_effects=False``
+        (the defaults), this behaves identically to :meth:`make_unrestricted_glm_model`: the
+        derived model's scoring and metrics include both the offset and the ``control_variables``
+        effects, and its coefficients are identical to the source model.
 
-        :param dest: (optional) destination key
-        :param remove_control_variables_effects: (optional) set control variables flag to get model affected only 
-            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
-        :param remove_offset_effects: (optional) set remove offset effects flag to get model affected only 
-            by this feature (available only if control_variables and remove_offset_effects parameters are both set)
+        :param dest: optional destination key for the derived model.
+        :param remove_control_variables_effects: when ``True``, the derived model's scoring and
+               metrics exclude the effects of the ``control_variables`` feature (their coefficients
+               are zeroed out); the offset effects, if the source model has any, are still included.
+               Requires the source model to have been trained with ``control_variables`` set.
+        :param remove_offset_effects: when ``True``, the derived model's scoring and metrics
+               exclude the offset effects; the ``control_variables`` effects, if the source model
+               has any, are still included. Requires the source model to have been trained with
+               ``remove_offset_effects=True``. Cannot be combined with
+               ``remove_control_variables_effects=True`` — only one set of effects can be excluded
+               at a time.
 
         :examples:
 
-        >>> d = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   solver='COORDINATE_DESCENT',
-        ...                                   remove_offset_effects=True,
-        ...                                   offset_column="VOL",
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
         ...                                   control_variables=["PSA"])
-        >>> m.train(training_frame=d,
-        ...         x=[2,3,4,5,6,8],
-        ...         y=1)
-        >>> p = m.model_performance(d)
-        >>> print(p)
-        >>> m2 = m.make_derived_glm_model(dest="unrestricted_glm")
-        >>> p2 = m2.model_performance(d)
-        >>> print(p2)
-        >>> m3 = m.make_derived_glm_model(dest="derived_glm_control_variables", remove_control_variables_effects=True)
-        >>> p3 = m3.model_performance(d)
-        >>> print(p3)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> # Unrestricted (with-offset) view — same as make_unrestricted_glm_model()
+        >>> m_unrestricted = m.make_derived_glm_model()
+        >>> print(m_unrestricted.model_performance(d).residual_deviance())
+        >>> # Exclude the control-variables effects (offset effects still included)
+        >>> m_cv = m.make_derived_glm_model(remove_control_variables_effects=True)
+        >>> print(m_cv.model_performance(d).residual_deviance())
+        >>> # Exclude the offset effects (control-variables effects still included)
+        >>> m_ro = m.make_derived_glm_model(remove_offset_effects=True)
+        >>> print(m_ro.model_performance(d).residual_deviance())
         """
-        if self.actual_params["control_variables"] is None and not(self.actual_params["remove_offset_effects"]):
-            raise H2OValueError("GLM wasn't trained with control variables or with remove offset effects.")
-        if (self.actual_params["control_variables"] is None or not(self.actual_params["remove_offset_effects"])) and (remove_control_variables_effects or remove_offset_effects):
-            raise H2OValueError("GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used.")
-        if self.actual_params["control_variables"] is not None and self.actual_params["remove_offset_effects"] and (remove_control_variables_effects and remove_offset_effects):
-            raise H2OValueError("The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model.")
+        if self.actual_params["control_variables"] is None and not self.actual_params.get("remove_offset_effects"):
+            raise H2OValueError("Source model must be trained with control_variables or remove_offset_effects=True.")
+        if remove_control_variables_effects and self.actual_params["control_variables"] is None:
+            raise H2OValueError("remove_control_variables_effects=True requires the source model to have been "
+                                "trained with control_variables.")
+        if remove_offset_effects and not self.actual_params.get("remove_offset_effects"):
+            raise H2OValueError("remove_offset_effects=True requires the source model to have been trained "
+                                "with remove_offset_effects=True.")
+        if remove_control_variables_effects and remove_offset_effects:
+            raise H2OValueError("remove_control_variables_effects and remove_offset_effects cannot both be True: "
+                                "they produce the same model as the main model.")
         model_json = h2o.api(
             "POST /3/MakeDerivedGLMModel",
             data={"model": self._model_json["model_id"]["name"],
