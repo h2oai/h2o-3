@@ -196,7 +196,8 @@ public class GLMUtils {
     for(int i=0; i < glmScRestrictedHeaders.length; i++){
       String colName = glmScRestrictedHeaders[i];
       String colNameLower = colName.toLowerCase();
-      if(colNameLower.equals("negative_log_likelihood") || colNameLower.equals("objective")){
+      if(colNameLower.equals("negative_log_likelihood") || colNameLower.equals("objective")
+              || colNameLower.equals("deviance_xval") || colNameLower.equals("deviance_se")){
         colName = "Unrestricted "+colName;
       }
       if (!finalColHeaders.contains(colName)) {
