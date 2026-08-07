@@ -8,10 +8,6 @@ Overview
 
 Welcome to the H2O-3 documentation site! Select a learning path from the sidebar or browse through the full content outline below.
 
-.. note::
-
-   H2O-3 OSS is for experimentation and prototyping, not production. H2O-3 Enterprise is the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
-
 We're excited you're interesting in learning more about H2O-3. If you have questions or ideas to share, please post them to the H2O community site on `Stack Overflow <http://stackoverflow.com/questions/tagged/h2o>`__.
 
 Additional resources
