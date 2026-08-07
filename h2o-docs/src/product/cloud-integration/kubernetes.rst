@@ -1,10 +1,6 @@
 Using H2O with Kubernetes
 =========================
 
-.. note::
-
-   Running H2O-3 on Kubernetes is part of H2O-3 Enterprise, the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
-
 H2O Software Stack
 ------------------
 
