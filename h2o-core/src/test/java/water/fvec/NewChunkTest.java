@@ -629,5 +629,35 @@ public class NewChunkTest extends TestUtil {
     nc.addNumDecompose(Double.MIN_VALUE);
     nc.addNumDecompose(Double.MIN_NORMAL);
   }
+
+  @Test
+  public void testNewChunkSparseCategoricals() {
+    // this is reproduction of issue that caused failure in multinode for the
+    // targetencoding.interaction.InteractionSupportTest.test_addFeatureInteraction_with_known_domain_is_consistent
+    // test
+    int[] data = new int[96];
+    for (int i = 0; i < 19; i++)
+      data[i] = 0;
+    for (int i = 19; i < 62; i++)
+      data[i] = 2;
+    for (int i = 62; i < 86; i++)
+      data[i] = 7;
+    for (int i = 86; i < 90; i++)
+      data[i] = 12;
+    for (int i = 90; i < 94; i++)
+      data[i] = 0;
+    data[94] = 11;
+    data[95] = 11;
+
+    nc = new NewChunk(av, 25);
+    for (int i = 0; i < data.length; i++) {
+      nc.addCategorical(data[i]);
+    }
+    assertEquals(Vec.T_CAT, nc.type());
+    Chunk c = nc.new_close();
+    for (int i = 0; i < data.length; i++) {
+      assertEquals(data[i], (int)c.atd(i));
+    }
+  }
 }
 
