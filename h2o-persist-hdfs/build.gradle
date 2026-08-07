@@ -46,7 +46,11 @@ task s3CredentialsCheck(group: "S3") {
 
 test {
     dependsOn ":h2o-core:testJar"
-    dependsOn smalldataCheck, s3CredentialsCheck, jar, testJar, testMultiNode
+    // s3CredentialsCheck is disabled: it was added for the s3n import tests, which needed AWS keys
+    // in core-site.xml because s3n had no environment-variable credential provider. s3n is no longer
+    // supported by hadoop-aws 3.0+ and the remaining s3a tests pick up AWS_ACCESS_KEY_ID /
+    // AWS_SECRET_ACCESS_KEY from the environment. Kept defined for Hadoop testing (GH-16922).
+    dependsOn smalldataCheck, /*s3CredentialsCheck,*/ jar, testJar, testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

@@ -28,9 +28,18 @@ function cleanup () {
 
 trap cleanup SIGTERM SIGINT
 
-if [ -z "$JUNIT_CORE_SITE_PATH" ]; then
-  echo "!!! Error: environment variable JUNIT_CORE_SITE_PATH is not defined. Aborting tests !!!"
-  exit 1
+# Disabled together with :h2o-persist-hdfs:s3CredentialsCheck - the s3a tests authenticate from
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY when no core-site.xml is supplied (GH-16922).
+#if [ -z "$JUNIT_CORE_SITE_PATH" ]; then
+#  echo "!!! Error: environment variable JUNIT_CORE_SITE_PATH is not defined. Aborting tests !!!"
+#  exit 1
+#fi
+
+# Only pass the config when it is actually set - an empty -Dai.h2o.hdfs_config adds the flag without
+# a value, and H2O's parser would then consume the following argument as the config path.
+HDFS_CONFIG_OPT=""
+if [ -n "$JUNIT_CORE_SITE_PATH" ]; then
+  HDFS_CONFIG_OPT="-Dai.h2o.hdfs_config=$JUNIT_CORE_SITE_PATH"
 fi
 
 # Find java command
@@ -96,7 +105,7 @@ $JVM water.H2O -name $CLUSTER_NAME -ip $H2O_NODE_IP -baseport $CLUSTER_BASEPORT 
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-persist-hdfs junit tests...
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes -Dai.h2o.hdfs_config=$JUNIT_CORE_SITE_PATH $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $HDFS_CONFIG_OPT $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | sed -e "s/.*TEST \(.*\) EXECUTION TIME: \(.*\) (Wall.*/\2 \1/" | sort -gr | head -n 10 >> $OUTDIR/out.0
 
