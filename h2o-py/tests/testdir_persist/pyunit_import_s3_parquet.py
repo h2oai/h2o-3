@@ -16,13 +16,14 @@ def test_import_parquet_from_s3():
 
 
 def test_import_parquet_from_s3_impl():
-    aws_creds_prefix = os.environ['AWS_CREDS_PREFIX'] if 'AWS_CREDS_PREFIX' in os.environ else ''
+    aws_creds_prefix = os.environ.get('AWS_CREDS_PREFIX_S3_PROD', os.environ.get('AWS_CREDS_PREFIX', ''))
     access_key_id = os.environ[aws_creds_prefix + 'AWS_ACCESS_KEY_ID']
     secret_access_key = os.environ[aws_creds_prefix + "AWS_SECRET_ACCESS_KEY"]
+    session_token = os.environ.get(aws_creds_prefix + "AWS_SESSION_TOKEN")
 
     assert access_key_id is not None
     assert secret_access_key is not None
-    set_s3_credentials(access_key_id, secret_access_key)
+    set_s3_credentials(access_key_id, secret_access_key, session_token)
     
     from_s3 = h2o.import_file("s3://h2o-public-test-data/smalldata/parser/parquet/airlines-simple.snappy.parquet")
     from_local = h2o.import_file(pyunit_utils.locate("smalldata/parser/parquet/airlines-simple.snappy.parquet"))
