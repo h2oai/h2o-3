@@ -51,7 +51,6 @@ public class H2OStarter {
       Log.info(message);
       Log.info("");
     }
-    EnterpriseGate.logStartupBanner();
   }
 
   public static void start(String[] args, String relativeResourcePath) {

@@ -3,10 +3,6 @@
 Productionizing H2O
 ===================
 
-.. note::
-
-   H2O-3 Enterprise provides the supported, production-grade path for deploying models. Contact enterprise@h2o.ai for access.
-
 .. _about-pojo-mojo:
 
 About POJOs and MOJOs

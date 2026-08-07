@@ -1,10 +1,6 @@
 Kubernetes users
 ================
 
-.. note::
-
-   Running H2O-3 on Kubernetes is part of H2O-3 Enterprise, the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
-
 H2O-3 nodes must be treated as stateful by the Kubernetes environment because H2O-3 is a stateful application. H2O-3 nodes are, therefore, spawned together and deallocated together as a single unit. Subsequently, Kubernetes tooling for stateless applications is not applicable to H2O-3. In Kubernetes, a set of pods sharing a common state is named a `StatefulSet <https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/>`__.
 
 H2O-3 pods deployed on a Kubernetes cluster require a `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__ for H2O-3 node discovery. The headless service returns a set of addresses to all the underlying pods instead of load-balancing incoming requests to the underlying H2O-3 pods.

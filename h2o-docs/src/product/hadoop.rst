@@ -3,10 +3,6 @@
 Using H2O on Hadoop
 ===================
 
-.. note::
-
-   Running H2O-3 on Hadoop is part of H2O-3 Enterprise, the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
-
 Currently supported versions:
 
 -  CDH 5.2
@@ -81,7 +77,7 @@ Walkthrough
 The following steps show you how to download or build H2O with Hadoop
 and the parameters involved in launching H2O from the command line.
 
-1. Obtain the H2O-3 release for your version of Hadoop. See the note at the top of this page for how to get Hadoop builds.
+1. Download the latest H2O release for your version of Hadoop. Refer to the `H2O on Hadoop <http://www.h2o.ai/download>`__ tab of the download page for either the latest stable release or the nightly bleeding edge release.
 
 2. Prepare the job input on the Hadoop Node by unzipping the build file
    and changing to the directory with the Hadoop and H2O's driver jar

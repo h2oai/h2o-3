@@ -1,10 +1,6 @@
 Sparkling Water
 ---------------
 
-.. note::
-
-   Running H2O-3 on Spark through Sparkling Water is part of H2O-3 Enterprise, the supported, production-grade path for production deployments. Contact enterprise@h2o.ai for access.
-
 **Note**: This topic is deprecated and will be removed in a later release. Refer to the `Sparkling Water User Guide <http://docs.h2o.ai/#sparkling-water>`__ for Sparkling Water FAQs. 
 
 What is Sparkling Water?

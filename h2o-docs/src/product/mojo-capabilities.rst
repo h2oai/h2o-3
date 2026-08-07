@@ -3,10 +3,6 @@
 MOJO Capabilities
 -----------------
 
-.. note::
-
-   H2O-3 Enterprise provides the supported, production-grade path for scoring and inspecting models with the MOJO API. Contact enterprise@h2o.ai for access.
-
 This section describes the basics of working with the MOJO model in H2O-3.
 
 About H2O Generated MOJO Models
