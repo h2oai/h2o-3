@@ -1790,10 +1790,11 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
         }
     }
 
-    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    // GH-16858: remove_offset_effects is now supported with interactions. With a categorical x categorical
+    // interaction, the remove_offset_effects predictions must equal the plain offset model scored with the
+    // offset column manually zeroed out.
+    @Test
     public void testRemoveOffsetWithInteraction() {
-        Frame train = null;
-        GLMModel glm = null;
         try {
             Scope.enter();
 
@@ -1801,21 +1802,40 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             Vec cat2 = Vec.makeVec(new long[]{1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,1,1,0,0,1,0,1,0},new String[]{"0","1"},Vec.newKey());
             Vec offset = Vec.makeVec(new double[]{0.1,0.2,0.2,0.2,0.1,0,0,0.2,0.3,0.5,0.3,0.4,0.8,0.4,0.4,0.5,0,0,0.5,0.1,0,0,0.1,0,0.1,0}, Vec.newKey());
             Vec res = Vec.makeVec(new double[]{1,1,0,0,0,1,0,1,0,1,1,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1}, new String[]{"0","1"},Vec.newKey());
-            train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
+            Frame train = new Frame(Key.<Frame>make("train"),new String[]{"x1", "x2", "offset", "y"},new Vec[]{cat1, cat2, offset, res});
             DKV.put(train);
+            Scope.track(train);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._train = train._key;
             params._alpha = new double[]{0};
             params._response_column = "y";
-            params._intercept = false;
-            params._remove_offset_effects = true;
             params._offset_column = "offset";
             params._interactions = new String[]{"x1", "x2"};
-            glm = new GLM(params).trainModel().get();
+            params._seed = 1234;
+
+            // remove_offset_effects model with a categorical x categorical interaction
+            params._remove_offset_effects = true;
+            GLMModel glmRoe = new GLM(params).trainModel().get();
+            Scope.track_generic(glmRoe);
+            Frame predsRoe = Scope.track(glmRoe.score(train));
+
+            // same model without remove_offset_effects, scored with the offset manually zeroed out
+            params._remove_offset_effects = false;
+            GLMModel glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+            Frame zeroOffset = train.deepCopy(Key.make().toString());
+            zeroOffset.replace(zeroOffset.find("offset"), zeroOffset.vec("offset").makeZero()).remove();
+            DKV.put(zeroOffset);
+            Scope.track(zeroOffset);
+            Frame predsManual = Scope.track(glm.score(zeroOffset));
+
+            double delta = 1e-6;
+            for (long i = 0; i < train.numRows(); i++) {
+                assertEquals(predsManual.vec(1).at(i), predsRoe.vec(1).at(i), delta);
+                assertEquals(predsManual.vec(2).at(i), predsRoe.vec(2).at(i), delta);
+            }
         } finally {
-            if (train != null) train.remove();
-            if (glm != null) glm.remove();
             Scope.exit();
         }
     }
