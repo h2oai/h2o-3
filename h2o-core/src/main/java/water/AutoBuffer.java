@@ -1788,7 +1788,7 @@ public final class AutoBuffer implements AutoCloseable {
 
   @SuppressWarnings("unused")  public AutoBuffer putJSONZ( String name, boolean value ) { return putJSONStr(name).put1(':').putJStr("" + value); }
 
-  private AutoBuffer putJSONAZ(boolean [] b) {
+  AutoBuffer putJSONAZ(boolean [] b) {
     if (b == null) return putJNULL();
     put1('[');
     for( int i = 0; i < b.length; ++i) {
