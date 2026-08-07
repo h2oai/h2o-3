@@ -251,6 +251,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        scoreUnrestrictedOffsetMetrics();
         computeParameters();
         saveModelCheckpointIfConfigured();
         notifyModelListeners();
@@ -310,6 +311,53 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       res.unlock(_job);
     }
     Log.info("Completing model "+ reskey);
+  }
+
+  // GH-16851: a remove_offset model reports offset-removed ("restricted") metrics by default. Here we also
+  // compute the parallel offset-APPLIED ("unrestricted") metrics on train/valid so users can compare the two
+  // views. Generic for any algo whose scoring honors Model.applyOffsetAtScoreTime(); algos that compute their
+  // own unrestricted metrics during training (GLM) already populated the field and are skipped by the null check.
+  private void scoreUnrestrictedOffsetMetrics() {
+    if (!_parms._remove_offset_effects || _parms._is_cv_model) return;
+    M model = _result.get();
+    if (model == null || model._output._training_metrics_unrestricted_model != null) return;
+    // Score a shallow clone with the flag set: the shared DKV-cached instance is never mutated, so a
+    // concurrent predict on this model cannot observe the offset-applied mode.
+    M unrestricted = model.clone();
+    unrestricted._scoreWithOffset = true;
+    // Compute both views first, assign together: no half-populated dual view if the second pass throws.
+    ModelMetrics trainMM = _parms.train() != null ? makeUnrestrictedMetrics(unrestricted, _parms.train(), model._output._training_metrics) : null;
+    ModelMetrics validMM = _parms.valid() != null ? makeUnrestrictedMetrics(unrestricted, _parms.valid(), model._output._validation_metrics) : null;
+    model.write_lock(_job);
+    try {
+      model._output._training_metrics_unrestricted_model = trainMM;
+      model._output._validation_metrics_unrestricted_model = validMM;
+      model.update(_job);
+    } finally {
+      model.unlock(_job);
+    }
+  }
+
+  // Computes offset-applied metrics for one frame. Uses score() (not scoreMetrics) because algos with a
+  // custom predictScoreImpl (e.g. CoxPH) don't implement the generic score0 path. The metric lands under the
+  // model's checksum-based DKV key (colliding with the restricted metric — the clone hashes identically
+  // because _scoreWithOffset lives on Model, outside the checksum), so the restricted keyed copy is re-put
+  // right away — the inconsistency window is a single DKV put, not a whole scoring pass.
+  private ModelMetrics makeUnrestrictedMetrics(M unrestricted, Frame fr, ModelMetrics restricted) {
+    unrestricted.score(fr).delete();
+    Key<ModelMetrics> sharedKey = ModelMetrics.buildKey(unrestricted, fr);
+    ModelMetrics mm = DKV.getGet(sharedKey);
+    if (restricted != null && sharedKey.equals(restricted._key)) {
+      DKV.put(restricted); // atomic overwrite: the shared key never goes absent
+    } else {
+      // no restricted twin to restore (or it lives under a different key) — never leave the
+      // offset-applied metric visible under the model's primary lookup key
+      DKV.remove(sharedKey);
+    }
+    // Detach the stored unrestricted object from the shared DKV slot (which now holds the restricted
+    // metric): a stale _key here is the footgun that caused the GH-16807 cascade-delete bug.
+    if (mm != null) mm._key = Key.make(sharedKey.toString() + "_unrestricted");
+    return mm;
   }
 
   private void saveModelCheckpointIfConfigured() {
@@ -835,6 +883,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   
   
+  // GH-16851: per-fold offset-APPLIED metric builders for the "unrestricted" CV view (parallel to the primary
+  // offset-removed CV metrics), captured during cv_scoreCVModels and aggregated in cv_mainModelScores.
+  private transient ModelMetrics.MetricBuilder[] _cvUnrestrictedMBs;
+
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -872,6 +924,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           } else {
             mbs[i] = cvModel.scoreMetrics(adaptFr);
           }
+          if (_parms._remove_offset_effects) { // GH-16851: also capture the offset-applied fold metrics
+            if (_cvUnrestrictedMBs == null) _cvUnrestrictedMBs = new ModelMetrics.MetricBuilder[N];
+            // score a shallow clone so the shared fold-model instance never carries the flag (no race)
+            M unrestrictedCv = cvModel.clone();
+            unrestrictedCv._scoreWithOffset = true;
+            _cvUnrestrictedMBs[i] = unrestrictedCv.scoreMetrics(adaptFr);
+          }
         }
       } finally {
         Scope.track(preds);
@@ -896,6 +955,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   protected boolean cv_canBuildMainModelInParallel() {
+    return false;
+  }
+
+  /**
+   * Whether this algorithm implements remove_offset_effects (offset-free scoring & metrics, GH-16851).
+   * Only algorithms whose every scoring path consults {@link Model#applyOffsetAtScoreTime()} may return true.
+   */
+  protected boolean supportsRemoveOffsetEffects() {
     return false;
   }
 
@@ -971,6 +1038,31 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
+
+    // GH-16851: build the parallel offset-APPLIED ("unrestricted") CV metric from the per-fold offset-applied
+    // metric builders captured in cv_scoreCVModels.
+    boolean cvUnrestrictedComplete = _parms._remove_offset_effects && _cvUnrestrictedMBs != null;
+    if (cvUnrestrictedComplete)
+      for (ModelMetrics.MetricBuilder mb : _cvUnrestrictedMBs)
+        if (mb == null) { cvUnrestrictedComplete = false; break; } // a fold was skipped -> no aggregate view
+    if (cvUnrestrictedComplete) {
+      cv_makeAggregateModelMetrics(_cvUnrestrictedMBs);
+      ModelMetrics uCV = _cvUnrestrictedMBs[0].makeModelMetrics(mainModel, _parms.train(), null, null);
+      uCV._description = N + "-fold cross-validation with the offset applied (unrestricted view of a remove_offset_effects model; no holdout predictions)";
+      mainModel._output._cross_validation_metrics_unrestricted_model = uCV;
+      // makeModelMetrics keyed uCV under the same (checksum-based) key as the restricted CV metric; re-put the
+      // restricted one right away so DKV lookups keep returning the model's primary metrics.
+      Key<ModelMetrics> sharedKey = uCV._key;
+      ModelMetrics restrictedCV = mainModel._output._cross_validation_metrics;
+      if (restrictedCV != null && sharedKey.equals(restrictedCV._key)) {
+        DKV.put(restrictedCV); // atomic overwrite: the shared key never goes absent
+      } else {
+        DKV.remove(sharedKey); // never leave the offset-applied metric under the primary lookup key
+      }
+      // detach the stored unrestricted object from the shared DKV slot (stale-_key footgun, see GH-16807)
+      uCV._key = Key.make(sharedKey.toString() + "_unrestricted");
+      _cvUnrestrictedMBs = null;
+    }
 
     // Put cross-validation scoring history to the main model
     if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
@@ -1441,6 +1533,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     if (_parms._nfolds > 1 && _parms._nfolds > train().numRows()) {
       error("_nfolds", "nfolds cannot be larger than the number of rows (" + train().numRows() + ").");
+    }
+    // remove_offset_effects (GH-16851): only algorithms that implement offset-free scoring may accept the
+    // flag (raw REST can set any inherited parameter regardless of the schema's fields list), and it only
+    // makes sense when there is an offset to remove. GLM adds further family/CV restrictions itself.
+    if (_parms._remove_offset_effects) {
+      if (!supportsRemoveOffsetEffects()) {
+        error("_remove_offset_effects", "Remove offset effects is not supported by " + getName() + ".");
+      } else if (_parms._offset_column == null) {
+        error("_remove_offset_effects", "Remove offset effects requires an offset_column to be specified.");
+      }
     }
     if (_parms._fold_column != null) {
       hide("_fold_assignment", "Fold assignment is ignored when a fold column is specified.");

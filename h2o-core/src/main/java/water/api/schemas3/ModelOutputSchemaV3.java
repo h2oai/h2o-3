@@ -68,6 +68,17 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Cross-validation model metrics summary", direction=API.Direction.OUTPUT, level=API.Level.critical)
   public TwoDimTableV3 cross_validation_metrics_summary;
 
+  // remove_offset_effects dual view (GH-16851): the parallel offset-APPLIED metrics of a model that removes
+  // the offset from scoring. Null unless the model was trained with remove_offset_effects.
+  @API(help="Training data model metrics with the offset applied (only for remove_offset_effects models)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public ModelMetricsBaseV3 training_metrics_unrestricted_model;
+
+  @API(help="Validation data model metrics with the offset applied (only for remove_offset_effects models)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public ModelMetricsBaseV3 validation_metrics_unrestricted_model;
+
+  @API(help="Cross-validation model metrics with the offset applied (only for remove_offset_effects models)", direction=API.Direction.OUTPUT, level=API.Level.expert)
+  public ModelMetricsBaseV3 cross_validation_metrics_unrestricted_model;
+
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public String status;
 

@@ -10,18 +10,18 @@ import water.fvec.Frame;
 
 public class XGBoostNativeBigScorePredict implements XGBoostBigScorePredict {
 
-  private final XGBoostModelInfo _modelInfo; 
+  private final XGBoostModelInfo _modelInfo;
   private final XGBoostModel.XGBoostParameters _parms;
   private final XGBoostOutput _output;
   private final DataInfo _dataInfo;
   private final BoosterParms _boosterParms;
   private final double _threshold;
-  
+  private final boolean _useOffset; // false for remove_offset_effects models outside the unrestricted pass (GH-16851)
 
   public XGBoostNativeBigScorePredict(
       XGBoostModelInfo modelInfo, XGBoostModel.XGBoostParameters parms,
-      XGBoostOutput output, DataInfo dataInfo, BoosterParms boosterParms, 
-      double threshold
+      XGBoostOutput output, DataInfo dataInfo, BoosterParms boosterParms,
+      double threshold, boolean useOffset
   ) {
     _modelInfo = modelInfo;
     _parms = parms;
@@ -29,11 +29,12 @@ public class XGBoostNativeBigScorePredict implements XGBoostBigScorePredict {
     _dataInfo = dataInfo;
     _boosterParms = boosterParms;
     _threshold = threshold;
+    _useOffset = useOffset;
   }
 
   @Override
   public XGBoostPredict initMap(Frame fr, Chunk[] chks) {
-    return new XGBoostNativeBigScoreChunkPredict(_modelInfo, _parms, _dataInfo, _boosterParms, _threshold, _output, fr, chks);
+    return new XGBoostNativeBigScoreChunkPredict(_modelInfo, _parms, _dataInfo, _boosterParms, _threshold, _output, fr, chks, _useOffset);
   }
 
 }

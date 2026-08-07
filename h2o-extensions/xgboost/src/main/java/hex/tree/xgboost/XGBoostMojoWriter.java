@@ -60,5 +60,8 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
       }
     }
     writekv("has_offset", model._output.hasOffset());
+    // remove_offset_effects (GH-16851): the booster was trained with a base margin, so scoring must keep the
+    // explicit-margin path (a no-margin predict would add base_score instead) — but with margin 0 and no offset input.
+    writekv("offset_removed", model._parms._remove_offset_effects);
   }
 }

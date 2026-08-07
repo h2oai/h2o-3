@@ -56,6 +56,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public P _parms;   // TODO: move things around so that this can be protected
   public P _input_parms;
   public O _output;  // TODO: move things around so that this can be protected
+  // remove_offset_effects dual view (GH-16851): temporarily forces scoring to apply the offset even on a
+  // remove_offset model, so the builder can compute the "unrestricted" (offset-applied) metrics. NOT transient
+  // on purpose: scoring tasks ship the model to remote nodes, so the flag must survive serialization.
+  // INVARIANTS: (1) may only ever be set true on a transient clone, never on the DKV-shared instance —
+  // a concurrent predict() would silently apply the offset; (2) must never enter the model checksum —
+  // ModelMetrics.buildKey relies on the flagged clone hashing identically to the original.
+  public boolean _scoreWithOffset = false;
+
+  /**
+   * Single decision point for offset handling at scoring time (GH-16851): every scoring task (BigScore,
+   * tree Score, XGBoost scorers, GAMScore, CoxPHScore) must consult this instead of reading the offset
+   * unconditionally. False only for a remove_offset_effects model outside the "unrestricted" pass.
+   * Exception: GLMScore predates this seam and keys off GLMModel._useRemoveOffsetEffects (set during
+   * training, shared with control_variables); it consults only {@code _scoreWithOffset} from here.
+   */
+  public final boolean applyOffsetAtScoreTime() {
+    return !_parms._remove_offset_effects || _scoreWithOffset;
+  }
   public String[] _warnings = new String[0];  // warning associated with model building
   public transient String[] _warningsP;     // warnings associated with prediction only (transient, not persisted)
   public Distribution _dist;
@@ -447,6 +465,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _ignore_const_cols;    // True if dropping constant cols
     public String _weights_column;
     public String _offset_column;
+    // Train with the offset, but score and compute metrics as if the offset were 0. See GH-16851.
+    public boolean _remove_offset_effects;
     public String _fold_column;
     public String _treatment_column;
 
@@ -786,6 +806,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     @Override
+    public final boolean allowMissingOffsetColumn() {
+      return _remove_offset_effects;
+    }
+
+    @Override
     public final String getFoldColumn() {
       return _fold_column;
     }
@@ -1120,6 +1145,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * Summary of cross-validation metrics of all k-fold models
      */
     public TwoDimTable _cross_validation_metrics_summary;
+
+    // remove_offset_effects "unrestricted" view (GH-16851): when the model removes the offset, these hold the
+    // parallel offset-APPLIED metrics/scoring-history for comparison. Null for models that don't use the feature.
+    public ModelMetrics _training_metrics_unrestricted_model;
+    public ModelMetrics _validation_metrics_unrestricted_model;
+    public ModelMetrics _cross_validation_metrics_unrestricted_model;
+    // populated only by GLM (which scores both views during training); always null for the other algos
+    public TwoDimTable _scoring_history_unrestricted_model;
 
     /**
      * User-facing model summary - Display model type, complexity, size and other useful stats
@@ -1669,6 +1702,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String getTreatmentColumn();
     double missingColumnsType();
     int getMaxCategoricalLevels();
+    // remove_offset_effects models ignore the offset at scoring time, so the column may be absent from a
+    // scoring frame (a zero column is substituted instead of failing). GH-16851.
+    default boolean allowMissingOffsetColumn() { return false; }
     default String[] getNonPredictors() {
       return Arrays.stream(new String[]{getWeightsColumn(), getOffsetColumn(), getFoldColumn(), getResponseColumn(), getTreatmentColumn()})
               .filter(Objects::nonNull)
@@ -1770,8 +1806,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (vec == null) {
         if (isResponse && computeMetrics)
           throw new IllegalArgumentException("Test/Validation dataset is missing response column '" + response + "'");
-        else if (isOffset)
-          throw new IllegalArgumentException(H2O.technote(12, "Test/Validation dataset is missing offset column '" + offset + "'. If your intention is to disable the effect of the offset add a zero offset column."));
+        else if (isOffset) {
+          if (!parms.allowMissingOffsetColumn())
+            throw new IllegalArgumentException(H2O.technote(12, "Test/Validation dataset is missing offset column '" + offset + "'. If your intention is to disable the effect of the offset add a zero offset column."));
+          if (expensive) {
+            // remove_offset_effects ignores the offset at scoring time — substitute zeros instead of failing (GH-16851)
+            vec = test.anyVec().makeCon(0);
+            toDelete.put(vec._key, "adapted missing vectors");
+            Log.info("Test/Validation dataset is missing offset column '" + offset + "': substituting in a column of 0 (remove_offset_effects is enabled)");
+          }
+        }
         else if (isWeights && computeMetrics) {
           if (expensive) {
             vec = test.anyVec().makeCon(1);
@@ -2303,7 +2347,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
             continue;
           }
-          double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
+          // remove_offset_effects: score and compute metrics as if the offset were 0 (the model was still
+          // trained with the offset). One guard here covers predictions (score0) and metrics (perRow) for
+          // every algo that scores through BigScore. See GH-16851.
+          double offset = (offsetChunk != null && applyOffsetAtScoreTime()) ? offsetChunk.atd(row) : 0;
           double[] preds = predict.score0(chks, offset, row, tmp, _mb._work);
           if (_computeMetrics) {
             if (responseChunk != null) {
@@ -3506,7 +3553,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       @Override
       public String algoFullName() { return _parms.fullName(); }
       @Override
-      public String offsetColumn() { return _output.offsetName(); }
+      // A remove_offset_effects model scores without an offset, so the MOJO/POJO must neither expect nor
+      // apply one. Advertising no offset column makes the standalone scorer take the no-offset path.
+      public String offsetColumn() { return _parms._remove_offset_effects ? null : _output.offsetName(); }
       @Override
       public String weightsColumn() { return _output.weightsName(); }
       @Override
