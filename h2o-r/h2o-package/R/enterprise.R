@@ -20,20 +20,6 @@
   paste(c(rule, body, rule), collapse = "\n")
 }
 
-# Print the OSS-vs-Enterprise notice shown by h2o.init() / h2o.connect().
-.h2o.enterprise.show_cluster_banner <- function() {
-  msg <- .h2o.enterprise.box(c(
-    "You are running the community edition of H2O-3 OSS.",
-    "",
-    "For commercial use, H2O-3 Enterprise is now recommended.",
-    "This includes production support, CVE fixes, multi-node scaling,",
-    "model artifact extraction, and more.",
-    "See h2o.ai/h2o-3/oss-vs-enterprise for additional details.",
-    paste0("Contact ", .h2o.enterprise.email, " to upgrade.")
-  ))
-  cat("\n", msg, "\n\n", sep = "")
-}
-
 # Print the Enterprise "blocked" notice, then stop(): MOJO is Enterprise-only.
 .h2o.enterprise.block <- function(operation) {
   msg <- .h2o.enterprise.box(c(

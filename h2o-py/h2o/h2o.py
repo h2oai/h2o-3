@@ -123,7 +123,6 @@ def connect(server=None, url=None, ip=None, port=None,
                                      verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
-            _enterprise.show_cluster_banner()
     # Fire-and-forget telemetry; never blocks, never raises. h2o.connect()
     # by definition attaches to an existing cluster (no local JVM spawn),
     # so we always emit `cluster_connect`. Honors the DO_NOT_TRACK env var
@@ -350,7 +349,6 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     if verbose:
         h2oconn.cluster.show_status()
-        _enterprise.show_cluster_banner()
     # Fire-and-forget telemetry; never blocks, never raises. Honors the
     # DO_NOT_TRACK env var internally.
     # Pick the event type based on whether we actually spawned a local JVM:
