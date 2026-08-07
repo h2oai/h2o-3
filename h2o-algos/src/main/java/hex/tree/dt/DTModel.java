@@ -4,7 +4,6 @@ import hex.*;
 import org.apache.log4j.Logger;
 import water.*;
 
-import java.util.Arrays;
 
 public class DTModel extends Model<DTModel, DTModel.DTParameters, DTModel.DTOutput> {
 
@@ -36,10 +35,10 @@ public class DTModel extends Model<DTModel, DTModel.DTParameters, DTModel.DTOutp
         // compute score for given point
         CompressedDT tree = DKV.getGet(_output._treeKey);
         DTPrediction prediction = tree.predictRowStartingFromNode(data, 0, "");
-        // for now, only pred. for class 0 is stored, will be improved later
         preds[0] = prediction.classPrediction;
-        preds[1] = prediction.probability;
-        preds[2] = 1 - prediction.probability;
+        for (int i = 0; i < prediction.probabilities.length; i++) {
+            preds[i + 1] =  prediction.probabilities[i];
+        }
 
         return preds;
     }
