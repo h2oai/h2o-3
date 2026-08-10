@@ -310,6 +310,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   }
   .attach.new.session(conn)
 
+  .h2o.enterprise.show_cluster_banner()
+
   # Fire-and-forget telemetry; never blocks h2o.init(), never raises.
   # Honors the DO_NOT_TRACK env var internally.
   # Pick init vs cluster_connect based on whether we actually spawned a JVM.
