@@ -2673,7 +2673,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("Should have thrown when source model has no control_variables or remove_offset_effects");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error should mention missing features",
-                        e.getMessage().contains("was not trained with control_variables or remove_offset_effects=True"));
+                        e.getMessage().contains("must be trained with control_variables or remove_offset_effects=True"));
             }
 
             // make_unrestricted_model should also throw
@@ -2684,7 +2684,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("make_unrestricted_model should also reject plain models");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error should mention missing features",
-                        e.getMessage().contains("was not trained with control_variables or remove_offset_effects=True"));
+                        e.getMessage().contains("must be trained with control_variables or remove_offset_effects=True"));
             }
         } finally {
             if (train != null) train.remove();
@@ -3731,6 +3731,179 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                     sourceHoldoutKey, secondDerived._output._cross_validation_holdout_predictions_frame_id);
         } finally {
             if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    private static GLMModel.GLMParameters staleFitParams(Frame train, double lambda) {
+        GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+        params._train = train._key;
+        params._response_column = "y";
+        params._offset_column = "offset";
+        params._alpha = new double[]{0};
+        params._lambda = new double[]{lambda};
+        params._remove_offset_effects = true;
+        params._distribution = DistributionFamily.bernoulli;
+        params._link = GLMModel.GLMParameters.Link.logit;
+        return params;
+    }
+
+    /**
+     * The provenance check must reject a derived model left over from a *different fit* of the same source
+     * model: H2O lets a model_id be retrained in place, so key equality alone would hand back the previous
+     * fit's metrics as the derived view of the retrained model.
+     */
+    @Test
+    public void testMakeDerivedModelRejectsStaleFitAtSameKey() {
+        Frame train = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_derive_stale_fit");
+            Scope.track(train);
+
+            // Fresh params per run: ModelBuilder.init() mutates the parameters object it is given.
+            Key<GLMModel> modelId = Key.make("test_derive_stale_fit_model");
+            GLMModel first = new GLM(staleFitParams(train, 0), modelId).trainModel().get();
+            Scope.track_generic(first);
+
+            MakeUnrestrictedGLMModelV3 args = new MakeUnrestrictedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(first._key);
+            args.dest = "test_derive_stale_fit_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, args);
+            Scope.track_generic((GLMModel) DKV.getGet(Key.make("test_derive_stale_fit_derived")));
+
+            // Retrain into the same model_id with a different penalty, so the coefficients - and therefore the
+            // fit token - change while every key stays the same.
+            GLMModel retrained = new GLM(staleFitParams(train, 0.5), modelId).trainModel().get();
+            Scope.track_generic(retrained);
+            assertEquals("the retrain must reuse the model_id, otherwise this test proves nothing",
+                    first._key, retrained._key);
+
+            try {
+                new MakeGLMModelHandler().make_unrestricted_model(3, args);
+                fail("Deriving from a retrained model must not silently return the previous fit's derived view.");
+            } catch (IllegalArgumentException e) {
+                assertTrue("Exception must call out the stale derivation, got: " + e.getMessage(),
+                        e.getMessage().contains("different fit"));
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /**
+     * The derived model's CV holdout-predictions frame lands at "&lt;dest&gt;_cv_holdout_preds", a key the
+     * caller's dest-collision check does not cover. Something already sitting there must be reported rather
+     * than overwritten (which would orphan its Vecs).
+     */
+    @Test
+    public void testMakeDerivedModelRejectsHoldoutPredsKeyCollision() {
+        Frame train = null;
+        Frame squatter = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_holdout_collision");
+            Scope.track(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._nfolds = 3;
+            params._keep_cross_validation_predictions = true;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            GLMModel glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            // occupy the derived model's holdout-predictions key before the derive call runs
+            squatter = new Frame(Key.<Frame>make("test_holdout_collision_out_cv_holdout_preds"),
+                    new String[]{"c"}, new Vec[]{Vec.makeVec(new double[]{1, 2, 3}, Vec.newKey())});
+            DKV.put(squatter);
+
+            MakeDerivedGLMModelV3 args = new MakeDerivedGLMModelV3();
+            args.model = new KeyV3.ModelKeyV3(glm._key);
+            args.dest = "test_holdout_collision_out";
+            args.remove_offset_effects = true;
+            try {
+                new MakeGLMModelHandler().make_derived_model(3, args);
+                fail("A pre-existing _cv_holdout_preds key must be reported, not overwritten.");
+            } catch (IllegalArgumentException e) {
+                assertTrue("Exception must name the holdout-predictions key, got: " + e.getMessage(),
+                        e.getMessage().contains("_cv_holdout_preds"));
+            }
+            assertNotNull("the object already at the holdout key must survive the failed derive",
+                    DKV.get(squatter._key));
+            assertNull("a failed derive must not leave a half-built model at the dest key",
+                    DKV.get(Key.make("test_holdout_collision_out")));
+        } finally {
+            if (squatter != null) squatter.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * Reporting-only models - the outputs of /3/MakeGLMModel and of the derived-model endpoints - carry a
+     * placeholder submodel and no solver state, so they must be rejected as a checkpoint with an actionable
+     * message instead of dying later inside ComputationState.
+     */
+    @Test
+    public void testReportingOnlyModelsAreRejectedAsCheckpoint() {
+        Frame train = null;
+        try {
+            Scope.enter();
+            train = makeBinomialOffsetFrame("test_reporting_only_checkpoint");
+            Scope.track(train);
+
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+            params._train = train._key;
+            params._response_column = "y";
+            params._offset_column = "offset";
+            params._alpha = new double[]{0};
+            params._lambda = new double[]{0};
+            params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            params._remove_offset_effects = true;
+            params._distribution = DistributionFamily.bernoulli;
+            params._link = GLMModel.GLMParameters.Link.logit;
+
+            GLMModel glm = new GLM(params).trainModel().get();
+            Scope.track_generic(glm);
+
+            MakeUnrestrictedGLMModelV3 unrestrictedArgs = new MakeUnrestrictedGLMModelV3();
+            unrestrictedArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            unrestrictedArgs.dest = "test_reporting_only_derived";
+            new MakeGLMModelHandler().make_unrestricted_model(3, unrestrictedArgs);
+            GLMModel derivedModel = DKV.getGet(Key.make("test_reporting_only_derived"));
+            Scope.track_generic(derivedModel);
+
+            // /3/MakeGLMModel output: user-supplied coefficients, no provenance, but equally unusable
+            MakeGLMModelV3 makeArgs = new MakeGLMModelV3();
+            makeArgs.model = new KeyV3.ModelKeyV3(glm._key);
+            makeArgs.dest = new KeyV3.ModelKeyV3(Key.make("test_reporting_only_made"));
+            makeArgs.names = glm._output.coefficientNames();
+            makeArgs.beta = glm._output.beta().clone();
+            new MakeGLMModelHandler().make_model(3, makeArgs);
+            GLMModel madeModel = DKV.getGet(Key.make("test_reporting_only_made"));
+            Scope.track_generic(madeModel);
+
+            for (GLMModel checkpointCandidate : new GLMModel[]{derivedModel, madeModel}) {
+                assertTrue("both endpoints must tag their output as reporting-only",
+                        checkpointCandidate._reportingOnly);
+                GLMModel.GLMParameters cont = (GLMModel.GLMParameters) params.clone();
+                cont._checkpoint = checkpointCandidate._key;
+                try {
+                    Scope.track_generic(new GLM(cont).trainModel().get());
+                    fail("A reporting-only model must not be accepted as a checkpoint: " + checkpointCandidate._key);
+                } catch (H2OModelBuilderIllegalArgumentException e) {
+                    assertTrue("Exception must explain why the checkpoint is unusable, got: " + e.getMessage(),
+                            e.getMessage().contains("reporting view"));
+                }
+            }
+        } finally {
             Scope.exit();
         }
     }

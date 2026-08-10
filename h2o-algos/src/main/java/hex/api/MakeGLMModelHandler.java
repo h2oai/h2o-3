@@ -24,6 +24,18 @@ import java.util.Map;
  */
 public class MakeGLMModelHandler extends Handler {
 
+  /**
+   * Identifies the exact fit a derived model was built from. Deliberately not Keyed.checksum(): that value is
+   * memoized in a non-transient field (so it is a snapshot from whenever the model was first scored, and
+   * deepClone copies it verbatim into a checkpoint continuation), it is derived from the training frame's own
+   * checksum (so deleting the frame changes it), and GLMModel.checksum_impl() collapses to the constant 1 for
+   * any model whose _train key is gone. The end timestamp plus the fitted coefficients are intrinsic to the
+   * fit and cannot drift after training.
+   */
+  private static long fitToken(GLMModel model) {
+    return model._output._end_time * 31 + Arrays.hashCode(model._output.beta());
+  }
+
   // Deep-copies a source model's CV holdout-predictions frame into a key owned by the derived
   // model, rather than transferring the source's pointer: the source model keeps its own
   // reference (repeated derive calls stay possible, and deleting either model does not
@@ -33,7 +45,12 @@ public class MakeGLMModelHandler extends Handler {
     Frame sourceHoldoutFrame = sourceHoldout.get();
     if (sourceHoldoutFrame == null) return;
     // derivedKey is user-controlled (args.dest), and the caller's collision check covers only that key - not this
-    // second key derived from it. deepCopy + DKV.put would overwrite whatever sits here and orphan its Vecs.
+    // second key derived from it. deepCopy + DKV.put would overwrite whatever sits here and orphan its Vecs, so
+    // check before allocating anything: on collision nothing has been created and nothing has to be cleaned up.
+    // ponytail: check-then-act, not a CAS. Two concurrent derives at the same dest can still race here (as they
+    // can on the derived model key itself, and as computeGram does for its gram frame). Closing it properly
+    // needs DKV.DputIfMatch, whose "match against null" does not compose with delete tombstones - a re-derive
+    // after the previous derived model was removed would start failing. Revisit only with a real report.
     String holdoutName = derivedKey.toString() + "_cv_holdout_preds";
     if (DKV.get(Key.make(holdoutName)) != null) {
       throw new IllegalArgumentException("Cannot store the derived model's cross-validation holdout predictions: " +
@@ -73,6 +90,7 @@ public class MakeGLMModelHandler extends Handler {
     m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
             model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
+    m._reportingOnly = true;
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
@@ -93,7 +111,7 @@ public class MakeGLMModelHandler extends Handler {
       if (model == null)
           throw new IllegalArgumentException("Missing source model " + args.model);
       if (model._parms._control_variables == null && !model._parms._remove_offset_effects) {
-          throw new IllegalArgumentException("Source model was not trained with control_variables or remove_offset_effects=True.");
+          throw new IllegalArgumentException("Source model must be trained with control_variables or remove_offset_effects=True.");
       }
       Key generatedKey;
       if (args.remove_control_variables_effects && model._parms._control_variables == null) {
@@ -123,13 +141,11 @@ public class MakeGLMModelHandler extends Handler {
           }
           GLMModel existingModel = (GLMModel) existingAtKey;
           // Idempotent re-derive: only trust a model at this key if it was produced by a previous
-          // make_derived_model call from this same source model with the same view requested. The checksum is part
+          // make_derived_model call from this same source model with the same view requested. The fit token is part
           // of the identity on purpose - H2O lets you retrain into an existing model_id, so key equality alone would
-          // return the *previous* fit's metrics as the derived view of the retrained model. It covers the params, the
-          // training-frame content and (via GLMOutput.checksum_impl) the fitted coefficients, as they stood when the
-          // model was first scored - Keyed.checksum() caches, so it is not recomputed per call.
+          // return the *previous* fit's metrics as the derived view of the retrained model.
           boolean sameProvenance = model._key.equals(existingModel._derivedFromModelId)
-                  && model.checksum() == existingModel._derivedFromModelChecksum
+                  && fitToken(model) == existingModel._derivedFromFitToken
                   && existingModel._useControlVariables == args.remove_control_variables_effects
                   && existingModel._useRemoveOffsetEffects == args.remove_offset_effects;
           if (sameProvenance) {
@@ -240,7 +256,8 @@ public class MakeGLMModelHandler extends Handler {
       m._useControlVariables = args.remove_control_variables_effects;
       m._useRemoveOffsetEffects = args.remove_offset_effects;
       m._derivedFromModelId = model._key;
-      m._derivedFromModelChecksum = model.checksum();
+      m._derivedFromFitToken = fitToken(model);
+      m._reportingOnly = true;
 
       DKV.put(key, m);
 

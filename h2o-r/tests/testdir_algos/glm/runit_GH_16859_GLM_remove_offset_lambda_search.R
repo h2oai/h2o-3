@@ -256,6 +256,37 @@ glm_remove_offset_lambda_search_early_stopping_test <- function() {
     expect_equal(h2o.coef(base), h2o.coef(unrestricted), tolerance = 1e-6)
 }
 
+# The R client rejects the invalid derive combinations before they reach the server, so the error paths need
+# their own coverage - a client-side regression here would otherwise surface only as a confusing server error.
+glm_remove_offset_lambda_search_derive_errors_test <- function() {
+    df <- prostate_frame()
+
+    plain <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                     lambda_search = TRUE, seed = 0xC0FFEE)
+    ro <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                  lambda_search = TRUE, remove_offset_effects = TRUE, seed = 0xC0FFEE)
+
+    # a model trained without either feature has no restricted/unrestricted split to expose
+    expect_error(h2o.make_unrestricted_glm_model(plain), "control_variables or remove_offset_effects")
+    expect_error(h2o.make_derived_glm_model(ro, remove_control_variables_effects = TRUE),
+                 "requires the source model to have been trained with control_variables")
+    expect_error(h2o.make_derived_glm_model(plain, remove_offset_effects = TRUE),
+                 "control_variables or remove_offset_effects")
+    # both set would just reproduce the main model. Needs a source trained with both features, otherwise the
+    # missing-control_variables check above fires first and this branch is never reached. control_variables is
+    # not supported with lambda_search, so this one model is fit without it.
+    both <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                    control_variables = c("PSA"), remove_offset_effects = TRUE, seed = 0xC0FFEE)
+    expect_error(h2o.make_derived_glm_model(both, remove_control_variables_effects = TRUE, remove_offset_effects = TRUE),
+                 "cannot both be TRUE")
+
+    # a reporting-only derived model holds no solver state, so it cannot seed a continuation
+    derived <- h2o.make_unrestricted_glm_model(ro)
+    expect_error(h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
+                         remove_offset_effects = TRUE, solver = "IRLSM", checkpoint = derived@model_id),
+                 "reporting view")
+}
+
 # NOTE: the sparse-standardized-data case lives only in Java
 # (GLMRemoveOffsetLambdaSearchTest.sparseDataWorksWithLambdaSearch). Forcing the sparse chunk path needs a
 # genuinely sparse-encoded frame (Java TestFrameBuilder); an as.h2o data.frame does not produce one.
@@ -272,5 +303,6 @@ doSuite("GLM: remove_offset_effects with lambda_search", makeSuite(
     glm_remove_offset_lambda_search_weights_test,
     glm_remove_offset_lambda_search_validation_test,
     glm_remove_offset_lambda_search_beta_constraints_test,
-    glm_remove_offset_lambda_search_early_stopping_test
+    glm_remove_offset_lambda_search_early_stopping_test,
+    glm_remove_offset_lambda_search_derive_errors_test
 ))

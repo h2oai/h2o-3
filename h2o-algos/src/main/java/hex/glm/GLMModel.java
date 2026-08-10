@@ -633,6 +633,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     newModel._output.clearModelMetrics(false);
     newModel._output._training_metrics = null;
     newModel._output._validation_metrics = null;
+    // The cross-validation slots describe the checkpointed run, not the continuation - which need not do
+    // cross-validation at all. Keeping them makes setCrossValidationScore fill every ScoringInfo's scored_xval
+    // from one frozen metric, so scoreKeepers() hands stopEarly a flat series and metric-based early stopping
+    // fires as soon as it has enough points. The key-valued slots have to go for a second reason: they are owned
+    // by the source model, so removing the continuation would cascade into the source's fold models and frames.
+    newModel._output._cross_validation_metrics = null;
+    newModel._output._cross_validation_metrics_summary = null;
+    newModel._output._cross_validation_models = null;
+    newModel._output._cross_validation_predictions = null;
+    newModel._output._cross_validation_holdout_predictions_frame_id = null;
+    newModel._output._cross_validation_fold_assignment_frame_id = null;
+    newModel._output._cross_validation_metrics_unrestricted_model = null;
+    newModel._output._cross_validation_metrics_summary_unrestricted_model = null;
+    newModel._output._cross_validation_predictions_unrestricted_model = null;
+    newModel._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = null;
     return newModel;
   }
 
@@ -1595,8 +1610,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double [] beta;
     public double[] zValues;
     public boolean dispersionEstimated;
-    // Offset-removed holdout deviance for this submodel, set only when remove_offset_effects=true.
-    // Under cross-validation it lets cv_computeAndSetOptimalParameters aggregate an offset-removed
+    // Offset-removed holdout deviance for this submodel. Populated only when remove_offset_effects=true *and*
+    // lambda_search=true (the two together are GLM.restrictedHistoryIsMain, which gates every write); stays NaN
+    // otherwise. Under cross-validation it lets cv_computeAndSetOptimalParameters aggregate an offset-removed
     // per-lambda xval deviance the same way devianceValid feeds the unrestricted one.
     public double devianceValidRestricted = Double.NaN;
 
@@ -1690,12 +1706,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public boolean _finalScoring = false; // used while scoring to indicate if it is a final or partial scoring 
   public boolean _useControlVariables = false;
   public boolean _useRemoveOffsetEffects = false;
-  // Provenance for a make_derived_model() output: the source model this was derived from (key *and* checksum,
+  // Provenance for a make_derived_model() output: the source model this was derived from (key *and* fit token,
   // since a model_id can be retrained in place), plus the view it exposes. Lets a repeated derive call at the same
   // dest key verify it is re-deriving the same view from the same source fit (idempotent) rather than silently
-  // returning an unrelated or stale model.
+  // returning an unrelated or stale model. See MakeGLMModelHandler.fitToken for why this is not Keyed.checksum().
   public Key<GLMModel> _derivedFromModelId = null;
-  public long _derivedFromModelChecksum = 0;
+  public long _derivedFromFitToken = 0;
+  // Set on every MakeGLMModelHandler output (/3/MakeGLMModel as well as the derived-model endpoints). Such a model
+  // carries only a reporting view - a single placeholder submodel with NaN deviances and none of the solver state -
+  // so it can never serve as a checkpoint. Distinct from _derivedFromModelId: /3/MakeGLMModel output has
+  // user-supplied coefficients and is not a view of any fit, so it must not satisfy the provenance check above.
+  public boolean _reportingOnly = false;
 
   private static String[] binomialClassNames = new String[]{"0", "1"};
 
@@ -1769,8 +1790,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
      * from the source model instead.
      */
     public void retagDerivedSubmodel(double lambda, double alpha) {
-      if (_submodels.length != 1)
-        return;   // only the derived-model output has a single placeholder submodel to retag
+      // A placeholder is the single submodel the GLMOutput(dinfo, ...) ctor synthesizes, recognisable by its NaN
+      // deviances. A trained single-lambda model also has one submodel, but with real deviances - retagging that
+      // one would throw away its regularization path, so check for the placeholder, not just the count.
+      if (_submodels.length != 1 || !Double.isNaN(_submodels[0].devianceTrain))
+        return;
       Submodel placeholder = _submodels[0];
       _submodels = new Submodel[]{new Submodel(lambda, alpha,
               placeholder.getBeta(MemoryManager.malloc8d(_totalBetaLength)), placeholder.iteration,

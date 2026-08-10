@@ -11,14 +11,25 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 # optimization), it only strips the offset contribution from the reported model.
 
 
+# Two assertions in this suite compare models that were trained independently (the plain offset model against
+# the remove_offset model, whose fit is supposed to be identical). Those go through IRLSM and an MRTask reduce
+# whose summation order is not pinned run to run, so they are compared to a tolerance rather than bit-exactly.
+COEF_DELTA = 1e-6
+PRED_DELTA = 1e-6
+LAMBDA_DELTA = 1e-10
+
+
 def _cars_with_offset():
     cars = h2o.upload_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars = cars[cars["economy_20mpg"].isna() == 0]
-    cars["name"] = cars["name"].asfactor()
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-    offset = h2o.H2OFrame([[.5]] * cars.nrows)
-    offset.set_names(["offset"])
-    return cars.cbind(offset), ["name", "power", "year"], "economy_20mpg", "offset"
+    cars["cylinders"] = cars["cylinders"].asfactor()   # keeps a categorical predictor in the design matrix
+    # A row-varying offset. A constant one is absorbed by the intercept, which leaves the restricted and
+    # unrestricted views differing by a single global shift - enough to satisfy the "predictions differ"
+    # assertions while hiding any per-row error in the offset handling. `economy` is excluded from the
+    # predictors and the offset alike: economy_20mpg is derived from it.
+    cars["offset"] = cars["acceleration"] / 10.0
+    return cars, ["cylinders", "displacement", "power", "weight", "year"], "economy_20mpg", "offset"
 
 
 # The model derived via make_unrestricted_glm_model must recover the plain offset-present model
@@ -43,16 +54,16 @@ def glm_remove_offset_lambda_search():
     # unrestricted model must reproduce the offset-present model (same fitted beta)
     for k in glm_offset.coef().keys():
         pyunit_utils.assert_equals(glm_offset.coef()[k], glm_unrestricted.coef().get(k, float("nan")),
-                                   f"Coefficient {k} differs between offset model and unrestricted model!")
+                                   f"Coefficient {k} differs between offset model and unrestricted model!", delta=COEF_DELTA)
 
     # lambda_search must select the same regularization strength (fit is identical)
     pyunit_utils.assert_equals(H2OGeneralizedLinearEstimator.getLambdaBest(glm_offset),
                                H2OGeneralizedLinearEstimator.getLambdaBest(glm_ro),
-                               "Selected lambda_best differs between offset model and remove_offset model!")
+                               "Selected lambda_best differs between offset model and remove_offset model!", delta=LAMBDA_DELTA)
 
     for i in range(preds_offset.shape[0]):
         pyunit_utils.assert_equals(preds_offset.iloc[i, 1], preds_unrestricted.iloc[i, 1],
-                                   f"Prediction {i} should match offset-present model but doesn't!")
+                                   f"Prediction {i} should match offset-present model but doesn't!", delta=PRED_DELTA)
 
     # remove_offset_effects must actually change the reported predictions
     assert (preds_offset.iloc[:, 1] - preds_ro.iloc[:, 1]).abs().max() > 1e-6, \
@@ -78,7 +89,7 @@ def glm_remove_offset_lambda_search_offset_zeroed():
 
     for i in range(preds_ro.shape[0]):
         pyunit_utils.assert_equals(preds_ro.iloc[i, 1], preds_zeroed.iloc[i, 1],
-                                   f"Prediction {i}: restricted model must equal offset-zeroed model!")
+                                   f"Prediction {i}: restricted model must equal offset-zeroed model!", delta=PRED_DELTA)
 
 
 # With remove_offset_effects + lambda_search + generate_scoring_history the model must expose both the
@@ -237,6 +248,21 @@ def glm_remove_offset_lambda_search_cross_validation():
     assert any(r == r and r >= 0 and abs(r - u) > 1e-8 for r, u, p in triples), \
         "restricted deviance_xval must be a real offset-removed value differing from the unrestricted history's"
 
+    # The assertion above pins only "differs from unrestricted"; it would still pass on a value off by a
+    # factor of nobs, summed instead of averaged, or negated. Anchor the column's *scale* to the model's own
+    # restricted CV deviance. Not an exact identity - the scoring-history value is an unweighted mean over
+    # folds while the CV metric pools holdout rows, so they coincide only for equal fold sizes; measured
+    # agreement is ~0.01%, so 5% is loose enough to be stable and tight enough that any scale or sign error
+    # (which are order-of-magnitude effects) fails. Note this band does NOT by itself separate the restricted
+    # column from the unrestricted one - they sit ~0.25% apart - which is what the assertion above is for.
+    xval_perf = glm_ro.model_performance(xval=True)
+    expected = xval_perf.residual_deviance() / xval_perf.nobs()
+    restricted_xval = [r for r, u, p in triples if r == r]
+    closest = min(restricted_xval, key=lambda r: abs(r - expected))
+    assert abs(closest - expected) <= 0.05 * abs(expected), \
+        "restricted deviance_xval (%r) must be on the scale of the model's own offset-removed CV deviance " \
+        "(%r); a factor-of-nobs, summed-not-averaged or sign error would show up here" % (closest, expected)
+
     # documented workflow: make_unrestricted_glm_model on a CV model propagates the unrestricted CV metrics
     # into the derived model's cross_validation_metrics, matching the plain offset model (this exercises the
     # cross_validation_metrics* model-object path, distinct from the scoring_history deviance_xval above).
@@ -297,11 +323,24 @@ def glm_remove_offset_lambda_search_families():
         unrestricted = ro.make_unrestricted_glm_model()
         for k in base.coef().keys():
             pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
-                                       f"[{family}] coef {k}: unrestricted model must recover plain offset model")
+                                       f"[{family}] coef {k}: unrestricted model must recover plain offset model", delta=COEF_DELTA)
 
         pb = base.predict(df).as_data_frame()["predict"]
         pr = ro.predict(df).as_data_frame()["predict"]
         assert (pb - pr).abs().max() > 1e-6, f"[{family}] restricted predictions should differ from plain offset model"
+
+        # The assertions above cannot fail on a broken deviance: the fit is untouched, so the coefficients
+        # always match and the predictions always differ. GLMResDevTask.alsoComputeOffsetRemoved() is
+        # family-specific, so it needs a real oracle per family - the restricted residual deviance must equal
+        # the deviance of the *same* fit scored with the offset column zeroed out.
+        df_zero = df.cbind(h2o.H2OFrame([[0.0]] * df.nrows, column_names=["off_zero"]))
+        df_zero["off"] = df_zero["off_zero"]
+        dev_restricted = ro.model_performance(df).residual_deviance()
+        dev_offset_zeroed = base.model_performance(df_zero).residual_deviance()
+        pyunit_utils.assert_equals(
+            dev_offset_zeroed, dev_restricted,
+            f"[{family}] restricted residual deviance must equal the offset-zeroed deviance of the same fit",
+            delta=max(1e-6, abs(dev_offset_zeroed) * 1e-8))
 
 
 # A weights column feeds into the restricted deviance sums; the fit stays identical, so the unrestricted
@@ -321,7 +360,7 @@ def glm_remove_offset_lambda_search_weights():
     unrestricted = ro.make_unrestricted_glm_model()
     for k in base.coef().keys():
         pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
-                                   f"[weights] coef {k}: unrestricted model must recover plain offset model")
+                                   f"[weights] coef {k}: unrestricted model must recover plain offset model", delta=COEF_DELTA)
     pb = base.predict(df).as_data_frame()["p1"]
     pr = ro.predict(df).as_data_frame()["p1"]
     assert (pb - pr).abs().max() > 1e-6, "[weights] restricted predictions should differ from plain offset model"
@@ -346,9 +385,9 @@ def glm_remove_offset_lambda_search_validation():
     perf_base = base.model_performance(valid)
     perf_unr = unrestricted.model_performance(valid)
     pyunit_utils.assert_equals(perf_base.rmse(), perf_unr.rmse(),
-                               "validation rmse: unrestricted model must match plain offset model")
+                               "validation rmse: unrestricted model must match plain offset model", delta=1e-6)
     pyunit_utils.assert_equals(perf_base.mse(), perf_unr.mse(),
-                               "validation mse: unrestricted model must match plain offset model")
+                               "validation mse: unrestricted model must match plain offset model", delta=1e-6)
 
 
 # beta_constraints route through a separate scoring path; the combination with lambda_search +
@@ -370,7 +409,7 @@ def glm_remove_offset_lambda_search_beta_constraints():
     unrestricted = ro.make_unrestricted_glm_model()
     for k in base.coef().keys():
         pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
-                                   f"[beta_constraints] coef {k}: unrestricted must recover plain offset model")
+                                   f"[beta_constraints] coef {k}: unrestricted must recover plain offset model", delta=COEF_DELTA)
     pb = base.predict(df).as_data_frame()["p1"]
     pr = ro.predict(df).as_data_frame()["p1"]
     assert (pb - pr).abs().max() > 1e-6, "[beta_constraints] restricted predictions should differ"
@@ -392,11 +431,11 @@ def glm_remove_offset_lambda_search_early_stopping():
 
     pyunit_utils.assert_equals(H2OGeneralizedLinearEstimator.getLambdaBest(base),
                                H2OGeneralizedLinearEstimator.getLambdaBest(ro),
-                               "[early_stopping] lambda_best must match plain offset model")
+                               "[early_stopping] lambda_best must match plain offset model", delta=LAMBDA_DELTA)
     unrestricted = ro.make_unrestricted_glm_model()
     for k in base.coef().keys():
         pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
-                                   f"[early_stopping] coef {k}: unrestricted must recover plain offset model")
+                                   f"[early_stopping] coef {k}: unrestricted must recover plain offset model", delta=COEF_DELTA)
 
 
 # NOTE: the sparse-standardized-data case lives only in Java
@@ -419,11 +458,11 @@ def glm_remove_offset_lambda_search_alpha():
 
         pyunit_utils.assert_equals(H2OGeneralizedLinearEstimator.getLambdaBest(base),
                                    H2OGeneralizedLinearEstimator.getLambdaBest(ro),
-                                   f"[alpha={alpha}] lambda_best must match plain offset model")
+                                   f"[alpha={alpha}] lambda_best must match plain offset model", delta=LAMBDA_DELTA)
         unrestricted = ro.make_unrestricted_glm_model()
         for k in base.coef().keys():
             pyunit_utils.assert_equals(base.coef()[k], unrestricted.coef().get(k, float("nan")),
-                                       f"[alpha={alpha}] coef {k}: unrestricted model must recover plain offset model")
+                                       f"[alpha={alpha}] coef {k}: unrestricted model must recover plain offset model", delta=COEF_DELTA)
 
 
 # learning_curve_plot is the advertised UX surface for this feature. Asserting only that a file was written

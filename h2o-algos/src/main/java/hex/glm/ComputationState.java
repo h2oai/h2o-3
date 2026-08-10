@@ -204,15 +204,24 @@ public final class ComputationState {
     // _betaCndCheckpoint to the solver, which mutates it in place - aliasing would corrupt the stored
     // coefficients.
     if (model._betaCndCheckpoint != null) {
-      model._betaCndCheckpoint = _activeData._activeCols == null
-              ? expandedBeta.clone()
-              : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
-      assert model._betaCndCheckpoint != expandedBeta :
-              "betaCndCheckpoint must not alias the submodel beta: the solver mutates betaCnd in place";
-      assert model._betaCndCheckpoint.length == (_activeData._activeCols == null
-              ? expandedBeta.length : _activeData._activeCols.length) :
-              "betaCndCheckpoint must be in the solver's active-column basis, got length "
-                      + model._betaCndCheckpoint.length;
+      // Only rebuild when the stored candidate cannot be trusted. With no active-column subset and no
+      // submodel index set there is no basis mismatch to repair, and the stored vector is the last IRLSM
+      // candidate the checkpoint deliberately saved - overwriting it with the submodel's *converged* beta
+      // would change where every plain GLM continuation resumes from, including runs that use neither
+      // remove_offset_effects nor lambda_search.
+      boolean storedCandidateIsUsable = _activeData._activeCols == null
+              && modelOutput._submodels[submodelInd].idxs == null;
+      if (!storedCandidateIsUsable) {
+        model._betaCndCheckpoint = _activeData._activeCols == null
+                ? expandedBeta.clone()
+                : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
+        assert model._betaCndCheckpoint != expandedBeta :
+                "betaCndCheckpoint must not alias the submodel beta: the solver mutates betaCnd in place";
+        assert model._betaCndCheckpoint.length == (_activeData._activeCols == null
+                ? expandedBeta.length : _activeData._activeCols.length) :
+                "betaCndCheckpoint must be in the solver's active-column basis, got length "
+                        + model._betaCndCheckpoint.length;
+      }
     }
   }
   

@@ -92,6 +92,11 @@ scoring history in different formats, the checkpointed model's scoring history c
 setting changes: the continued model starts its scoring history from the continuation run and a warning is
 issued. The coefficients are still resumed from the checkpoint.
 
+A GLM produced by ``/3/MakeGLMModel``, ``make_derived_glm_model()`` or ``make_unrestricted_glm_model()``
+cannot be used as a ``checkpoint``. These endpoints return a reporting-only view - the coefficients are
+supplied by the caller or copied from a source model, and none of the solver state a continuation needs is
+present - so passing one is rejected with an error. Use the trained model instead.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 

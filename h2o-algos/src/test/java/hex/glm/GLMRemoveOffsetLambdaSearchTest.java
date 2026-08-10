@@ -2,6 +2,7 @@ package hex.glm;
 
 import hex.GLMMetrics;
 import hex.api.MakeGLMModelHandler;
+import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.schemas.MakeDerivedGLMModelV3;
 import water.api.schemas3.KeyV3;
 import hex.SplitFrame;
@@ -10,6 +11,7 @@ import hex.generic.GenericModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.Scope;
@@ -1393,6 +1395,211 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
                 }
             }
         } finally {
+            Scope.exit();
+        }
+    }
+
+    /**
+     * The MOJO must honour remove_offset_effects, not just happen to agree when the caller supplies no offset.
+     * The GLM MOJO records offset_column, so EasyPredictModelWrapper feeds a real offset into score0 - and
+     * before this flag was written into the MOJO, that offset was added to the linear predictor even though
+     * the in-H2O model excludes it. Scoring the MOJO with the row's true offset must reproduce the restricted
+     * in-H2O prediction, and must be invariant to the offset value.
+     */
+    @Test
+    public void mojoIgnoresSuppliedOffsetWhenRemoveOffsetEffects() {
+        try {
+            Scope.enter();
+            Frame train = binomialFrame();
+            Scope.track(train);
+
+            GLMModel.GLMParameters roParams = baseParams(train);
+            roParams._remove_offset_effects = true;
+            GLMModel ro = new GLM(roParams).trainModel().get();
+            Scope.track_generic(ro);
+            GLMModel plain = new GLM(baseParams(train)).trainModel().get();
+            Scope.track_generic(plain);
+
+            Frame roPreds = ro.score(train);
+            Scope.track(roPreds);
+            Frame plainPreds = plain.score(train);
+            Scope.track(plainPreds);
+
+            GlmMojoModel roMojo = (GlmMojoModel) toMojo(ro, "glm_ro_offset_mojo", false);
+            GlmMojoModel plainMojo = (GlmMojoModel) toMojo(plain, "glm_plain_offset_mojo", false);
+
+            // Column order the MOJO expects, resolved against the training frame once.
+            String[] mojoFeatures = roMojo.features();
+            int nfeat = mojoFeatures.length;
+            int[] colIdx = new int[nfeat];
+            for (int i = 0; i < nfeat; i++) {
+                colIdx[i] = train.find(mojoFeatures[i]);
+                assertTrue("MOJO feature " + mojoFeatures[i] + " must exist in the training frame", colIdx[i] >= 0);
+            }
+            int offsetIdx = train.find(OFFSET);
+
+            double[] row = new double[nfeat];
+            double[] restrictedOut = new double[roMojo.nclasses() + 1];
+            double[] shiftedOut = new double[roMojo.nclasses() + 1];
+            double[] plainOut = new double[plainMojo.nclasses() + 1];
+            for (int r = 0; r < 20; r++) {
+                for (int i = 0; i < nfeat; i++)
+                    row[i] = train.vec(colIdx[i]).at(r);
+                double offset = train.vec(offsetIdx).at(r);
+
+                roMojo.score0(row, offset, restrictedOut);
+                assertEquals("the MOJO must reproduce the restricted in-H2O prediction at row " + r,
+                        roPreds.vec(2).at(r), restrictedOut[2], 1e-6);
+
+                // an offset the model is supposed to ignore must not move the prediction at all
+                roMojo.score0(row, offset + 5.0, shiftedOut);
+                assertEquals("remove_offset_effects means the supplied offset is ignored, row " + r,
+                        restrictedOut[2], shiftedOut[2], 0);
+
+                // control: a plain offset model must still consume the offset, otherwise this test would pass
+                // even if the MOJO simply dropped offset support altogether
+                plainMojo.score0(row, offset, plainOut);
+                assertEquals("the plain offset model's MOJO must still add the offset at row " + r,
+                        plainPreds.vec(2).at(r), plainOut[2], 1e-6);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    /** Finds a job warning containing the given fragment, or fails with everything that was emitted. */
+    private static void assertWarned(Job<GLMModel> job, String fragment, String what) {
+        String[] warns = job.warns();
+        if (warns != null)
+            for (String w : warns)
+                if (w != null && w.contains(fragment)) return;
+        fail(what + " - expected a job warning containing \"" + fragment + "\", got "
+                + (warns == null ? "null" : Arrays.toString(warns)));
+    }
+
+    /**
+     * lambda_search is deliberately not pinned across a continuation, but the two modes persist the scoring
+     * history in different formats, so the checkpointed history cannot be parsed back. The restore must warn
+     * and start the history fresh rather than mis-parse it. The pyunit exercises this path but asserts
+     * neither the warning nor the discarded state.
+     */
+    @Test
+    public void checkpointLambdaSearchFlipWarnsAndDiscardsHistory() {
+        Frame train = null;
+        GLMModel baseModel = null, continued = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+
+            GLMModel.GLMParameters base = baseParams(train);
+            base._lambda_search = false;
+            base._remove_offset_effects = true;
+            base._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            base._max_iterations = 3;
+            baseModel = new GLM(base).trainModel().get();
+
+            GLMModel.GLMParameters cont = baseParams(train);       // baseParams sets _lambda_search = true
+            cont._remove_offset_effects = true;
+            cont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            cont._nlambdas = 4;
+            cont._checkpoint = baseModel._key;
+            Job<GLMModel> job = new GLM(cont).trainModel();
+            continued = job.get();
+
+            assertWarned(job, "could not be carried over", "flipping lambda_search across a checkpoint");
+            // the history restarts from this run, in this run's lambda format rather than the iteration
+            // format the checkpoint stored
+            TwoDimTable sh = continued._output._scoring_history;
+            assertNotNull("the continued model must still build a scoring history", sh);
+            assertTrue("the continued history must be in lambda format",
+                    Arrays.asList(sh.getColHeaders()).contains("lambda"));
+        } finally {
+            if (continued != null) continued.remove();
+            if (baseModel != null) baseModel.remove();
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A checkpoint carrying no scoring history at all must warn and start fresh rather than NPE in
+     * grabHeaderIndex. Reporting-only models (the natural producer) are now rejected earlier in init, so the
+     * table is nulled directly here to reach the guard.
+     */
+    @Test
+    public void checkpointWithoutScoringHistoryWarnsInsteadOfNPE() {
+        Frame train = null;
+        GLMModel baseModel = null, continued = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+
+            GLMModel.GLMParameters base = baseParams(train);
+            base._remove_offset_effects = true;
+            base._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            base._nlambdas = 3;
+            baseModel = new GLM(base).trainModel().get();
+
+            baseModel._output._scoring_history = null;
+            DKV.put(baseModel);
+
+            GLMModel.GLMParameters cont = baseParams(train);
+            cont._remove_offset_effects = true;
+            cont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            cont._nlambdas = 5;
+            cont._checkpoint = baseModel._key;
+            Job<GLMModel> job = new GLM(cont).trainModel();
+            continued = job.get();
+
+            assertWarned(job, "carries no scoring history", "a checkpoint with no scoring history");
+            assertNotNull("training must still complete and rebuild a history",
+                    continued._output._scoring_history);
+        } finally {
+            if (continued != null) continued.remove();
+            if (baseModel != null) baseModel.remove();
+            if (train != null) train.remove();
+            Scope.exit();
+        }
+    }
+
+    /**
+     * A checkpoint written by a build that populated the restricted history but not the unrestricted one must
+     * warn, so a user whose continued history comes out short knows why.
+     */
+    @Test
+    public void checkpointWithoutUnrestrictedHistoryWarns() {
+        Frame train = null;
+        GLMModel baseModel = null, continued = null;
+        try {
+            Scope.enter();
+            train = binomialFrame();
+
+            GLMModel.GLMParameters base = baseParams(train);
+            base._remove_offset_effects = true;
+            base._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            base._nlambdas = 3;
+            baseModel = new GLM(base).trainModel().get();
+
+            assertNotNull("precondition: the checkpoint must start with an unrestricted history",
+                    baseModel._output._scoring_history_unrestricted_model);
+            baseModel._output._scoring_history_unrestricted_model = null;   // simulate an older build
+            DKV.put(baseModel);
+
+            GLMModel.GLMParameters cont = baseParams(train);
+            cont._remove_offset_effects = true;
+            cont._solver = GLMModel.GLMParameters.Solver.IRLSM;
+            cont._nlambdas = 5;
+            cont._checkpoint = baseModel._key;
+            Job<GLMModel> job = new GLM(cont).trainModel();
+            continued = job.get();
+
+            assertWarned(job, "does not carry an unrestricted scoring history",
+                    "a checkpoint missing the unrestricted history");
+            assertNotNull(continued._output._scoring_history_unrestricted_model);
+        } finally {
+            if (continued != null) continued.remove();
+            if (baseModel != null) baseModel.remove();
+            if (train != null) train.remove();
             Scope.exit();
         }
     }

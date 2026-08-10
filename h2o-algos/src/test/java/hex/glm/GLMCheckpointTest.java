@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.ScoringInfo;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
@@ -19,6 +20,9 @@ import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Solver.IRLSM;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -89,6 +93,74 @@ public class GLMCheckpointTest extends TestUtil {
       if (tfr != null) tfr.delete();
       if (glm != null) glm.delete();
       if (glm2 != null) glm2.delete();
+    }
+  }
+
+  /**
+   * A continuation must not inherit the checkpointed run's cross-validation results. GLMModel.setCrossValidationScore
+   * keys ScoringInfo.cross_validation off _output._cross_validation_metrics, so a stale metric surviving deepClone
+   * would fill every iteration's scored_xval from the same frozen object - scoreKeepers() then hands
+   * ScoreKeeper.stopEarly a flat series and early stopping fires immediately, silently truncating the fit.
+   * The key-valued slots are checked too: they point at the source model's fold models and frames, so a
+   * continuation that kept them would delete the source's cross-validation artifacts when it is removed.
+   */
+  @Test
+  public void testCheckpointDoesNotInheritCrossValidationResults() {
+    try {
+      Scope.enter();
+      Frame train = parseTestFile("./smalldata/iris/iris.csv");
+      Scope.track(train);
+
+      GLMParameters parms = new GLMParameters();
+      parms._train = train._key;
+      parms._response_column = "C5";
+      parms._seed = 0xdecaf;
+      parms._solver = IRLSM;
+      parms._nfolds = 3;
+      parms._keep_cross_validation_predictions = true;  // otherwise the prediction-key slots are null anyway
+      GLMModel glm = new GLM(parms).trainModel().get();
+      Scope.track_generic(glm);
+      // Without these the assertions below pass vacuously.
+      assertNotNull("the checkpointed model must actually have cross-validation results, otherwise this test " +
+              "cannot detect them being inherited", glm._output._cross_validation_metrics);
+      assertNotNull("the checkpointed model must actually have fold models", glm._output._cross_validation_models);
+      assertNotNull("the checkpointed model must actually have fold predictions",
+              glm._output._cross_validation_predictions);
+
+      // Continue without cross-validation: nothing in the continued model may come from the checkpoint's CV run.
+      GLMParameters contParms = new GLMParameters();
+      contParms._train = train._key;
+      contParms._response_column = "C5";
+      contParms._seed = 0xdecaf;
+      contParms._solver = IRLSM;
+      contParms._checkpoint = glm._key;
+      GLMModel continued = new GLM(contParms).trainModel().get();
+      Scope.track_generic(continued);
+
+      assertNull("continued model inherited the checkpoint's cross-validation metrics",
+              continued._output._cross_validation_metrics);
+      assertNull("continued model inherited the checkpoint's cross-validation metrics summary",
+              continued._output._cross_validation_metrics_summary);
+      assertNull("continued model inherited the checkpoint's fold models - removing it would delete them",
+              continued._output._cross_validation_models);
+      assertNull("continued model inherited the checkpoint's fold predictions - removing it would delete them",
+              continued._output._cross_validation_predictions);
+      assertNull("continued model inherited the checkpoint's holdout predictions frame",
+              continued._output._cross_validation_holdout_predictions_frame_id);
+      assertNull("continued model inherited the checkpoint's fold assignment frame",
+              continued._output._cross_validation_fold_assignment_frame_id);
+
+      // The observable consequence: ScoringInfo must not claim an xval score the continuation never computed.
+      assertNotNull("continued model has no scoring info to check", continued.getScoringInfo());
+      for (ScoringInfo si : continued.getScoringInfo()) {
+        assertFalse("continued model reports cross_validation=true on a run with nfolds=0", si.cross_validation);
+      }
+
+      // The checkpoint keeps its own results - the continuation must not have consumed or removed them.
+      assertNotNull("the checkpointed model lost its cross-validation metrics",
+              glm._output._cross_validation_metrics);
+    } finally {
+      Scope.exit();
     }
   }
 

@@ -31,9 +31,13 @@ When ``lambda_search=True``, two parallel per-lambda scoring histories are produ
 
 ``remove_offset_effects`` changes only the reported metrics, never the fit, so the model is identical to the one you would get without the option. Consequently **the best lambda is selected on the offset-preserved (unrestricted) deviance**, which guarantees that ``lambda_best`` and the coefficients match the equivalent model trained without ``remove_offset_effects``. One consequence is worth noting: the ``deviance_test`` column of the restricted ``scoring_history`` is *not* necessarily minimized at the selected lambda. To see the deviance that selection is based on, read ``scoring_history_unrestricted_model`` (or the derived model returned by ``make_unrestricted_glm_model()``).
 
-Combining ``lambda_search`` with cross-validation is supported; the restricted history's ``deviance_xval`` is then the offset-removed cross-validated deviance, on the same scale as its ``deviance_train``/``deviance_test``.
+Combining ``lambda_search`` with cross-validation is supported; the restricted history's ``deviance_xval`` is then the offset-removed cross-validated deviance, on the same scale as its ``deviance_test``.
+
+.. note::
+
+	``deviance_xval`` and ``deviance_test`` are true deviances (non-negative) for every family. ``deviance_train``, however, reports the negative log-likelihood rather than the deviance for the ``tweedie`` and ``negativebinomial`` families, and the ``tweedie`` value additionally omits a normalization term and can be negative. For those two families ``deviance_train`` is therefore **not** on the same scale as ``deviance_test``/``deviance_xval`` and the three columns should not be compared with each other. This applies equally to the restricted and unrestricted histories, and to models trained without ``remove_offset_effects``.
 An empty ``deviance_xval``/``deviance_se`` cell in the restricted history means the offset-removed cross-validated deviance could not be computed (for example when a fold was resumed from a checkpoint); a warning is issued in that case, and ``scoring_history_unrestricted_model`` still reports the offset-included values.
-Note that the per-lambda ``deviance_xval``/``deviance_se`` columns and the cross-validated lambda selection require ``nfolds``; with a ``fold_column`` the CV metric slots above are still populated, but those columns are omitted from the scoring history and the best lambda is chosen from the training/validation path instead.
+Note that the per-lambda ``deviance_xval``/``deviance_se`` columns require ``nfolds``; with a ``fold_column`` the CV metric slots above are still populated and cross-validation still constrains the search (the alpha and the explored lambda range are narrowed to the cross-validated optimum), but those columns are omitted from the scoring history and the final ``lambda_best`` is taken from the training/validation path rather than from the cross-validated deviance.
 
 **Combination with control_variables**
 

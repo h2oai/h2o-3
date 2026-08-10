@@ -1320,7 +1320,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._remove_offset_effects && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
         error("_remove_offset_effects", "Remove offset effects option (remove_offset_effects=True) is not supported with " + _parms._family.name() + " family.");
       if (_parms._control_variables != null && (_parms._family == Family.multinomial || _parms._family == Family.ordinal))
-        error("_control_variables", "Control variables option (control_variables) are not supported with " + _parms._family.name() + " family.");
+        error("_control_variables", "Control variables option (control_variables) is not supported with " + _parms._family.name() + " family.");
       if (_parms._plug_values != null) {
         Frame plugValues = _parms._plug_values.get();
         if (plugValues == null) {
@@ -1650,16 +1650,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!IRLSM.equals(_parms._solver))
           error("_checkpoint", "GLM checkpoint is supported only for IRLSM.  Please specify it " +
                   "explicitly.  Do not use AUTO or default");
-        // A model from make_derived_glm_model()/make_unrestricted_glm_model() only carries a reporting view: its
-        // single submodel is a placeholder with NaN deviances and no z-values, and it has none of the solver state a
-        // continuation needs (it fails later in ComputationState.penalty). Reject it here with something actionable
-        // rather than let it die mid-training.
+        // A model from /3/MakeGLMModel or make_derived_glm_model()/make_unrestricted_glm_model() only carries a
+        // reporting view: its single submodel is a placeholder with NaN deviances and no z-values, and it has none
+        // of the solver state a continuation needs (it fails later in ComputationState.penalty). Reject it here
+        // with something actionable rather than let it die mid-training.
         Object checkpointObj = DKV.getGet(_parms._checkpoint);
-        if (checkpointObj instanceof GLMModel && ((GLMModel) checkpointObj)._derivedFromModelId != null)
-          error("_checkpoint", "The checkpoint model was produced by make_derived_glm_model() or" +
-                  " make_unrestricted_glm_model() and cannot be continued - it holds only a reporting view of its" +
-                  " source model, not the training state. Pass the trained source model (" +
-                  ((GLMModel) checkpointObj)._derivedFromModelId + ") as the checkpoint instead.");
+        if (checkpointObj instanceof GLMModel && ((GLMModel) checkpointObj)._reportingOnly) {
+          Key<GLMModel> source = ((GLMModel) checkpointObj)._derivedFromModelId;
+          error("_checkpoint", "The checkpoint model was produced by /3/MakeGLMModel, make_derived_glm_model() or" +
+                  " make_unrestricted_glm_model() and cannot be continued - it holds only a reporting view with" +
+                  " user- or source-supplied coefficients, not the training state. Pass a trained model" +
+                  (source == null ? "" : " (" + source + ")") + " as the checkpoint instead.");
+        }
         Value cv = DKV.get(_parms._checkpoint);
         CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
       }
@@ -1800,10 +1802,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.discardScoringHistory();
         return;
       }
+      // Every decision below is about the *format of the persisted tables*, so all of them read checkpointParms.
+      // _model._parms was already overwritten with this run's params by buildModel, and control_variables is not
+      // pinned across a continuation (CHECKPOINT_NON_MODIFIABLE_FIELDS), so reading it here would decide from
+      // parameters the checkpoint was never written with.
+      boolean checkpointHasUnrestrictedHistory =
+              checkpointParms._control_variables != null || checkpointParms._remove_offset_effects;
       TwoDimTable scoringHistory = _model._output._scoring_history;
-      // A checkpoint need not carry a scoring history at all: /3/MakeGLMModel output has none, and its
-      // _derivedFromModelId is null so the derived-model rejection in init does not catch it. grabHeaderIndex
-      // dereferences this table, so bail out here rather than NPE mid-training.
+      // A checkpoint need not carry a scoring history at all - a reporting-only model has none. Those are rejected
+      // outright in init now, but grabHeaderIndex dereferences this table, so bail out here rather than NPE
+      // mid-training if one ever reaches this far.
       if (scoringHistory == null) {
         // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training starts.
         _job.warn("The checkpointed model carries no scoring history, so none could be carried over. The continued" +
@@ -1823,8 +1831,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // was written by a build that did not populate it. restoreFromCheckpoint tolerates a null table (starts that
       // history empty); warn once here so the user knows why their continued model's history is short rather than
       // silently getting a partial one. (A derived model is rejected outright in init - see the _checkpoint check.)
-      if ((_model._parms._control_variables != null || _model._parms._remove_offset_effects)
-              && _model._output._scoring_history_unrestricted_model == null) {
+      if (checkpointHasUnrestrictedHistory && _model._output._scoring_history_unrestricted_model == null) {
         // _job.warn, not warn(): ModelBuilder messages are snapshotted into the response before training starts.
         _job.warn("The checkpointed model does not carry an unrestricted scoring history, so the checkpointed" +
                 " scoring history could not be fully carried over. The continued model's scoring history starts" +
@@ -1843,12 +1850,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       } else {
         _scoringHistory.restoreFromCheckpoint(scoringHistory, colHeadersIndex);
-        if (_model._parms._control_variables != null || _model._parms._remove_offset_effects) {
+        if (checkpointHasUnrestrictedHistory) {
           TwoDimTable scoringHistoryUnrestricted = _model._output._scoring_history_unrestricted_model;
           _scoringHistoryUnrestrictedModel.restoreFromCheckpoint(scoringHistoryUnrestricted, colHeadersIndex);
         }
       }
-      if (_model._parms._control_variables != null && _model._parms._remove_offset_effects) {
+      // Conjunction, not checkpointParms alone: the checkpoint decides whether the tables were written, but this
+      // run decides whether the histories that would receive them were allocated at all (see the constructor
+      // block gated on _parms above). Both must hold or there is nothing to copy into.
+      if (checkpointParms._control_variables != null && checkpointParms._remove_offset_effects
+              && _scoringHistoryRemoveOffsetEnabled != null && _scoringHistoryControlValEnabled != null) {
           TwoDimTable scoringHistoryRestrictedRO = _model._output._scoring_history_restricted_model_ro;
           _scoringHistoryRemoveOffsetEnabled.restoreFromCheckpoint(scoringHistoryRestrictedRO, colHeadersIndex);
           TwoDimTable scoringHistoryRestrictedContrVals = _model._output._scoring_history_restricted_model_contr_vals;
@@ -3989,7 +4000,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             double trainDev = _state.deviance() / mtrain._nobs;
             // With remove_offset_effects/control_variables, _validation_metrics is null (only the unrestricted
             // metrics are populated). Use the unrestricted metrics for the (unrestricted) lambda history.
-            ModelMetrics vmm = (_model._parms._remove_offset_effects || _model._parms._control_variables != null)
+            ModelMetrics vmm = restrictedHistoryIsMain()
                     ? _model._output._validation_metrics_unrestricted_model : _model._output._validation_metrics;
             assert vmm != null : "scorePostProcessing populates this slot above; a null here means the "
                     + "restricted/unrestricted slot choice disagrees with the one made there";
@@ -4407,17 +4418,29 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // combineScoringHistoryRestricted expects iteration-format tables; both histories are
             // lambda-format here, so each is combined independently with its own early-stop table instead.
             _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history, scoringHistoryEarlyStop);
-            // Label this table too. Both slots carry identical column names, so without a title the two are
-            // indistinguishable - and the Python client renders scoring_history() as a DataFrame, dropping the
-            // title, so the suffix on the unrestricted slot alone is not enough to tell them apart.
-            _model._output._scoring_history.setTableHeader(
-                    _model._output._scoring_history.getTableHeader() + " offset-removed model");
+            // Under lambda_search the selected lambda is chosen on the *unrestricted* deviance, so the
+            // deviance_test column of the restricted table the user sees is not necessarily minimized at
+            // lambda_best. Neither client surfaces the table title (Python renders scoring_history() as a
+            // DataFrame and R drops the TwoDimTable name entirely), so without this the user's only signal is
+            // a curve whose minimum sits somewhere other than the selected lambda.
+            _job.warn("scoring_history reports the offset-removed deviances, but lambda selection uses the" +
+                    " offset-included ones, so its deviance_test column is not necessarily minimized at" +
+                    " lambda_best. Read scoring_history_unrestricted_model for the deviances the selection is" +
+                    " based on.");
           } else {
             ScoreKeeper.StoppingMetric sm = _model._parms._stopping_metric.name().equals("AUTO") ? _model._output.isClassifier() ?
                     ScoreKeeper.StoppingMetric.logloss : ScoreKeeper.StoppingMetric.deviance : _model._parms._stopping_metric;
             _model._output._scoring_history = combineScoringHistoryRestricted(_model._output._scoring_history, _model._output._scoring_history_unrestricted_model,
                     scoringHistoryEarlyStop, scoringHistoryEarlyStopUnrestricted, sm, null != _parms._valid);
           }
+          // Title BOTH tables, in every branch. They carry identical column names, so an untitled
+          // scoring_history sitting next to "... unrestricted model" is indistinguishable from it - which was
+          // the case for every model that has a restricted view without lambda_search, including the whole
+          // cross-validation path. "restricted" matches the vocabulary the docs and the *_unrestricted_model
+          // field names already use, and is accurate whether the removed effects are the offset, the control
+          // variables, or both.
+          _model._output._scoring_history.setTableHeader(
+                  _model._output._scoring_history.getTableHeader() + " restricted model");
           _model._output._scoring_history_unrestricted_model = combineScoringHistory(_model._output._scoring_history_unrestricted_model, scoringHistoryEarlyStopUnrestricted);
           _model._output._scoring_history_unrestricted_model.setTableHeader(_model._output._scoring_history_unrestricted_model.getTableHeader()+" unrestricted model");
           // set control variables and remove offset effects flag to true for scoring after training

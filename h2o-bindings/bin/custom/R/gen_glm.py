@@ -135,6 +135,18 @@ h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_con
   h2o.getModel(model_id = res$model_id$name)
 }
 
+#' Extract the scoring history of the with-offset (unrestricted) view from a glm model.
+#'
+#' Available when the model was trained with \code{remove_offset_effects=TRUE} or with
+#' \code{control_variables}; NULL otherwise. Under \code{lambda_search} this is the per-lambda
+#' deviance that \code{lambda_best} selection is based on, while \code{h2o.scoreHistory} reports the
+#' offset-removed view.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.scoring_history_unrestricted_model <- function(model) {
+  model@model$scoring_history_unrestricted_model
+}
+
 #' Extract best lambda value found from glm model.
 #'
 #' This function allows setting betas of an existing glm model.

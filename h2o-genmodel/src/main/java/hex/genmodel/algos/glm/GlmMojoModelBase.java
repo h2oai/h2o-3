@@ -18,6 +18,9 @@ public abstract class GlmMojoModelBase extends MojoModel {
 
   String _family;
   boolean _versionSupportOffset;
+  // When set, the model was trained with remove_offset_effects: the offset is excluded from the linear
+  // predictor, so any offset the caller supplies must be ignored to match the in-H2O predictions.
+  boolean _removeOffsetEffects;
   
   double _dispersion_estimated;
 
