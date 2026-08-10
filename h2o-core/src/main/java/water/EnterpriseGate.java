@@ -1,9 +1,10 @@
 package water;
 
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.Log;
 
 /**
- * Server-side H2O-3 Enterprise gate for production-only capabilities.
+ * Server-side H2O-3 Secure gate for production-only capabilities.
  *
  * The OSS build enforces the paywall where the artifacts are actually produced, so it holds
  * regardless of how the caller got there - REST, Flow, a patched client, an embedded H2O
@@ -30,14 +31,14 @@ import water.exceptions.H2OIllegalArgumentException;
  * rather than by a {@code StreamWriter}. The client-side notices in the Python/R packages are
  * only the friendly message.
  *
- * Binary model export stays open by design: a model can still be moved to an Enterprise
+ * Binary model export stays open by design: a model can still be moved to an H2O-3 Secure
  * cluster, which is the intended upgrade path. What OSS will not do is convert one into a
  * deployable scoring artifact.
  */
 public class EnterpriseGate {
 
   public static final String ENTERPRISE_EMAIL = "enterprise@h2o.ai";
-  public static final String LEARN_MORE = "h2o.ai/h2o-3/oss-vs-enterprise";
+  public static final String LEARN_MORE = "h2o.ai/h2o-3/oss-vs-secure";
 
   /**
    * True when this JVM is running the H2O test harness. The multi-node JUnit suites
@@ -68,6 +69,19 @@ public class EnterpriseGate {
   }
 
   /**
+   * Log the OSS-vs-Secure notice at cluster startup. Emitted via {@link Log#info}
+   * (not System.out) so it flows through the standard logging pipeline.
+   */
+  public static void logStartupBanner() {
+    Log.info("You are running the community edition of H2O-3 OSS.");
+    Log.info("For commercial use, H2O-3 Secure is now recommended.");
+    Log.info("This includes production support, CVE fixes, multi-node scaling, " +
+             "model artifact extraction, and more.");
+    Log.info("See " + LEARN_MORE + " for additional details.");
+    Log.info("Contact " + ENTERPRISE_EMAIL + " to upgrade.");
+  }
+
+  /**
    * Enforcement point for the {@code hex.Model} artifact-producing methods, which the
    * test harness itself relies on. Identical to {@link #block(String)} for every shipped
    * cluster; a no-op under the JUnit suites. The REST layer deliberately does not use
@@ -84,13 +98,13 @@ public class EnterpriseGate {
    */
   public static void block(String operation) {
     throw new H2OIllegalArgumentException(
-        "H2O-3 ENTERPRISE REQUIRED - " + operation + " is blocked. " +
-        operation + " is a production capability available only in H2O-3 Enterprise, " +
-        "the commercially supported tier of H2O-3. You are running H2O-3 OSS, built for " +
-        "experimentation and research, not production. Upgrade to H2O-3 Enterprise for " +
-        "multi-node production deployment (Hadoop, Spark, Kubernetes), audit-ready governance " +
-        "(SOC 2, ISO 27001, ISO 42001), prioritized CVE patching, and premium support with SLAs. " +
-        "H2O-3 Enterprise is a drop-in replacement - your existing code, APIs, and pipelines run " +
-        "unchanged. Learn more: " + LEARN_MORE + ". Contact: " + ENTERPRISE_EMAIL);
+        "H2O-3 SECURE REQUIRED - " + operation + " is blocked. " +
+        operation + " is a production capability available only in H2O-3 Secure, " +
+        "the commercially supported tier of H2O-3. You are running self-managed H2O-3 OSS. " +
+        "You must upgrade to H2O-3 Secure for Hadoop and Kubernetes enterprise packages, " +
+        "audit-supporting capabilities (SOC 2, ISO 27001, ISO 42001), commercial CVE patching " +
+        "and long-term support, and premium support with SLAs. If you need MOJO, we provide a " +
+        "free license for non-commercial use - request it at " + LEARN_MORE + ". " +
+        "Contact: " + ENTERPRISE_EMAIL);
   }
 }

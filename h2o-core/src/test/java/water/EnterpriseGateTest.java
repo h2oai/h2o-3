@@ -5,7 +5,7 @@ import org.junit.Test;
 import water.exceptions.H2OIllegalArgumentException;
 
 /**
- * Unit tests for the server-side H2O-3 Enterprise gate. Pure (no cloud needed):
+ * Unit tests for the server-side H2O-3 Secure gate. Pure (no cloud needed):
  * {@link EnterpriseGate#block(String)} only builds and throws.
  */
 public class EnterpriseGateTest {
@@ -18,7 +18,7 @@ public class EnterpriseGateTest {
     } catch (H2OIllegalArgumentException e) {
       String msg = e.getMessage();
       assertTrue("names the operation", msg.contains("MOJO export"));
-      assertTrue("marked as blocked/enterprise", msg.contains("H2O-3 ENTERPRISE REQUIRED"));
+      assertTrue("marked as blocked/secure", msg.contains("H2O-3 SECURE REQUIRED"));
       assertTrue("routes to contact", msg.contains(EnterpriseGate.ENTERPRISE_EMAIL));
       assertTrue("links the comparison page", msg.contains(EnterpriseGate.LEARN_MORE));
     }
@@ -56,7 +56,7 @@ public class EnterpriseGateTest {
       EnterpriseGate.block("MOJO export");
       fail("block must throw even under the test harness - it is what the REST layer uses");
     } catch (H2OIllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("H2O-3 ENTERPRISE REQUIRED"));
+      assertTrue(expected.getMessage().contains("H2O-3 SECURE REQUIRED"));
     }
   }
 
