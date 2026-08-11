@@ -15,6 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/inde
 
 #### Docs
 - [[#16903]](https://github.com/h2oai/h2o-3/issues/16903) – Noted H2O-3 Secure features (Hadoop, Kubernetes, Sparkling Water, and MOJO deployment) in the OSS documentation.
+- [[#16932]](https://github.com/h2oai/h2o-3/issues/16932) – Marked H2O Flow as deprecated in the documentation.
 
 ### 3.46.0.11 - 5/21/2026
 
