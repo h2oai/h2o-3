@@ -104,7 +104,7 @@ public class EnterpriseGate {
         "You must upgrade to H2O-3 Secure for Hadoop and Kubernetes enterprise packages, " +
         "audit-supporting capabilities (SOC 2, ISO 27001, ISO 42001), commercial CVE patching " +
         "and long-term support, and premium support with SLAs. If you need MOJO, we provide a " +
-        "free license for non-commercial use - request it at " + LEARN_MORE + ". " +
-        "Contact: " + ENTERPRISE_EMAIL);
+        "free license for non-commercial use. See " + LEARN_MORE + " to compare the two tiers. " +
+        "Request a license or upgrade at " + ENTERPRISE_EMAIL);
   }
 }

@@ -2,6 +2,21 @@
 
 ## H2O
 
+### 3.46.0.12 - 8/12/2026
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/12/index.html</a>
+
+#### New Feature
+- [[#16875]](https://github.com/h2oai/h2o-3/issues/16875) – Added opt-in anonymous usage telemetry to the Python, R, and JVM clients.
+- [[#16909]](https://github.com/h2oai/h2o-3/issues/16909) – Added H2O-3 OSS vs Secure in-product messaging.
+
+#### Task
+- [[#16910]](https://github.com/h2oai/h2o-3/issues/16910) – Blocked MOJO and POJO artifact extraction in H2O-3 OSS; it is now an H2O-3 Secure feature.
+
+#### Docs
+- [[#16903]](https://github.com/h2oai/h2o-3/issues/16903) – Noted H2O-3 Secure features (Hadoop, Kubernetes, Sparkling Water, and MOJO deployment) in the OSS documentation.
+- [[#16932]](https://github.com/h2oai/h2o-3/issues/16932) – Marked H2O Flow as deprecated in the documentation.
+
 ### 3.46.0.11 - 5/21/2026
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-3.46.0/11/index.html</a>

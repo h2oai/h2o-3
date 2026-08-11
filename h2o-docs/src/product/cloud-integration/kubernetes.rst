@@ -1,6 +1,10 @@
 Using H2O with Kubernetes
 =========================
 
+.. note::
+
+   Kubernetes packages are part of H2O-3 Secure, the commercially supported tier of H2O-3. Contact enterprise@h2o.ai.
+
 H2O Software Stack
 ------------------
 

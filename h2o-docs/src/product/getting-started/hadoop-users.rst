@@ -1,6 +1,10 @@
 Hadoop users
 ============
 
+.. note::
+
+   Hadoop packages are part of H2O-3 Secure, the commercially supported tier of H2O-3. Contact enterprise@h2o.ai.
+
 This section describes how to use H2O-3 on Hadoop.
 
 Supported Versions
