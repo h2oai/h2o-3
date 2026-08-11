@@ -1108,7 +1108,7 @@ The following additional functions are available when viewing a model:
 
 .. note::
 
-   **Download POJO** and **Download Model Deployment Package (MOJO)** require H2O-3 Secure, the commercially supported tier of H2O-3. H2O-3 OSS blocks both at the server, so Flow returns an error. **Export** and **Download Gen Model** still work. See `Productionizing H2O <productionizing.html>`__.
+   **Download POJO** and **Download Model Deployment Package (MOJO)** require H2O-3 Secure, the commercially supported tier of H2O-3. H2O-3 OSS blocks both at the server, so Flow returns an error. See `Productionizing H2O <productionizing.html>`__.
 
 - **Refresh**: Refreshes the model.
 - **Predict**: Use this model to make predictions.  
