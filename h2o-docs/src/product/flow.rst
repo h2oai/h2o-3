@@ -3,10 +3,6 @@
 Using Flow - H2O's Web UI
 =========================
 
-.. warning::
-
-   H2O Flow is deprecated and will be removed in a future release. Use the Python or R client instead. See `H2O-3 clients <h2o-client.html>`__.
-
 About
 ------
 

@@ -6,10 +6,6 @@ These clients allow you to connect to and interact with H2O-3.
 H2O Flow
 --------
 
-.. warning::
-
-   H2O Flow is deprecated and will be removed in a future release. Use the R or Python client instead.
-
 H2O Flow is a Web based (GUI) user interface. It lets you interactively run your H2O-3 machine learning workflows and iteratively improve them. H2O Flow combines code execution, text, mathematics, plots, and rich media in a single document. See the `documentation for H2O Flow <flow.html>`__.
 
 R client
