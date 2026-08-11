@@ -3,6 +3,10 @@
 MOJO Capabilities
 -----------------
 
+.. note::
+
+   Downloading a model as a MOJO requires H2O-3 Secure. An H2O-3 OSS cluster blocks MOJO export, though binary model export stays available and a free MOJO license covers non-commercial use. See `Productionizing H2O <productionizing.html>`__.
+
 This section describes the basics of working with the MOJO model in H2O-3.
 
 About H2O Generated MOJO Models

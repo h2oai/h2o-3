@@ -3,6 +3,17 @@
 Productionizing H2O
 ===================
 
+.. note::
+
+   Downloading a model as a MOJO or a POJO requires H2O-3 Secure, the commercially supported tier of H2O-3. An H2O-3 OSS cluster blocks both, including the API endpoints that produce them, so it cannot generate a deployable scoring artifact.
+
+   Two paths remain open in H2O-3 OSS:
+
+   - **Binary model export** works as usual. Save or download the model, then move it to an H2O-3 Secure cluster and produce the MOJO or POJO there. This is the intended upgrade path.
+   - **A free MOJO license** is available for non-commercial use. Request it from enterprise@h2o.ai.
+
+   H2O-3 Secure also covers Hadoop and Kubernetes packages, commercial CVE patching and long-term support, audit-supporting capabilities (SOC 2, ISO 27001, ISO 42001), and premium support with SLAs. Contact enterprise@h2o.ai.
+
 .. _about-pojo-mojo:
 
 About POJOs and MOJOs

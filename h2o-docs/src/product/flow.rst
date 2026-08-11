@@ -1110,6 +1110,10 @@ Click on a model name to view details about the model. The information that disp
 
 The following additional functions are available when viewing a model:
 
+.. note::
+
+   **Download POJO** and **Download Model Deployment Package (MOJO)** require H2O-3 Secure, the commercially supported tier of H2O-3. H2O-3 OSS blocks both at the server, so Flow returns an error. See `Productionizing H2O <productionizing.html>`__.
+
 - **Refresh**: Refreshes the model.
 - **Predict**: Use this model to make predictions.  
 - **Download POJO**: Generates a Plain Old Java Object (POJO) that can use the model outside of H2O. Note that a POJO can be run in standalone mode or it can be integrated into a platform, such as `Hadoop's Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__. To make the POJO work in your Java application, you will also need the ``h2o-genmodel.jar`` file (available via the **Download Generated Model** button, from the **Admin** menu, or in ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``). Note that POJOs are are not supported for XGBoost models.
