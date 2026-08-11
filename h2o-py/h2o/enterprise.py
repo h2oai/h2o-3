@@ -61,9 +61,9 @@ def block(operation):
         u"  - Premium support with SLAs",
         u"",
         u"If you need MOJO, we provide a free license for non-commercial",
-        u"use. Request it at h2o.ai/h2o-3/oss-vs-secure",
+        u"use. See h2o.ai/h2o-3/oss-vs-secure to compare the two tiers.",
         u"",
-        u"Contact:    " + ENTERPRISE_EMAIL,
+        u"Request a license or upgrade:  " + ENTERPRISE_EMAIL,
     ]) + u"\n")
     sys.stdout.flush()
     raise H2OValueError(operation + " requires H2O-3 Secure. Contact " + ENTERPRISE_EMAIL)

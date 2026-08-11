@@ -52,9 +52,9 @@
     "  - Premium support with SLAs",
     "",
     "If you need MOJO, we provide a free license for non-commercial",
-    "use. Request it at h2o.ai/h2o-3/oss-vs-secure",
+    "use. See h2o.ai/h2o-3/oss-vs-secure to compare the two tiers.",
     "",
-    paste0("Contact:    ", .h2o.enterprise.email)
+    paste0("Request a license or upgrade:  ", .h2o.enterprise.email)
   ))
   message("\n", msg, "\n")
   stop(paste0(operation, " requires H2O-3 Secure. Contact ", .h2o.enterprise.email),
