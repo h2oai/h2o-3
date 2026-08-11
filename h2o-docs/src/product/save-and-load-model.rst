@@ -98,9 +98,7 @@ MOJO Models
 
 .. note::
 
-   Saving or downloading a MOJO requires H2O-3 Secure, the commercially supported tier of H2O-3. H2O-3 OSS blocks ``h2o.save_mojo()``, ``h2o.download_mojo()``, and ``h2o.download_pojo()``.
-
-   Importing and uploading a MOJO still work, as does everything in the preceding Binary Models section. Saving a binary model and moving it to an H2O-3 Secure cluster is the intended path to a MOJO. A free MOJO license also covers non-commercial use. Contact enterprise@h2o.ai.
+   Saving or downloading a MOJO requires H2O-3 Secure, the commercially supported tier of H2O-3. H2O-3 OSS blocks ``h2o.save_mojo()``, ``h2o.download_mojo()``, and ``h2o.download_pojo()``. A free MOJO license also covers non-commercial use. Contact enterprise@h2o.ai.
 
 Introduction
 ~~~~~~~~~~~~
