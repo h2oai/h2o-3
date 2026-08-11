@@ -10,7 +10,7 @@ Welcome to the H2O-3 documentation site! Select a learning path from the sidebar
 
 .. note::
 
-   This documentation covers H2O-3 OSS, the community edition. H2O-3 Secure is the commercially supported tier. It adds Hadoop and Kubernetes packages, model artifact extraction (MOJO and POJO), commercial CVE patching and long-term support, audit-supporting capabilities (SOC 2, ISO 27001, ISO 42001), and premium support with SLAs. Your code, APIs, and pipelines run unchanged.
+   This documentation covers H2O-3 OSS, the community edition. H2O-3 Secure is the commercially supported tier. It adds Hadoop and Kubernetes packages, model artifact extraction (MOJO and POJO), commercial CVE patching and long-term support, audit-supporting capabilities (SOC 2, ISO 27001, ISO 42001), and premium support with SLAs.
 
    For a comparison of the two, contact enterprise@h2o.ai.
 
