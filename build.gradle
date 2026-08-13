@@ -7,18 +7,29 @@ buildscript {
         isCi = (!rootProject.hasProperty("forcePublic")) && (System.getProperty("user.name").equals("jenkins")
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+
+        // Internal Nexus mirror - a pull-through proxy of our upstreams, declared ahead of the
+        // public repositories so artifacts get cached there. The mirror rejects anonymous reads,
+        // so it is skipped without credentials. Configuration is documented in gradle.properties.
+        nexusMirrorUrl = System.getenv("NEXUS_URL") ?: rootProject.findProperty("nexusMirrorUrl") ?: ""
+        nexusMirrorUser = System.getenv("NEXUS_USERNAME") ?: rootProject.findProperty("nexusMirrorUsername") ?: ""
+        nexusMirrorPass = System.getenv("NEXUS_PASSWORD") ?: rootProject.findProperty("nexusMirrorPassword") ?: ""
+        useNexusMirror = nexusMirrorUrl && nexusMirrorUrl != "NO_NEXUS" && nexusMirrorUser && nexusMirrorPass
     }
 
     repositories {
-        if (false) {
-//            maven {
-//                allowInsecureProtocol = true
-//                url "${localNexusLocation}/public"
-//            }
-        } else {
-            maven { url 'https://plugins.gradle.org/m2/' }
-            mavenCentral()
+        if (useNexusMirror) {
+            maven {
+                name "NexusMirror"
+                url "${nexusMirrorUrl}/maven-public"
+                credentials {
+                    username = nexusMirrorUser
+                    password = nexusMirrorPass
+                }
+            }
         }
+        maven { url 'https://plugins.gradle.org/m2/' }
+        mavenCentral()
     }
 
     //noinspection GroovyAssignabilityCheck
@@ -237,29 +248,29 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (false) {
-//            maven {
-//                allowInsecureProtocol = true
-//                url "${localNexusLocation}/public"
-//            }
+        if (rootProject.useNexusMirror) {
             maven {
-                url "https://oss.sonatype.org/content/groups/staging/"
+                name "NexusMirror"
+                url "${rootProject.nexusMirrorUrl}/maven-public"
+                credentials {
+                    username = rootProject.nexusMirrorUser
+                    password = rootProject.nexusMirrorPass
+                }
             }
-        } else {
-            mavenCentral()
-            maven {
-                url "https://repository.cloudera.com/artifactory/cloudera-repos/"
-            }
-            maven {
-                allowInsecureProtocol = true
-                url "http://nexus-private.hortonworks.com:8081/nexus/"
-            }
-            maven {
-                url "https://repository.mapr.com/maven/"
-            }
-            maven {
-                url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
-            }
+        }
+        mavenCentral()
+        maven {
+            url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+        }
+        maven {
+            allowInsecureProtocol = true
+            url "http://nexus-private.hortonworks.com:8081/nexus/"
+        }
+        maven {
+            url "https://repository.mapr.com/maven/"
+        }
+        maven {
+            url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
         }
     }
 

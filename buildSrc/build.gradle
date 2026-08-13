@@ -2,6 +2,22 @@ apply plugin: 'java-library'
 apply plugin: 'groovy'
 
 repositories {
+    // buildSrc is a separate build and cannot see the root gradle.properties, so the mirror is
+    // configured from the environment or ~/.gradle - keep the default URL in step with
+    // nexusMirrorUrl in the root gradle.properties.
+    def nexusUrl = System.getenv('NEXUS_URL') ?: project.findProperty('nexusMirrorUrl') ?: 'https://nexus.h2o.dev/repository'
+    def nexusUser = System.getenv('NEXUS_USERNAME') ?: project.findProperty('nexusMirrorUsername')
+    def nexusPass = System.getenv('NEXUS_PASSWORD') ?: project.findProperty('nexusMirrorPassword')
+    if (nexusUrl && nexusUrl != 'NO_NEXUS' && nexusUser && nexusPass) {
+        maven {
+            name 'NexusMirror'
+            url "${nexusUrl}/maven-public"
+            credentials {
+                username = nexusUser
+                password = nexusPass
+            }
+        }
+    }
     mavenCentral()
 }
 
