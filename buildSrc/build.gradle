@@ -5,13 +5,13 @@ repositories {
     // buildSrc is a separate build and cannot read the root gradle.properties, so the URL is
     // defaulted here - keep it in step with h2oNexusUrl there.
     def nexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('NEXUS_ENABLED') ?: 'true').toString())
-    def nexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('NEXUS_URL') ?: 'https://nexus.h2o.dev/repository/maven-public'
+    def nexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('NEXUS_URL') ?: 'https://nexus.h2o.dev/repository'
     def nexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('NEXUS_USERNAME')
     def nexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('NEXUS_PASSWORD')
     if (nexusEnabled && nexusUrl && nexusUsername && nexusPassword) {
         maven {
             name 'NexusMirror'
-            url nexusUrl
+            url "${nexusUrl}/maven-public"
             credentials {
                 username = nexusUsername
                 password = nexusPassword

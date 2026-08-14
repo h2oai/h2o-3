@@ -27,7 +27,7 @@ buildscript {
         if (useNexusMirror) {
             maven {
                 name "NexusMirror"
-                url h2oNexusUrl
+                url "${h2oNexusUrl}/maven-public"
                 credentials {
                     username = h2oNexusCredentials()[0]
                     password = h2oNexusCredentials()[1]
@@ -73,7 +73,7 @@ apply from: 'gradle/timing.gradle'
 // green while resolving from the public repositories, so nothing is actually being mirrored.
 // Incomplete configuration warns rather than failing, so forks and public builds still work.
 if (useNexusMirror) {
-    logger.lifecycle("Nexus mirror: resolving through ${h2oNexusUrl}")
+    logger.lifecycle("Nexus mirror: resolving through ${h2oNexusUrl}/maven-public")
 } else if (!h2oNexusEnabled) {
     logger.lifecycle("Nexus mirror: disabled, resolving from the public repositories")
 } else {
@@ -273,7 +273,7 @@ subprojects {
         if (rootProject.useNexusMirror) {
             maven {
                 name "NexusMirror"
-                url rootProject.h2oNexusUrl
+                url "${rootProject.h2oNexusUrl}/maven-public"
                 credentials {
                     username = rootProject.h2oNexusCredentials()[0]
                     password = rootProject.h2oNexusCredentials()[1]

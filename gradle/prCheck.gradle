@@ -11,7 +11,7 @@ buildscript {
         if (nexusEnabled && nexusUrl && nexusUsername && nexusPassword) {
             maven {
                 name 'NexusMirror'
-                url nexusUrl
+                url "${nexusUrl}/maven-public"
                 credentials {
                     username = nexusUsername
                     password = nexusPassword
