@@ -32,7 +32,7 @@ warmup-caches:
 
 test-build-h2o-public:
 	git config --global --add safe.directory '*' # TODO github Find better solution
-	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -PlocalNexusLocation=NO_NEXUS $$ADDITIONAL_GRADLE_OPTS
+	BUILD_HADOOP="true" ./gradlew --gradle-user-home $$HOME/.gradle_public clean build -x test -PforcePublic=true -Ph2oNexusEnabled=false $$ADDITIONAL_GRADLE_OPTS
 
 compress-huge-logfiles:
 	find * -type f -name 'java*.out.txt' -exec gzip {} \;
