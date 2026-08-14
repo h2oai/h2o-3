@@ -25,6 +25,11 @@ buildscript {
                     username = h2oNexusUsername
                     password = h2oNexusPassword
                 }
+                // Send credentials on the first request. Without this Gradle waits for a 401
+                // challenge and retries, doubling the round trips for every artifact.
+                authentication {
+                    basic(BasicAuthentication)
+                }
             }
         }
         maven { url 'https://plugins.gradle.org/m2/' }
@@ -267,6 +272,9 @@ subprojects {
                 credentials {
                     username = rootProject.h2oNexusUsername
                     password = rootProject.h2oNexusPassword
+                }
+                authentication {
+                    basic(BasicAuthentication)
                 }
             }
         }

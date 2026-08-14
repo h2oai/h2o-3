@@ -14,6 +14,9 @@ repositories {
                 username = h2oNexusUsername
                 password = h2oNexusPassword
             }
+            authentication {
+                basic(BasicAuthentication)
+            }
         }
     }
     mavenCentral()
