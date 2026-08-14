@@ -8,14 +8,9 @@ buildscript {
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
 
-        // Ordered first so every artifact is cached in our mirror; it rejects anonymous reads,
-        // so without credentials it is skipped rather than failing every resolution.
-        // -P is read before the environment so the opt-out still works on agents exporting H2O_NEXUS_*.
         h2oNexusEnabled = Boolean.parseBoolean(
                 (rootProject.findProperty("h2oNexusEnabled") ?: System.getenv("H2O_NEXUS_ENABLED") ?: "true").toString())
         h2oNexusUrl = rootProject.findProperty("h2oNexusUrl") ?: System.getenv("H2O_NEXUS_URL") ?: ""
-        // Credentials stay behind a closure instead of becoming project properties, which are
-        // printed verbatim by `gradlew properties` and by build scans.
         h2oNexusCredentials = {
             [rootProject.findProperty("h2oNexusUsername") ?: System.getenv("H2O_NEXUS_USERNAME") ?: "",
              rootProject.findProperty("h2oNexusPassword") ?: System.getenv("H2O_NEXUS_PASSWORD") ?: ""]
@@ -69,9 +64,6 @@ apply from: 'gradle/java.gradle'
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
 
-// State the mirror decision explicitly. Misconfiguration is otherwise invisible: the build stays
-// green while resolving from the public repositories, so nothing is actually being mirrored.
-// Incomplete configuration warns rather than failing, so forks and public builds still work.
 if (useNexusMirror) {
     logger.lifecycle("Nexus mirror: resolving through ${h2oNexusUrl}/maven-public")
 } else if (!h2oNexusEnabled) {

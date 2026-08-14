@@ -2,8 +2,6 @@ apply plugin: 'java-library'
 apply plugin: 'groovy'
 
 repositories {
-    // buildSrc is a separate build and cannot read the root gradle.properties, so the URL is
-    // defaulted here - keep it in step with h2oNexusUrl there.
     def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'true').toString())
     def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: 'https://nexus.h2o.dev/repository'
     def h2oNexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME')
