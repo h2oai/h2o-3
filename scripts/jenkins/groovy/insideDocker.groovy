@@ -24,7 +24,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
           withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY'), string(credentialsId: "H2O3_GET_PROJECT_TOKEN", variable:  "H2O3_GET_PROJECT_TOKEN")]) {
             // Bound to the environment, not -P arguments: buildSrc runs as a separate build and
             // would not see a project property.
-            withCredentials([usernamePassword(credentialsId: 'PUBLIC_NEXUS_DEV', usernameVariable: 'NEXUS_USERNAME', passwordVariable: 'NEXUS_PASSWORD')]) {
+            withCredentials([usernamePassword(credentialsId: 'PUBLIC_NEXUS_DEV', usernameVariable: 'H2O_NEXUS_USERNAME', passwordVariable: 'H2O_NEXUS_PASSWORD')]) {
             dockerGroupIdAdd = ""
             if (addToDockerGroup) {
               dockerGroupName = "docker"
@@ -36,9 +36,9 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               }
             }
 //            // TODO add -e H2O3_GET_PROJECT_TOKEN=${H2O3_GET_PROJECT_TOKEN}
-           // NEXUS_* use the value-less "-e NAME" form to keep the password out of the command
+           // H2O_NEXUS_* use the value-less "-e NAME" form to keep the password out of the command
            // line Jenkins echoes.
-           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -e NEXUS_USERNAME -e NEXUS_PASSWORD -v /home/jenkins:/home/jenkins/repos  -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
+           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -e H2O_NEXUS_USERNAME -e H2O_NEXUS_PASSWORD -v /home/jenkins:/home/jenkins/repos  -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
               sh """
               id
               printenv | sort
