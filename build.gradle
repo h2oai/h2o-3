@@ -8,9 +8,8 @@ buildscript {
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
 
-        // Internal Nexus mirror - a pull-through proxy of our upstreams, declared ahead of the
-        // public repositories so artifacts get cached there. The mirror rejects anonymous reads,
-        // so it is skipped without credentials. Configuration is documented in gradle.properties.
+        // Ordered first so every artifact is cached in our mirror; it rejects anonymous reads,
+        // so without credentials it is skipped rather than failing every resolution.
         nexusUrl = System.getenv("NEXUS_URL") ?: rootProject.findProperty("nexusUrl") ?: ""
         nexusUsername = System.getenv("NEXUS_USERNAME") ?: rootProject.findProperty("nexusUsername") ?: ""
         nexusPassword = System.getenv("NEXUS_PASSWORD") ?: rootProject.findProperty("nexusPassword") ?: ""

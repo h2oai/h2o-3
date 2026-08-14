@@ -5,15 +5,15 @@
 buildscript {
     repositories {
         def nexusUrl = System.getenv('NEXUS_URL') ?: project.findProperty('nexusUrl') ?: ''
-        def nexusUser = System.getenv('NEXUS_USERNAME') ?: project.findProperty('nexusUsername') ?: ''
-        def nexusPass = System.getenv('NEXUS_PASSWORD') ?: project.findProperty('nexusPassword') ?: ''
-        if (nexusUrl && nexusUrl != 'NO_NEXUS' && nexusUser && nexusPass) {
+        def nexusUsername = System.getenv('NEXUS_USERNAME') ?: project.findProperty('nexusUsername') ?: ''
+        def nexusPassword = System.getenv('NEXUS_PASSWORD') ?: project.findProperty('nexusPassword') ?: ''
+        if (nexusUrl && nexusUrl != 'NO_NEXUS' && nexusUsername && nexusPassword) {
             maven {
                 name 'NexusMirror'
                 url "${nexusUrl}/maven-public"
                 credentials {
-                    username = nexusUser
-                    password = nexusPass
+                    username = nexusUsername
+                    password = nexusPassword
                 }
             }
         }
