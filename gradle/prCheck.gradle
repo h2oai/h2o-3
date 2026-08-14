@@ -4,17 +4,17 @@
 
 buildscript {
     repositories {
-        def nexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'true').toString())
-        def nexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: ''
-        def nexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME') ?: ''
-        def nexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('H2O_NEXUS_PASSWORD') ?: ''
-        if (nexusEnabled && nexusUrl && nexusUsername && nexusPassword) {
+        def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'true').toString())
+        def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: ''
+        def h2oNexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME') ?: ''
+        def h2oNexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('H2O_NEXUS_PASSWORD') ?: ''
+        if (h2oNexusEnabled && h2oNexusUrl && h2oNexusUsername && h2oNexusPassword) {
             maven {
                 name 'NexusMirror'
-                url "${nexusUrl}/maven-public"
+                url "${h2oNexusUrl}/maven-public"
                 credentials {
-                    username = nexusUsername
-                    password = nexusPassword
+                    username = h2oNexusUsername
+                    password = h2oNexusPassword
                 }
             }
         }
