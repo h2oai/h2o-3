@@ -277,6 +277,114 @@ public class SQLManagerTest {
   }
 
   /**
+   * CVE-2024-45758 names queryInterceptors as the canonical payload for this endpoint. The other
+   * MySQL cases above trip on autoDeserialize first, so assert this parameter is caught on its own.
+   */
+  @Test
+  public void testValidateJdbcConnectionStringMysqlQueryInterceptors() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: queryInterceptors");
+
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/test?queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  /**
+   * statementInterceptors is the pre-8.0 spelling of queryInterceptors and reaches the same
+   * deserialization sink on older Connector/J versions.
+   */
+  @Test
+  public void testValidateJdbcConnectionStringMysqlStatementInterceptors() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: statementInterceptors");
+
+    String jdbcConnection = "jdbc:mysql://127.0.0.1:3306/test?statementInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  /**
+   * H2 INIT=RUNSCRIPT fetches and executes a remote SQL script, which is the command-execution
+   * half of CVE-2024-45758 (the H2 test above only covers INIT=CREATE ALIAS).
+   */
+  @Test
+  public void testValidateJdbcConnectionStringH2RunScript() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: INIT");
+
+    String jdbcConnection = "jdbc:h2:mem:test;MODE=MSSQLServer;INIT=RUNSCRIPT FROM 'http://127.0.0.1:9090/poc.sql'";
+
+    SQLManager.validateJdbcUrl(jdbcConnection);
+  }
+
+  /**
+   * The endpoint takes the connection string verbatim, so anything that is not a JDBC URL must be
+   * refused before it can be handed to a driver or a URL handler.
+   */
+  @Test
+  public void testValidateJdbcConnectionStringRejectsNonJdbcScheme() {
+    String[] nonJdbcUrls = {
+            "ldap://127.0.0.1:1389/evil",
+            "rmi://127.0.0.1:1099/evil",
+            "file:///etc/passwd",
+            "http://127.0.0.1:9090/evil.xml"
+    };
+
+    for (String url : nonJdbcUrls) {
+      try {
+        SQLManager.validateJdbcUrl(url);
+        Assert.fail("Expected non-JDBC URL to be rejected: " + url);
+      } catch (IllegalArgumentException e) {
+        Assert.assertEquals("JDBC URL must start with 'jdbc:'", e.getMessage());
+      }
+    }
+  }
+
+  @Test
+  public void testValidateJdbcConnectionStringRejectsNullAndBlank() {
+    String[] blankUrls = {null, "", "   "};
+
+    for (String url : blankUrls) {
+      try {
+        SQLManager.validateJdbcUrl(url);
+        Assert.fail("Expected blank JDBC URL to be rejected: " + url);
+      } catch (IllegalArgumentException e) {
+        Assert.assertEquals("JDBC URL is null or empty", e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * getConnectionSafe is the second way into DriverManager (import worker pool and h2o-hive).
+   * It must reject the payload before a driver is initialized or a connection is attempted.
+   */
+  @Test
+  public void testGetConnectionSafeRejectsMaliciousUrl() throws SQLException {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: autoDeserialize");
+
+    SQLManager.getConnectionSafe("jdbc:mysql://127.0.0.1:3306/test?autoDeserialize=true", "user", "password");
+  }
+
+  /**
+   * The CVE-2024-45758 vector end to end: the connection_url a POST to ImportSQLTable would carry.
+   * Validation is the first statement of importSqlTable, so the request dies before any Job is
+   * started or any DKV key is written.
+   */
+  @Test
+  public void testImportSqlTableRejectsMaliciousConnectionUrl() {
+    exception.expect(IllegalArgumentException.class);
+    exception.expectMessage("Potentially dangerous JDBC parameter found: queryInterceptors");
+
+    String maliciousConnectionUrl = "jdbc:mysql://127.0.0.1:3306/test?queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor&autoDeserialize=true";
+
+    SQLManager.importSqlTable(
+            maliciousConnectionUrl, "mytable", "", "user", "password", "*",
+            false, null, SqlFetchMode.DISTRIBUTED, null);
+  }
+
+  /**
    * Test fail if any exception is thrown therefore no assert
    */
   @Test
