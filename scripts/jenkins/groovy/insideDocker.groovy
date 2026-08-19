@@ -34,7 +34,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               }
             }
 //            // TODO add -e H2O3_GET_PROJECT_TOKEN=${H2O3_GET_PROJECT_TOKEN}
-           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -e H2O_NEXUS_USERNAME -e H2O_NEXUS_PASSWORD -e H2O_NEXUS_ENABLED -e GRADLE_USER_HOME=/home/jenkins/.gradle -v /home/jenkins:/home/jenkins/repos -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
+           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -e H2O_NEXUS_USERNAME -e H2O_NEXUS_PASSWORD -e H2O_NEXUS_ENABLED -v /home/jenkins:/home/jenkins/repos -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
               sh """
               id
               printenv | sort
