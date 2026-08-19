@@ -1,0 +1,136 @@
+name: Sync milestone to Monday (standalone test)
+
+# SELF-CONTAINED single-repo version — no shared repo, no stub, no script file.
+# Drop this at .github/workflows/milestone-to-monday.yml in ONE repo, on its
+# DEFAULT branch, add a repo secret MONDAY_API_TOKEN, then create a milestone.
+#
+# Everything (trigger + logic) lives in this one file. Once you're happy, switch
+# to the reusable-workflow + stub model to roll out across many repos.
+
+on:
+  milestone:
+    types: [created, edited, closed, opened]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create/update Monday Version from milestone
+        env:
+          MONDAY_API_TOKEN: ${{ secrets.MONDAY_API_TOKEN }}
+        run: |
+          cat > /tmp/milestone-to-monday.js <<'SCRIPT'
+          const fs = require('fs');
+          const MONDAY_API = 'https://api.monday.com/v2';
+          const VERSIONS_BOARD_ID = 18390014318;
+          const REPOS_BOARD_ID = 18392153880;
+          const V = {
+            product: 'board_relation_mkyba13b',
+            versionType: 'color_mky4mtfv',
+            releaseStage: 'status',
+            devDone: 'date_mky4p56m',
+            githubMilestone: 'link_mm5n7n2c',
+          };
+          const REPO_URL_COL = 'link_mkyn41d3';
+          const REPO_PRODUCT_COL = 'board_relation_mkzh9hn7';
+          const STAGE_FOR_ACTION = { created: 'In Planning', opened: 'In Dev', closed: 'Done - Not Released' };
+
+          async function monday(query, variables = {}) {
+            const res = await fetch(MONDAY_API, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: process.env.MONDAY_API_TOKEN,
+                'API-Version': '2026-07',
+              },
+              body: JSON.stringify({ query, variables }),
+            });
+            const json = await res.json();
+            if (json.errors) throw new Error('monday API error: ' + JSON.stringify(json.errors));
+            return json.data;
+          }
+
+          async function resolveProductId(repoShortName) {
+            const data = await monday(
+              'query ($board: [ID!]) { boards(ids: $board) { items_page(limit: 200) { items { name column_values(ids: ["' +
+                REPO_PRODUCT_COL + '", "' + REPO_URL_COL +
+                '"]) { id ... on BoardRelationValue { linked_item_ids } ... on LinkValue { url } } } } } }',
+              { board: [String(REPOS_BOARD_ID)] }
+            );
+            const items = data.boards?.[0]?.items_page?.items || [];
+            const match = items.find((it) => {
+              if (it.name?.toLowerCase() === repoShortName.toLowerCase()) return true;
+              const url = it.column_values.find((c) => c.id === REPO_URL_COL)?.url || '';
+              return url.toLowerCase().endsWith('/' + repoShortName.toLowerCase());
+            });
+            if (!match) return null;
+            const rel = match.column_values.find((c) => c.id === REPO_PRODUCT_COL);
+            return rel?.linked_item_ids?.[0] || null;
+          }
+
+          async function findVersionByMilestoneUrl(url) {
+            if (!url) return null;
+            const data = await monday(
+              'query ($board: [ID!]) { boards(ids: $board) { items_page(limit: 500) { items { id name column_values(ids: ["' + V.githubMilestone + '"]) { ... on LinkValue { url } } } } } }',
+              { board: [String(VERSIONS_BOARD_ID)] }
+            );
+            const items = data.boards?.[0]?.items_page?.items || [];
+            return items.find((it) => (it.column_values?.[0]?.url || '') === url) || null;
+          }
+
+          function buildColumnValues(milestone, productId, action) {
+            const cols = {};
+            if (productId) cols[V.product] = { item_ids: [Number(productId)] };
+            const stage = STAGE_FOR_ACTION[action]; // undefined for `edited` -> stage left as-is
+            if (stage) cols[V.releaseStage] = { label: stage };
+            if (milestone.due_on) cols[V.devDone] = { date: milestone.due_on.slice(0, 10) };
+            if (milestone.html_url) cols[V.githubMilestone] = { url: milestone.html_url, text: milestone.title };
+            return cols;
+          }
+
+          async function createVersion(name, cols) {
+            const data = await monday(
+              'mutation ($board: ID!, $name: String!, $cols: JSON!) { create_item(board_id: $board, item_name: $name, column_values: $cols) { id } }',
+              { board: String(VERSIONS_BOARD_ID), name, cols: JSON.stringify(cols) }
+            );
+            return data.create_item.id;
+          }
+
+          async function updateVersion(itemId, cols) {
+            await monday(
+              'mutation ($board: ID!, $item: ID!, $cols: JSON!) { change_multiple_column_values(board_id: $board, item_id: $item, column_values: $cols) { id } }',
+              { board: String(VERSIONS_BOARD_ID), item: String(itemId), cols: JSON.stringify(cols) }
+            );
+          }
+
+          (async () => {
+            const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+            const milestone = event.milestone;
+            const action = event.action; // created | edited | closed | opened | deleted
+            const repoFull = event.repository?.full_name || process.env.GITHUB_REPOSITORY;
+            if (!milestone) { console.log('No milestone in payload; nothing to do.'); return; }
+            const repoShortName = repoFull.split('/')[1];
+            const name = milestone.title;
+            const productId = await resolveProductId(repoShortName);
+            if (!productId) console.log('WARN: no product mapped for repo "' + repoShortName + '"; creating Version without product link.');
+            const cols = buildColumnValues(milestone, productId, action);
+            const existing = await findVersionByMilestoneUrl(milestone.html_url);
+            if (existing) {
+              cols.name = name; // rename the same Version, keeping its links
+              await updateVersion(existing.id, cols);
+              const renamed = existing.name !== name ? ' (renamed from "' + existing.name + '")' : '';
+              console.log('Updated Version "' + name + '" (item ' + existing.id + ')' + renamed + '.');
+            } else {
+              if (!cols[V.releaseStage]) cols[V.releaseStage] = { label: 'In Planning' };
+              cols[V.versionType] = { label: 'Minor' };
+              const id = await createVersion(name, cols);
+              console.log('Created Version "' + name + '" (item ' + id + ').');
+            }
+          })().catch((err) => { console.error(err.message); process.exit(1); });
+          SCRIPT
+          node /tmp/milestone-to-monday.js
