@@ -2,7 +2,7 @@ apply plugin: 'java-library'
 apply plugin: 'groovy'
 
 repositories {
-    def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'true').toString())
+    def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'false').toString())
     def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: 'https://nexus.h2o.dev/repository'
     def h2oNexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME')
     def h2oNexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('H2O_NEXUS_PASSWORD')
