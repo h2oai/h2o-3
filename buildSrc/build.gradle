@@ -3,7 +3,11 @@ apply plugin: 'groovy'
 
 repositories {
     def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'false').toString())
-    def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: 'https://nexus.h2o.dev/repository'
+    // buildSrc is a separate build and cannot see the root project's gradle.properties,
+    // so read it off disk - the mirror settings have one source of truth.
+    def rootProps = new Properties()
+    file('../gradle.properties').withInputStream { rootProps.load(it) }
+    def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: rootProps.getProperty('h2oNexusUrl') ?: ''
     def h2oNexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME')
     def h2oNexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('H2O_NEXUS_PASSWORD')
     if (h2oNexusEnabled && h2oNexusUrl && h2oNexusUsername && h2oNexusPassword) {

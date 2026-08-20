@@ -10,7 +10,7 @@ buildscript {
 
         h2oNexusEnabled = Boolean.parseBoolean(
                 (rootProject.findProperty("h2oNexusEnabled") ?: System.getenv("H2O_NEXUS_ENABLED") ?: "false").toString())
-        h2oNexusUrl = rootProject.findProperty("h2oNexusUrl") ?: System.getenv("H2O_NEXUS_URL") ?: ""
+        h2oNexusUrl = rootProject.findProperty("h2oNexusUrl") ?: ""
         h2oNexusUsername = rootProject.findProperty("h2oNexusUsername") ?: System.getenv("H2O_NEXUS_USERNAME") ?: ""
         h2oNexusPassword = rootProject.findProperty("h2oNexusPassword") ?: System.getenv("H2O_NEXUS_PASSWORD") ?: ""
         useNexusMirror = h2oNexusEnabled && h2oNexusUrl && h2oNexusUsername && h2oNexusPassword
@@ -71,11 +71,7 @@ apply from: 'gradle/timing.gradle'
 if (useNexusMirror) {
     logger.lifecycle("Nexus mirror: resolving through ${h2oNexusUrl}/maven-public")
 } else if (h2oNexusEnabled) {
-    def missing = []
-    if (!h2oNexusUrl) missing << "h2oNexusUrl (or H2O_NEXUS_URL)"
-    if (!h2oNexusUsername) missing << "h2oNexusUsername (or H2O_NEXUS_USERNAME)"
-    if (!h2oNexusPassword) missing << "h2oNexusPassword (or H2O_NEXUS_PASSWORD)"
-    logger.warn("Nexus mirror: enabled but not configured - missing ${missing.join(', ')}. " +
+    logger.warn("Nexus mirror: enabled but h2oNexusUsername/h2oNexusPassword are not set. " +
                 "Falling back to the public repositories; nothing will be cached in the mirror.")
 }
 

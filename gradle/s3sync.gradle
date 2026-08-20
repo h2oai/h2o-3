@@ -5,17 +5,13 @@
 
 buildscript {
     repositories {
-        def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'false').toString())
-        def h2oNexusUrl = project.findProperty('h2oNexusUrl') ?: System.getenv('H2O_NEXUS_URL') ?: ''
-        def h2oNexusUsername = project.findProperty('h2oNexusUsername') ?: System.getenv('H2O_NEXUS_USERNAME') ?: ''
-        def h2oNexusPassword = project.findProperty('h2oNexusPassword') ?: System.getenv('H2O_NEXUS_PASSWORD') ?: ''
-        if (h2oNexusEnabled && h2oNexusUrl && h2oNexusUsername && h2oNexusPassword) {
+        if (rootProject.useNexusMirror) {
             maven {
                 name 'NexusMirror'
-                url "${h2oNexusUrl}/maven-public"
+                url "${rootProject.h2oNexusUrl}/maven-public"
                 credentials {
-                    username = h2oNexusUsername
-                    password = h2oNexusPassword
+                    username = rootProject.h2oNexusUsername
+                    password = rootProject.h2oNexusPassword
                 }
                 authentication {
                     basic(BasicAuthentication)

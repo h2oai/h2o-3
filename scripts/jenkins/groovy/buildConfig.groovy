@@ -89,7 +89,7 @@ class BuildConfig {
                   final String xgbVersion, final String gradleVersion) {
     this.mode = mode
     this.nodeLabel = nodeLabel
-    this.h2oNexusEnabled = context.params.h2oNexusEnabled ?: false
+    this.h2oNexusEnabled = Boolean.parseBoolean(String.valueOf(context.params.h2oNexusEnabled))
     this.commitMessage = commitMessage
     this.buildHadoop = (mode == 'MODE_HADOOP' || mode == 'MODE_KERBEROS')
     this.additionalGradleOpts = gradleOpts
