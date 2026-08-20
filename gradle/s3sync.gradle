@@ -5,6 +5,19 @@
 
 buildscript {
     repositories {
+        if (rootProject.useNexusMirror) {
+            maven {
+                name 'NexusMirror'
+                url "${rootProject.h2oNexusUrl}/maven-public"
+                credentials {
+                    username = rootProject.h2oNexusUsername
+                    password = rootProject.h2oNexusPassword
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
+            }
+        }
         mavenCentral()
     }
     dependencies {

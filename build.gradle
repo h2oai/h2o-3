@@ -7,18 +7,33 @@ buildscript {
         isCi = (!rootProject.hasProperty("forcePublic")) && (System.getProperty("user.name").equals("jenkins")
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+
+        h2oNexusEnabled = Boolean.parseBoolean(
+                (rootProject.findProperty("h2oNexusEnabled") ?: System.getenv("H2O_NEXUS_ENABLED") ?: "false").toString())
+        h2oNexusUrl = rootProject.findProperty("h2oNexusUrl") ?: ""
+        h2oNexusUsername = rootProject.findProperty("h2oNexusUsername") ?: System.getenv("H2O_NEXUS_USERNAME") ?: ""
+        h2oNexusPassword = rootProject.findProperty("h2oNexusPassword") ?: System.getenv("H2O_NEXUS_PASSWORD") ?: ""
+        useNexusMirror = h2oNexusEnabled && h2oNexusUrl && h2oNexusUsername && h2oNexusPassword
     }
 
     repositories {
-        if (false) {
-//            maven {
-//                allowInsecureProtocol = true
-//                url "${localNexusLocation}/public"
-//            }
-        } else {
-            maven { url 'https://plugins.gradle.org/m2/' }
-            mavenCentral()
+        if (useNexusMirror) {
+            maven {
+                name "NexusMirror"
+                url "${h2oNexusUrl}/maven-public"
+                credentials {
+                    username = h2oNexusUsername
+                    password = h2oNexusPassword
+                }
+                // Send credentials on the first request. Without this Gradle waits for a 401
+                // challenge and retries, doubling the round trips for every artifact.
+                authentication {
+                    basic(BasicAuthentication)
+                }
+            }
         }
+        maven { url 'https://plugins.gradle.org/m2/' }
+        mavenCentral()
     }
 
     //noinspection GroovyAssignabilityCheck
@@ -51,6 +66,14 @@ apply from: 'gradle/java.gradle'
 
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
+
+// Silent unless the mirror was asked for - a plain build resolves from the public repositories.
+if (useNexusMirror) {
+    logger.lifecycle("Nexus mirror: resolving through ${h2oNexusUrl}/maven-public")
+} else if (h2oNexusEnabled) {
+    logger.warn("Nexus mirror: enabled but h2oNexusUsername/h2oNexusPassword are not set. " +
+                "Falling back to the public repositories; nothing will be cached in the mirror.")
+}
 
 //
 // Common configuration
@@ -237,29 +260,32 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (false) {
-//            maven {
-//                allowInsecureProtocol = true
-//                url "${localNexusLocation}/public"
-//            }
+        if (rootProject.useNexusMirror) {
             maven {
-                url "https://oss.sonatype.org/content/groups/staging/"
+                name "NexusMirror"
+                url "${rootProject.h2oNexusUrl}/maven-public"
+                credentials {
+                    username = rootProject.h2oNexusUsername
+                    password = rootProject.h2oNexusPassword
+                }
+                authentication {
+                    basic(BasicAuthentication)
+                }
             }
-        } else {
-            mavenCentral()
-            maven {
-                url "https://repository.cloudera.com/artifactory/cloudera-repos/"
-            }
-            maven {
-                allowInsecureProtocol = true
-                url "http://nexus-private.hortonworks.com:8081/nexus/"
-            }
-            maven {
-                url "https://repository.mapr.com/maven/"
-            }
-            maven {
-                url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
-            }
+        }
+        mavenCentral()
+        maven {
+            url "https://repository.cloudera.com/artifactory/cloudera-repos/"
+        }
+        maven {
+            allowInsecureProtocol = true
+            url "http://nexus-private.hortonworks.com:8081/nexus/"
+        }
+        maven {
+            url "https://repository.mapr.com/maven/"
+        }
+        maven {
+            url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
         }
     }
 
