@@ -28,6 +28,9 @@ class BuildConfig {
   public static final String XGB_TARGET_GPU = 'gpu'
   public static final String XGB_BUILD_TAG = '-b1'
   private Map supportedXGBEnvironments
+  // The mirror is slower than the public repositories on a cold cache, and every build starts on
+  // a fresh agent, so keep it off unless a build explicitly asks for it.
+  private boolean h2oNexusEnabled = false
 
   public static final String COMPONENT_PY = 'py'
   public static final String COMPONENT_R = 'r'
@@ -86,6 +89,7 @@ class BuildConfig {
                   final String xgbVersion, final String gradleVersion) {
     this.mode = mode
     this.nodeLabel = nodeLabel
+    this.h2oNexusEnabled = Boolean.parseBoolean(String.valueOf(context.params.h2oNexusEnabled))
     this.commitMessage = commitMessage
     this.buildHadoop = (mode == 'MODE_HADOOP' || mode == 'MODE_KERBEROS')
     this.additionalGradleOpts = gradleOpts
@@ -161,7 +165,8 @@ class BuildConfig {
   List<String> getBuildEnv() {
     return [
       'JAVA_VERSION=8',
-      "BUILD_HADOOP=false"
+      "BUILD_HADOOP=false",
+      "H2O_NEXUS_ENABLED=${h2oNexusEnabled}"
     ]
   }
 
@@ -179,7 +184,8 @@ class BuildConfig {
     ]
 
     jobProperties += context.parameters([
-      context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
+      context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages'),
+      context.booleanParam(name: 'h2oNexusEnabled', defaultValue: false, description: 'If checked, resolve dependencies through the internal Nexus mirror instead of the public repositories')
     ])
     
     if (customProperties != null) {

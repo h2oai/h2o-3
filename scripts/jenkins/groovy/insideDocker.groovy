@@ -22,6 +22,7 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
       docker.withRegistry("https://${registry}") {
         withCredentials([/**file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'),**/ [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: "${awsCredsPrefix}AWS_ACCESS_KEY_ID", credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: "${awsCredsPrefix}AWS_SECRET_ACCESS_KEY"]]) {
           withCredentials([string(credentialsId: 'DRIVERLESS_AI_LICENSE_KEY', variable: 'DRIVERLESS_AI_LICENSE_KEY'), string(credentialsId: "H2O3_GET_PROJECT_TOKEN", variable:  "H2O3_GET_PROJECT_TOKEN")]) {
+            withCredentials([usernamePassword(credentialsId: 'PUBLIC_NEXUS_DEV', usernameVariable: 'H2O_NEXUS_USERNAME', passwordVariable: 'H2O_NEXUS_PASSWORD')]) {
             dockerGroupIdAdd = ""
             if (addToDockerGroup) {
               dockerGroupName = "docker"
@@ -33,12 +34,13 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
               }
             }
 //            // TODO add -e H2O3_GET_PROJECT_TOKEN=${H2O3_GET_PROJECT_TOKEN}
-           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -v /home/jenkins:/home/jenkins/repos  -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
+           docker.image(image).inside("--user=root:root --entrypoint='' --init ${dockerGroupIdAdd} -e AWS_CREDS_PREFIX='${awsCredsPrefix}' -e ${awsCredsPrefix}AWS_ACCESS_KEY_ID=${awsCredsPrefix}\${AWS_ACCESS_KEY_ID} -e ${awsCredsPrefix}AWS_SECRET_ACCESS_KEY=${awsCredsPrefix}\${AWS_SECRET_ACCESS_KEY} -e DRIVERLESS_AI_LICENSE_KEY=${DRIVERLESS_AI_LICENSE_KEY} -e H2O_NEXUS_USERNAME -e H2O_NEXUS_PASSWORD -e H2O_NEXUS_ENABLED -v /home/jenkins:/home/jenkins/repos -v /mnt/h2o-shared-data:/mnt/h2o-shared-data ${customArgs}") {
               sh """
               id
               printenv | sort
             """
               block()
+            }
             }
           }
         }
