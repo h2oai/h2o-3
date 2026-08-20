@@ -11,12 +11,22 @@ on:
   milestone:
     types: [created, edited, closed, opened]
 
+# Job only calls the Monday API — no GITHUB_TOKEN repo access needed.
+permissions: {}
+
+# Serialize events for the same milestone so concurrent runs can't race
+# (find-then-create running twice would create a duplicate Version).
+concurrency:
+  group: milestone-to-monday-${{ github.event.milestone.number }}
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
