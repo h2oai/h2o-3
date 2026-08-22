@@ -9,7 +9,7 @@ buildscript {
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
 
         h2oNexusEnabled = Boolean.parseBoolean(
-                (rootProject.findProperty("h2oNexusEnabled") ?: System.getenv("H2O_NEXUS_ENABLED") ?: "false").toString())
+                (rootProject.findProperty("h2oNexusEnabled") ?: System.getenv("H2O_NEXUS_ENABLED") ?: (System.getenv("H2O_NEXUS_USERNAME") && System.getenv("H2O_NEXUS_PASSWORD") ? "true" : "false")).toString())
         h2oNexusUrl = rootProject.findProperty("h2oNexusUrl") ?: ""
         h2oNexusUsername = rootProject.findProperty("h2oNexusUsername") ?: System.getenv("H2O_NEXUS_USERNAME") ?: ""
         h2oNexusPassword = rootProject.findProperty("h2oNexusPassword") ?: System.getenv("H2O_NEXUS_PASSWORD") ?: ""
