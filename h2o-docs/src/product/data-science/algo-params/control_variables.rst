@@ -15,31 +15,67 @@ Common use cases include:
 - Controlling for confounding variables
 - Incorporating fixed effects that won't be available at prediction time
 
-When control variables are specified, GLM will exclude them during scoring. Model metrics and scoring history are calculated for both the restricted model (with control variables excluded) and the unrestricted model (with control variables included).
+When control variables are specified, GLM excludes their contribution from **predictions**, not just from reported metrics: their coefficients are zeroed before scoring, so any downstream consumer of ``predict()`` (not only ``model_performance()``) sees the restricted view. Model metrics and scoring history are calculated for both the restricted model (with control variables excluded) and the unrestricted model (with control variables included).
 
 To get the unrestricted model with its own metrics use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
-The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included.
+The control variables' coefficients are set to zero in the variable importance table. Use the unrestricted model to get the variable importance table with all variables included. Two related points worth knowing about the restricted view: zeroing a control variable's coefficient does **not** re-centre the intercept, so restricted predictions are shifted relative to a model that never saw the control variable at all; and ``coefficients_table``/``coef()`` on the restricted (main) model still show the *fitted* (non-zero) control-variable coefficients -- only scoring and the variable importance table zero them out.
+
+Because zeroing a coefficient without refitting the intercept is a deliberate miscalibration (for a canonical-link GLM, dropping a coefficient without adjusting ``b0`` breaks ``mean(pred) == mean(y)``), not every restricted metric means what it normally would:
+
+- Rank metrics (AUC, Gini, PR-AUC) stay meaningful -- they're invariant to a monotone level shift.
+- ``residual_deviance``, ``logloss``, ``MSE``/``RMSE``, ``R²`` and ``AIC`` are **not** directly comparable to a normally-fitted model of the same shape; they're inflated by an amount that depends on the reference level chosen, not on predictive quality.
+- ``null_deviance`` is still computed from the unrestricted response mean, so ``residual_deviance > null_deviance`` (and hence a negative explained deviance) is possible for the restricted view.
+- Despite this, ``cross_validation_metrics`` -- the slot grid search and AutoML leaderboards sort on -- holds the restricted view, while early stopping (when ``control_variables`` and/or ``remove_offset_effects`` is set) uses the unrestricted view instead. Keep that difference in mind if you're comparing model selection behavior with and without this feature.
 
 **Cross-validation support**
 
-When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views are computed:
+When cross-validation is enabled (``nfolds > 0`` or a ``fold_column``) and ``remove_offset_effects`` is not also set, two parallel CV metric views are computed:
 
 - **Restricted** (``cross_validation_metrics``, ``cross_validation_metrics_summary``): CV metrics computed with the control variables zeroed out, consistent with the restricted training and validation metrics.
 - **Unrestricted** (``cross_validation_metrics_unrestricted_model``, ``cross_validation_metrics_summary_unrestricted_model``): CV metrics computed with the control variables preserved, matching the unrestricted training and validation metrics.
 
 Calling ``make_unrestricted_glm_model()`` on a model trained with CV propagates the unrestricted CV metrics into the derived model's main ``cross_validation_metrics`` slot, so the derived model presents the full with-control-variables view consistently across training, validation, and CV.
 
+``control_variables`` runs a second full per-fold scoring pass (plus a holdout-predictions merge) even on its own, and for binomial models the per-fold prediction frames are materialized regardless of ``keep_cross_validation_predictions`` -- the "four times higher" cost note below is specifically about combining it with ``remove_offset_effects``.
+
 **Combination with remove_offset_effects**
 
-If you set up ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history (including under cross-validation) are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring). Four CV metric views are available in this case: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``, offset kept), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``, control variables kept), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``, neither effect removed).
+If you set up ``control_variables`` together with the ``remove_offset_effects`` feature, model metrics and scoring history (including under cross-validation) are calculated with both features enabled (that is, with both offset and control-variables effects removed during scoring). Four CV metric views are available in this case:
+
+.. list-table::
+   :header-rows: 1
+
+   * - View
+     - Slot
+     - Control variables
+     - Offset
+   * - Default restricted
+     - ``cross_validation_metrics``
+     - zeroed
+     - zeroed
+   * - Control-variables-only-restricted
+     - ``cross_validation_metrics_restricted_model_contr_vals``
+     - zeroed
+     - kept
+   * - Offset-only-restricted
+     - ``cross_validation_metrics_restricted_model_ro``
+     - kept
+     - zeroed
+   * - Fully-unrestricted
+     - ``cross_validation_metrics_unrestricted_model``
+     - kept
+     - kept
+
+Each view has a matching ``..._summary`` table. Of these four, the fully-unrestricted view is the one directly comparable to a model that never used either feature; the other three carry the miscalibration caveats above for whichever effect(s) they zero.
+
 To get a model with only one set of effects excluded, use ``glm.make_derived_glm_model()`` / ``h2o.make_derived_glm_model()`` with exactly one of its two flags set to ``True``:
 
 - ``remove_control_variables_effects=True``: excludes the control-variables effects from scoring and metrics; the offset effects stay included.
 - ``remove_offset_effects=True``: excludes the offset effects from scoring and metrics; the control-variables effects stay included.
 
 The two flags cannot both be ``True`` in the same call.
-If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
+If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation, and with ``keep_cross_validation_predictions=True`` a single ``train()`` call also materializes up to ``4 * (nfolds + 1)`` prediction frames -- worth budgeting memory for on large data.
 
 **Notes**:
 
@@ -106,6 +142,23 @@ Example
 		varimp <- h2o.varimp(airlines_glm)
 		varimp_unrestricted <- h2o.varimp(unrestricted_airlines_glm)
 
+		# control_variables also works with cross-validation:
+		airlines_glm_cv <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
+                           control_variables = c("Year", "DayOfWeek"),
+                           nfolds = 5)
+
+		# restricted CV deviance (control variables zeroed during CV scoring) -- this is the slot
+		# grid search / AutoML would sort on, and it carries the miscalibration caveats above
+		print(h2o.residual_deviance(airlines_glm_cv, xval = TRUE))
+
+		# unrestricted CV deviance (control variables preserved during CV scoring) -- the directly
+		# comparable number if you also trained a baseline model without control_variables
+		print(airlines_glm_cv@model$cross_validation_metrics_unrestricted_model$residual_deviance)
+
+		# derived model presents the full with-control-variables CV view consistently
+		unrestricted_cv_glm <- h2o.make_unrestricted_glm_model(airlines_glm_cv)
+		print(h2o.residual_deviance(unrestricted_cv_glm, xval = TRUE))
+
 
    .. code-tab:: python
 
@@ -158,3 +211,21 @@ Example
 		# get variable importance tables
 		varimp = airlines_glm.varimp()
 		varimp_unrestricted = unrestricted_airlines_glm.varimp()
+
+		# control_variables also works with cross-validation:
+		airlines_glm_cv = H2OGeneralizedLinearEstimator(family = 'binomial',
+		                                                control_variables = ["Year", "DayOfWeek"],
+		                                                nfolds = 5)
+		airlines_glm_cv.train(x = predictors, y = response, training_frame = train)
+
+		# restricted CV deviance (control variables zeroed during CV scoring) -- this is the slot
+		# grid search / AutoML would sort on, and it carries the miscalibration caveats above
+		print(airlines_glm_cv.model_performance(xval=True).residual_deviance())
+
+		# unrestricted CV deviance (control variables preserved during CV scoring) -- the directly
+		# comparable number if you also trained a baseline model without control_variables
+		print(airlines_glm_cv.cross_validation_metrics_unrestricted_model["residual_deviance"])
+
+		# derived model presents the full with-control-variables CV view consistently
+		unrestricted_cv_glm = airlines_glm_cv.make_unrestricted_glm_model()
+		print(unrestricted_cv_glm.model_performance(xval=True).residual_deviance())

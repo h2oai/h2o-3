@@ -13,9 +13,11 @@ Model metrics and scoring history are calculated for both the restricted model (
 
 To get the unrestricted model with its own metrics, use ``glm.make_unrestricted_glm_model()`` / ``h2o.make_unrestricted_glm_model(glm)``.
 
+Zeroing the offset's contribution does not re-centre the intercept, so (as with ``control_variables``) the restricted view's ``residual_deviance``, ``logloss``, ``MSE``/``RMSE``, ``R²`` and ``AIC`` are not directly comparable to a normally-fitted model -- only rank metrics (AUC, Gini, PR-AUC) stay meaningful. ``cross_validation_metrics`` (what grid search / AutoML sort on) holds the restricted view; early stopping uses the unrestricted view instead. See `control_variables <control_variables.html>`__ for the full explanation, which applies identically here.
+
 **Cross-validation support**
 
-When cross-validation is enabled (``nfolds > 0``), two parallel CV metric views are computed:
+When cross-validation is enabled (``nfolds > 0`` or a ``fold_column``), two parallel CV metric views are computed:
 
 - **Restricted** (``cross_validation_metrics``, ``cross_validation_metrics_summary``): CV metrics computed with the offset zeroed out, consistent with the restricted training and validation metrics.
 - **Unrestricted** (``cross_validation_metrics_unrestricted_model``, ``cross_validation_metrics_summary_unrestricted_model``): CV metrics computed with the offset preserved, matching the unrestricted training and validation metrics.
@@ -33,7 +35,7 @@ To get a model with only one set of effects excluded, use ``glm.make_derived_glm
 
 The two flags cannot both be ``True`` in the same call.
 If both features are enabled and ``score_each_iteration=True`` or ``generate_scoring_history=True``, training the model on big data can be slowed down. The complexity is four times higher than the standard GLM metric calculation.
-When cross-validation is enabled and both features are set together, four CV metric views are available: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``).
+When cross-validation is enabled and both features are set together, four CV metric views are available: the default restricted view (both effects removed, in ``cross_validation_metrics``), the control-variables-only-restricted view (``cross_validation_metrics_restricted_model_contr_vals``, offset kept), the offset-only-restricted view (``cross_validation_metrics_restricted_model_ro``, control variables kept), and the fully-unrestricted view (``cross_validation_metrics_unrestricted_model``, neither effect removed). Each has a matching ``..._summary`` table; see `control_variables <control_variables.html>`__ for the full view/slot table.
 
 **Notes**:
 

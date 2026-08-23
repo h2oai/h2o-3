@@ -411,12 +411,21 @@ class H2OEstimator(ModelBase):
 
         if model_id is not None and model_json is not None and metrics_class is not None:
             # build Metric objects out of each metrics
-            for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics"]:
+            for metric in ["training_metrics", "validation_metrics", "cross_validation_metrics",
+                           # GLM control_variables/remove_offset_effects combined-flags CV views: same
+                           # family/schema shape as cross_validation_metrics above (just computed with
+                           # a different restriction), so they need the same metrics_class wrapping --
+                           # the generic schema-name dispatch in h2o/model/metrics doesn't know GLM's
+                           # binomial schema and would otherwise degrade these to H2ODefaultModelMetrics,
+                           # silently dropping confusion_matrix/roc/gains_lift/plot/etc.
+                           "cross_validation_metrics_unrestricted_model",
+                           "cross_validation_metrics_restricted_model_contr_vals",
+                           "cross_validation_metrics_restricted_model_ro"]:
                 metrics = model_json["output"].get(metric, None)
                 if metrics is not None:
                     if metric == "cross_validation_metrics":
                         m._is_xvalidated = True
-                    mc = metrics_class_valid if metric == "validation_metrics" else metrics_class  
+                    mc = metrics_class_valid if metric == "validation_metrics" else metrics_class
                     # fixme: never ever ever modify the original payload!!! put the metric object somewhere else
                     model_json["output"][metric] = mc(metrics, metric, model_json["algo"])
             # if m._is_xvalidated:

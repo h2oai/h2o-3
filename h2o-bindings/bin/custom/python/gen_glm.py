@@ -319,7 +319,7 @@ def class_extensions():
     @property
     def cross_validation_metrics_unrestricted_model(self):
         """
-        Cross-validation metrics for the with-offset (unrestricted) view.
+        Cross-validation metrics with control-variables and/or offset effects preserved (fully-unrestricted view).
 
         Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
         Returns a ``dict`` (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.),
@@ -344,7 +344,7 @@ def class_extensions():
     @property
     def cross_validation_metrics_summary_unrestricted_model(self):
         """
-        Cross-validation metrics summary table for the with-offset (unrestricted) view.
+        Cross-validation metrics summary table with control-variables and/or offset effects preserved (fully-unrestricted view).
 
         Available when ``control_variables`` and/or ``remove_offset_effects`` is set, and ``nfolds > 0``.
         Returns an ``H2OTwoDimTable``, or ``None`` when the model was not trained with
@@ -361,6 +361,50 @@ def class_extensions():
         >>> m.cross_validation_metrics_summary_unrestricted_model
         """
         return self._model_json.get("output", {}).get("cross_validation_metrics_summary_unrestricted_model")
+
+    @property
+    def cross_validation_metrics_restricted_model_contr_vals(self):
+        """
+        Cross-validation metrics for the control-variables-only-restricted view (control variables
+        zeroed, offset kept).
+
+        Available when ``control_variables`` and ``remove_offset_effects`` are both set, together
+        with cross-validation. Returns a ``dict`` (key-accessible as
+        ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or ``None`` otherwise.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   control_variables=["PSA"], nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> m.cross_validation_metrics_restricted_model_contr_vals["residual_deviance"]
+        """
+        return self._model_json.get("output", {}).get("cross_validation_metrics_restricted_model_contr_vals")
+
+    @property
+    def cross_validation_metrics_restricted_model_ro(self):
+        """
+        Cross-validation metrics for the offset-only-restricted view (offset zeroed, control
+        variables kept).
+
+        Available when ``control_variables`` and ``remove_offset_effects`` are both set, together
+        with cross-validation. Returns a ``dict`` (key-accessible as
+        ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or ``None`` otherwise.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> d = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> m = H2OGeneralizedLinearEstimator(family="binomial", remove_offset_effects=True,
+        ...                                   control_variables=["PSA"], nfolds=3, seed=1)
+        >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"], y="CAPSULE",
+        ...         training_frame=d, offset_column="VOL")
+        >>> m.cross_validation_metrics_restricted_model_ro["residual_deviance"]
+        """
+        return self._model_json.get("output", {}).get("cross_validation_metrics_restricted_model_ro")
 
     def make_unrestricted_glm_model(self, dest=None):
         """
@@ -411,6 +455,14 @@ def class_extensions():
         (the defaults), this behaves identically to :meth:`make_unrestricted_glm_model`: the
         derived model's scoring and metrics include both the offset and the ``control_variables``
         effects, and its coefficients are identical to the source model.
+
+        If the source model was cross-validated, the derived model's ``cross_validation_metrics``
+        reflects the requested view, but its fold models are **not** reconstructed: the derived
+        model reports ``is_cross_validated() == True`` yet ``get_xval_models()``/``xvals`` return an
+        empty list, because copying the source's fold-model keys would let deleting the derived
+        model delete the source's own fold models. This call also deep-copies the source's CV
+        holdout-predictions frame into a new key owned by the derived model, doubling holdout-frame
+        memory per call.
 
         :param dest: optional destination key for the derived model.
         :param remove_control_variables_effects: when ``True``, the derived model's scoring and

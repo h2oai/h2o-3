@@ -418,7 +418,14 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
         :returns: A model or list of models.
         """
-        return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
+        if key is not None:
+            return h2o.get_model(key)
+        # is_cross_validated() can be True with no fold-model keys available -- e.g. a GLM derived
+        # model (make_unrestricted_glm_model/make_derived_glm_model) built from a cross-validated
+        # source whose fold-model keys were deliberately not copied over (copying them would let
+        # deleting the derived model delete the source's fold models). Guard on _xval_keys itself
+        # rather than is_cross_validated() so that case returns an empty list instead of a TypeError.
+        return [h2o.get_model(k) for k in self._xval_keys] if self._xval_keys is not None else []
 
     @property
     def xvals(self):

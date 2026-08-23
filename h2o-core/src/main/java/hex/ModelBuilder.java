@@ -2067,12 +2067,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   private TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels) {
-    return makeCrossValidationSummaryTable(cvmodels, m -> m._output._validation_metrics);
+    return makeCrossValidationSummaryTable(cvmodels, m -> m._output._validation_metrics, "Cross-Validation Metrics Summary");
   }
 
   // Picker-parameterized variant: lets subclasses build a summary from an alternate per-fold
   // ModelMetrics slot. The 1-arg overload above delegates with the default validation-metrics picker.
-  protected TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels, Function<Model, ModelMetrics> picker) {
+  // title distinguishes multiple summary tables on the same model (Flow keys generic output tables
+  // by name, and clients print the TwoDimTable header as the only per-view label).
+  protected TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels, Function<Model, ModelMetrics> picker, String title) {
     if (cvmodels == null || cvmodels.length == 0) return null;
     int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
@@ -2141,7 +2143,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     int numMetrics = rowNames.size();
 
-    TwoDimTable table = new TwoDimTable("Cross-Validation Metrics Summary",
+    TwoDimTable table = new TwoDimTable(title,
             null,
             rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
 

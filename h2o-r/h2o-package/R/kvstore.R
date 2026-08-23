@@ -229,6 +229,16 @@ h2o.getModel <- function(model_id) {
   model$training_metrics   <- new(MetricsClass, algorithm=json$algo, on_train=TRUE, on_valid=FALSE, on_xval=FALSE, metrics=model$training_metrics)
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
+  # GLM control_variables/remove_offset_effects combined-flags CV views: same family/schema shape
+  # as cross_validation_metrics above (just computed with a different restriction), so they need
+  # the same MetricsClass wrapping -- otherwise accessors like h2o.residual_deviance() don't work
+  # on them, only raw list access. NULL (absent) for every model that doesn't have these fields.
+  for (field in c("cross_validation_metrics_unrestricted_model",
+                  "cross_validation_metrics_restricted_model_contr_vals",
+                  "cross_validation_metrics_restricted_model_ro")) {
+    if (!is.null(model[[field]]))
+      model[[field]] <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model[[field]])
+  }
   if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
     if (!is.null(model$coefficients_table)) {
       if (typeof(model$coefficients_table[[2]])=="double") {

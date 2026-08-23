@@ -103,7 +103,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null ;
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -141,7 +141,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -179,7 +179,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -217,7 +217,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    currInfo.cross_validation = parms._nfolds > 1 || parms._fold_column != null;
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -823,6 +823,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             if (col.equals(_response_column)){
               glm.error("_control_variables", "Control variable '"+col+"' is set as response_column.");
             }
+            if (col.equals(_fold_column)){
+              glm.error("_control_variables", "Control variable '"+col+"' is set as fold_column.");
+            }
             if(_ignored_columns != null) {
               for (String icol : _ignored_columns) {
                 if (col.equals(icol)) {
@@ -835,6 +838,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
             }
           }
         }
+        // GLM never syncs _distribution from _family for a Family-typed constructor, so the
+        // _distribution check above never fires for the common family="multinomial"/"ordinal" case
+        // -- it would previously only be caught in expensive init(), after the job already returned
+        // 200 with a job key and a progress bar started. Check _family here too so this is a clean
+        // validation error at submit time, like every other control_variables check in this loop.
+        if (_family == Family.multinomial || _family == Family.ordinal) {
+          glm.error("_control_variables", "Control variables are not supported with the " + _family.name() +
+                  " family. Consider fitting separate binomial models per class instead.");
+        }
       }
       if (_remove_offset_effects) {
           if (_offset_column == null) {
@@ -842,6 +854,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           }
           if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
               glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
+          }
+          // Same _distribution-vs-_family gap as the control_variables check above: catch the
+          // family="multinomial"/"ordinal" case here too so it's a clean validation error at submit
+          // rather than a stack trace after expensive init() has already started the job.
+          if (_family == Family.multinomial || _family == Family.ordinal) {
+              glm.error("_remove_offset_effects", "Remove offset effects is not supported with the " + _family.name() + " family.");
           }
           if (_interactions != null || _interaction_pairs != null) {
               glm.error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
@@ -1762,11 +1780,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
       _control_values_idxs_in_adapted_frame = new int[_control_variables_names.length];
       for(int i = 0; i < _control_variables_names.length; i++) {
+        _control_values_idxs_in_adapted_frame[i] = -1; // sentinel: not found among _names
         for(int j = 0; j < _names.length; j++) {
           if(_control_variables_names[i].equals(_names[j]) ) {
             _control_values_idxs_in_adapted_frame[i] = j; break;
           }
         }
+        if (_control_values_idxs_in_adapted_frame[i] == -1)
+          throw new IllegalArgumentException("Control variable '" + _control_variables_names[i] +
+                  "' could not be matched to a column in the model's adapted training frame.");
       }
       // Sort required for Arrays.binarySearch in isFeatureUsedInPredict
       java.util.Arrays.sort(_control_values_idxs_in_adapted_frame);
@@ -2584,12 +2606,22 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void deleteCrossValidationPreds() {
       super.deleteCrossValidationPreds();
       GLMOutput out = (GLMOutput) _output;
-      // Per-fold unrestricted predictions — non-null only when keep_cross_validation_predictions=true.
-      if (out._cross_validation_predictions_unrestricted_model != null) {
-          int count = Keyed.removeAll(out._cross_validation_predictions_unrestricted_model);
-          if (count > 0) Log.info(count + " per-fold unrestricted CV predictions were removed");
+      deleteViewPreds(out._cross_validation_predictions_unrestricted_model,
+              out._cross_validation_holdout_predictions_frame_id_unrestricted_model, "unrestricted");
+      deleteViewPreds(out._cross_validation_predictions_restricted_model_contr_vals,
+              out._cross_validation_holdout_predictions_frame_id_restricted_model_contr_vals, "restricted (control variables)");
+      deleteViewPreds(out._cross_validation_predictions_restricted_model_ro,
+              out._cross_validation_holdout_predictions_frame_id_restricted_model_ro, "restricted (offset)");
+  }
+
+  // Per-fold/combined holdout predictions for one CV metrics view — non-null only when
+  // keep_cross_validation_predictions=true.
+  private static void deleteViewPreds(Key<Frame>[] perFoldKeys, Key<Frame> combinedKey, String label) {
+      if (perFoldKeys != null) {
+          int count = Keyed.removeAll(perFoldKeys);
+          if (count > 0) Log.info(count + " per-fold " + label + " CV predictions were removed");
       }
-      Keyed.remove(out._cross_validation_holdout_predictions_frame_id_unrestricted_model);
+      Keyed.remove(combinedKey);
   }
 
   @Override

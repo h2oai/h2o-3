@@ -10,7 +10,12 @@ import water.api.schemas3.SchemaV3;
  * are enabled. Creates a modified copy of the original model. When the source model was trained
  * with cross-validation, also reconstructs the corresponding CV metric view (control-vars-only-
  * restricted, offset-only-restricted, or fully-unrestricted, depending on which flags are set)
- * as the derived model's cross_validation_metrics / cross_validation_metrics_summary.
+ * as the derived model's cross_validation_metrics / cross_validation_metrics_summary, and
+ * deep-copies the source's CV holdout-predictions frame into a new key owned by the derived
+ * model (doubling holdout-frame memory per call). The source's fold-model keys are deliberately
+ * not copied over -- doing so would let deleting the derived model delete the source's own fold
+ * models -- so the derived model can report cross-validation as enabled while having no fold
+ * models attached.
  */
 public class MakeDerivedGLMModelV3 extends SchemaV3<Iced, MakeDerivedGLMModelV3> {
 
