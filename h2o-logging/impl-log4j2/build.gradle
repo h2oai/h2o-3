@@ -5,8 +5,11 @@ compileJava {
 }
 
 dependencies {
-    api("org.apache.logging.log4j:log4j-1.2-api:2.25.4")
-    api("org.apache.logging.log4j:log4j-core:2.25.4")
+    // 2.25.5 fixes CVE-2026-49844 (log4j-api). log4j-api is pinned explicitly so that
+    // scanners see the fixed version declared rather than inherited transitively.
+    api("org.apache.logging.log4j:log4j-api:2.25.5")
+    api("org.apache.logging.log4j:log4j-1.2-api:2.25.5")
+    api("org.apache.logging.log4j:log4j-core:2.25.5")
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
