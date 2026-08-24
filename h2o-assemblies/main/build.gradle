@@ -35,7 +35,8 @@ dependencies {
         exclude group: "org.eclipse.jetty"
     }
 
-    // Jetty 12 (ee8 / javax.servlet) — fixes CVE-2026-2332, CVE-2024-6763, CVE-2025-11143.
+    // Jetty 12 (ee8 / javax.servlet) — version pinned in gradle.properties (jetty12Version),
+    // which lists the CVEs the current pin fixes.
     api "org.eclipse.jetty:jetty-server:${jetty12Version}"
     api "org.eclipse.jetty:jetty-http:${jetty12Version}"
     api "org.eclipse.jetty:jetty-util:${jetty12Version}"
