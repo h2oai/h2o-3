@@ -61,9 +61,8 @@ def glm_remove_offset_lambda_search():
                                H2OGeneralizedLinearEstimator.getLambdaBest(glm_ro),
                                "Selected lambda_best differs between offset model and remove_offset model!", delta=LAMBDA_DELTA)
 
-    for i in range(preds_offset.shape[0]):
-        pyunit_utils.assert_equals(preds_offset.iloc[i, 1], preds_unrestricted.iloc[i, 1],
-                                   f"Prediction {i} should match offset-present model but doesn't!", delta=PRED_DELTA)
+    assert (preds_offset.iloc[:, 1] - preds_unrestricted.iloc[:, 1]).abs().max() < PRED_DELTA, \
+        "Predictions should match the offset-present model but don't!"
 
     # remove_offset_effects must actually change the reported predictions
     assert (preds_offset.iloc[:, 1] - preds_ro.iloc[:, 1]).abs().max() > 1e-6, \
@@ -87,9 +86,8 @@ def glm_remove_offset_lambda_search_offset_zeroed():
     cars[offset_col] = 0                              # zero out the offset
     preds_zeroed = glm_offset.predict(cars).as_data_frame()
 
-    for i in range(preds_ro.shape[0]):
-        pyunit_utils.assert_equals(preds_ro.iloc[i, 1], preds_zeroed.iloc[i, 1],
-                                   f"Prediction {i}: restricted model must equal offset-zeroed model!", delta=PRED_DELTA)
+    assert (preds_ro.iloc[:, 1] - preds_zeroed.iloc[:, 1]).abs().max() < PRED_DELTA, \
+        "Restricted model must equal the offset-zeroed model!"
 
 
 # With remove_offset_effects + lambda_search + generate_scoring_history the model must expose both the

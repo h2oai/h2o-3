@@ -15,14 +15,10 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
 
   @Override
   public String mojoVersion() {
-    // 1.01 is emitted only for the models whose scoring actually depends on the remove_offset_effects key
-    // written below. An older h2o-genmodel reports "1.00" from its own mojoVersion(), so
-    // ModelMojoReader.checkMaxSupportedMojoVersion rejects those MOJOs outright instead of loading them,
-    // silently ignoring the unknown key and adding the offset back into eta - a scoring difference with no
-    // error. Every other GLM MOJO stays at 1.00 and remains readable by older scorers.
-    // A patch-level bump, not 1.10, so that GlmMojoModelBase's `_versionSupportOffset = _mojo_version >= 1.1`
-    // keeps its original meaning: 1.1 was reserved for "GLM MOJO supports offset", which is the opposite of
-    // what these models want.
+    // Only remove-offset models get 1.01, so an old scorer rejects them instead of ignoring the unknown
+    // remove_offset_effects key and silently adding the offset back into eta; every other GLM MOJO stays
+    // at 1.00 and keeps loading. Patch-level, to stay below the 1.1 "GLM MOJO supports offset" sentinel
+    // in GlmMojoModelBase.
     return model != null && model._useRemoveOffsetEffects ? "1.01" : "1.00";
   }
 
