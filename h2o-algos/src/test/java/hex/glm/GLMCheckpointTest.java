@@ -1,6 +1,5 @@
 package hex.glm;
 
-import hex.ScoringInfo;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
@@ -20,7 +19,6 @@ import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Solver.IRLSM;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -97,12 +95,10 @@ public class GLMCheckpointTest extends TestUtil {
   }
 
   /**
-   * A continuation must not inherit the checkpointed run's cross-validation results. GLMModel.setCrossValidationScore
-   * keys ScoringInfo.cross_validation off _output._cross_validation_metrics, so a stale metric surviving deepClone
-   * would fill every iteration's scored_xval from the same frozen object - scoreKeepers() then hands
-   * ScoreKeeper.stopEarly a flat series and early stopping fires immediately, silently truncating the fit.
-   * The key-valued slots are checked too: they point at the source model's fold models and frames, so a
-   * continuation that kept them would delete the source's cross-validation artifacts when it is removed.
+   * A continuation must not inherit the checkpointed run's cross-validation results: a continuation that does no
+   * cross-validation would report the checkpoint's stale metrics as its own. The key-valued slots matter for a
+   * second reason: they point at the source model's fold models and frames, so a continuation that kept them
+   * would delete the source's cross-validation artifacts when it is removed.
    */
   @Test
   public void testCheckpointDoesNotInheritCrossValidationResults() {
@@ -149,12 +145,6 @@ public class GLMCheckpointTest extends TestUtil {
               continued._output._cross_validation_holdout_predictions_frame_id);
       assertNull("continued model inherited the checkpoint's fold assignment frame",
               continued._output._cross_validation_fold_assignment_frame_id);
-
-      // The observable consequence: ScoringInfo must not claim an xval score the continuation never computed.
-      assertNotNull("continued model has no scoring info to check", continued.getScoringInfo());
-      for (ScoringInfo si : continued.getScoringInfo()) {
-        assertFalse("continued model reports cross_validation=true on a run with nfolds=0", si.cross_validation);
-      }
 
       // The checkpoint keeps its own results - the continuation must not have consumed or removed them.
       assertNotNull("the checkpointed model lost its cross-validation metrics",

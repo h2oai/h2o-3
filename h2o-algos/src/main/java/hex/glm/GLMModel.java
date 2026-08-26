@@ -94,23 +94,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return sk;
   }
   
-  /**
-   * Fills the cross-validation slot of a ScoringInfo and sets the cross_validation flag from whether it was actually
-   * filled. ScoringInfo.scoreKeepers() prefers scored_xval whenever the flag is set, so the two must stay in step:
-   * a set flag with an unfilled scored_xval yields an all-NaN series that silently disables metric-based early
-   * stopping. GLM only has cross-validation metrics after the main model is scored, so during training this leaves
-   * the flag false.
-   */
-  private void setCrossValidationScore(ScoringInfo info) {
-    if (_output._cross_validation_metrics != null) {
-      info.scored_xval = new ScoreKeeper(Double.NaN);
-      info.scored_xval.fillFrom(_output._cross_validation_metrics);
-      info.cross_validation = true;
-    } else {
-      info.cross_validation = false;
-    }
-  }
-
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
 
   /**
@@ -138,12 +121,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    // scoreKeepers() returns scored_xval whenever this flag is set, so the flag must not be set unless scored_xval
-    // is actually populated - otherwise ScoreKeeper.stopEarly gets an all-NaN series and silently never triggers,
-    // and Model.mse()/auc()/... report NaN via last_scored(). Mirrors hex.Model:1405-1408. During GLM training
-    // _cross_validation_metrics is null (CV metrics are built afterwards in cv_mainModelScores), so in practice this
-    // resolves to false and early stopping correctly falls back to validation/training metrics.
-    setCrossValidationScore(currInfo);
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -181,7 +159,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    setCrossValidationScore(currInfo);
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -219,7 +197,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    setCrossValidationScore(currInfo);
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -257,7 +235,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
-    setCrossValidationScore(currInfo);
+    currInfo.cross_validation = parms._nfolds > 1;
     currInfo.iterations = iter;
     currInfo.time_stamp_ms = currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
@@ -634,10 +612,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     newModel._output._training_metrics = null;
     newModel._output._validation_metrics = null;
     // The cross-validation slots describe the checkpointed run, not the continuation - which need not do
-    // cross-validation at all. Keeping them makes setCrossValidationScore fill every ScoringInfo's scored_xval
-    // from one frozen metric, so scoreKeepers() hands stopEarly a flat series and metric-based early stopping
-    // fires as soon as it has enough points. The key-valued slots have to go for a second reason: they are owned
-    // by the source model, so removing the continuation would cascade into the source's fold models and frames.
+    // cross-validation at all, so reporting the stale metrics as the continuation's own is wrong. The key-valued
+    // slots have to go for a second reason: they are owned by the source model, so removing the continuation
+    // would cascade into the source's fold models and frames.
     newModel._output._cross_validation_metrics = null;
     newModel._output._cross_validation_metrics_summary = null;
     newModel._output._cross_validation_models = null;
