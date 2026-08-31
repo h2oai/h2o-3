@@ -44,6 +44,10 @@
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param remove_offset_effects \code{Logical}. Train with the offset column but score and compute metrics as if the offset were 0. The
+#'        offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+#'        training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+#'        cross_validation_metrics_unrestricted_model output fields. Experimental. Defaults to FALSE.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
@@ -125,6 +129,7 @@ h2o.stackedEnsemble <- function(x,
                                 max_runtime_secs = 0,
                                 weights_column = NULL,
                                 offset_column = NULL,
+                                remove_offset_effects = FALSE,
                                 custom_metric_func = NULL,
                                 seed = -1,
                                 score_training_samples = 10000,
@@ -195,6 +200,8 @@ h2o.stackedEnsemble <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(seed))
@@ -237,6 +244,7 @@ h2o.stackedEnsemble <- function(x,
                                                 max_runtime_secs = 0,
                                                 weights_column = NULL,
                                                 offset_column = NULL,
+                                                remove_offset_effects = FALSE,
                                                 custom_metric_func = NULL,
                                                 seed = -1,
                                                 score_training_samples = 10000,
@@ -312,6 +320,8 @@ h2o.stackedEnsemble <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
   if (!missing(seed))

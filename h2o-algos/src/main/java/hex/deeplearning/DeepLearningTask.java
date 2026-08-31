@@ -313,9 +313,18 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     for (int i=1; i<neurons.length; ++i)
       neurons[i].fprop(seed, training, n);
 
-    // Add offset (in link space) if applicable
+    // Add offset (in link space) if applicable.
+    // The `offset > 0` gate means an offset of 0 is SKIPPED rather than applied, and skipping leaves the
+    // response-mean term in place: score0 destandardizes as out/mul + sub, so the two branches give
+    //   offset > 0 : a/mul + offset        offset <= 0 : a/mul + sub   (sub = mean(response))
+    // i.e. the offset replaces the mean term instead of adding to the prediction. A remove_offset_effects
+    // model is scored with offset 0 and wants the genuinely offset-free prediction a/mul, so it must take
+    // the formula (which yields a/mul for offset 0) rather than the skip. Restricted to scoring: the gate
+    // is left exactly as-is during training, so the fit of a remove_offset model is bit-identical to a
+    // plain one and no existing model changes behaviour. GH-16851.
+    final boolean applyZeroOffsetForRemovedOffset = !training && minfo.get_params()._remove_offset_effects;
     for (int mb=0;mb<n;++mb) {
-      if (offset!=null && offset[mb] > 0) {
+      if (offset!=null && (offset[mb] > 0 || applyZeroOffsetForRemovedOffset)) {
         assert (!minfo._classification); // Regression
         double[] m = minfo.data_info()._normRespMul;
         double[] s = minfo.data_info()._normRespSub;

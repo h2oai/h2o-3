@@ -68,6 +68,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     return true;
   }
 
+  // GH-16851: the ensemble is offset-free when its base models are - the level-one predictions already have
+  // the offset removed and the offset column is kept out of the level-one frame entirely.
+  @Override
+  protected boolean supportsRemoveOffsetEffects() { return true; }
+
   @Override
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     HashSet usedColumns = new HashSet();
@@ -128,8 +133,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     checkColumnPresent("fold", _parms._metalearner_fold_column, train(), valid(), _parms.blending());
     checkColumnPresent("weights", _parms._weights_column, train(), valid(), _parms.blending());
-    checkColumnPresent("offset", _parms._offset_column, train(), valid(), _parms.blending());
-    validateBaseModels();
+    validateBaseModels(); // may inherit _offset_column / _remove_offset_effects from the base models
+    // a remove_offset ensemble ignores the offset, so the column need not be present (GH-16851)
+    if (!_parms._remove_offset_effects)
+      checkColumnPresent("offset", _parms._offset_column, train(), valid(), _parms.blending());
   }
 
   /**
@@ -171,6 +178,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (i == 0) {
         if ((_parms._offset_column == null))
           _parms._offset_column = baseModel._parms._offset_column;
+        // remove_offset_effects travels with the offset column (GH-16851). Base models that remove the offset
+        // produce offset-free level-one predictions; if the ensemble did not inherit the flag it would hand the
+        // offset to the metalearner and add back on the link scale exactly what the user removed - silently.
+        _parms._remove_offset_effects |= baseModel._parms._remove_offset_effects;
         referenceWeightsColumn = baseModel._parms._weights_column;
         warnSameWeightsColumns = referenceWeightsColumn != null; // We don't want to warn if no weights are set
       }
@@ -181,6 +192,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       if (!Objects.equals(_parms._offset_column, baseModel._parms._offset_column))
         throw new IllegalArgumentException("All base models must have the same offset_column!");
+
+      // Mixing views would silently average offset-free and offset-applied predictions into one ensemble.
+      if (_parms._remove_offset_effects != baseModel._parms._remove_offset_effects)
+        throw new IllegalArgumentException("All base models must have the same remove_offset_effects setting!");
     }
 
     if (_parms._weights_column == null && warnSameWeightsColumns && _parms._base_models.length > 0) {
@@ -253,7 +268,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     if (parms._weights_column != null)
       levelOneFrame.add(parms._weights_column, fr.vec(parms._weights_column));
 
-    if (parms._offset_column != null)
+    // remove_offset_effects: the base-model predictions in this frame are already offset-free, so the offset
+    // must NOT be handed to the metalearner - it would add back on the link scale exactly what was removed.
+    // Dropping the column here (rather than setting the flag on the metalearner) also keeps the metalearner
+    // free to cross-validate, which GLM forbids together with remove_offset_effects. GH-16851.
+    if (parms._offset_column != null && !parms._remove_offset_effects)
       levelOneFrame.add(parms._offset_column, fr.vec(parms._offset_column));
 
     levelOneFrame.add(parms._response_column, fr.vec(parms._response_column));

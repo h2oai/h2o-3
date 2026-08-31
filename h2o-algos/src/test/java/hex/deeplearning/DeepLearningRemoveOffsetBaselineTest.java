@@ -16,10 +16,8 @@ import water.fvec.Vec;
 import java.util.Arrays;
 import java.util.Collection;
 
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Phase 0 baseline for GH-16851 (remove_offset_effect for all algos).
@@ -35,8 +33,8 @@ import static org.junit.Assert.fail;
  * Both frames are scored by the SAME fitted model and only the offset input differs. Offset is supported for
  * regression only (no classification / no logit case).
  *
- * NOTE: DeepLearning does NOT support remove_offset_effects - see rejectsRemoveOffsetEffects() below and the
- * comment on DeepLearning.isSupervised(). This class only pins the flag=false path.
+ * NOTE: this class only pins the flag=false path. The flag=true behaviour (and the mean(response) bias that
+ * a naive zero-offset scoring would introduce) lives in DeepLearningRemoveOffsetEffectTest.
  */
 @RunWith(Parameterized.class)
 public class DeepLearningRemoveOffsetBaselineTest extends TestUtil {
@@ -106,37 +104,4 @@ public class DeepLearningRemoveOffsetBaselineTest extends TestUtil {
     }
   }
 
-  /**
-   * GH-16851: DeepLearning must REJECT remove_offset_effects. DL adds the offset as
-   * ((offset - _normRespSub) * _normRespMul) and only when offset > 0, so scoring with offset 0 drops the
-   * response-mean centering term instead of the offset, shifting every prediction by mean(response).
-   */
-  @Test
-  public void rejectsRemoveOffsetEffects() {
-    Scope.enter();
-    try {
-      Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
-      Vec offset = Scope.track(train.anyVec().makeCon(0.25));
-      train.add("offset", offset);
-      DKV.put(train);
-
-      DeepLearningParameters parms = new DeepLearningParameters();
-      parms._train = train._key;
-      parms._response_column = "AGE";
-      parms._offset_column = "offset";
-      parms._remove_offset_effects = true;
-      parms._hidden = new int[]{4};
-      parms._epochs = 1;
-
-      try {
-        Scope.track_generic(new DeepLearning(parms).trainModel().get());
-        fail("DeepLearning must reject remove_offset_effects");
-      } catch (H2OModelBuilderIllegalArgumentException e) {
-        assertTrue("expected the unsupported-algo error, got: " + e.getMessage(),
-                e.getMessage().contains("remove_offset_effects"));
-      }
-    } finally {
-      Scope.exit();
-    }
-  }
 }

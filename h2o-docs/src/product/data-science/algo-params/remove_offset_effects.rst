@@ -1,7 +1,7 @@
 ``remove_offset_effects``
 -------------------------
 
-- Available in: GLM, GBM, XGBoost, GAM, CoxPH
+- Available in: GLM, GBM, XGBoost, GAM, CoxPH, Deep Learning, HGLM, Stacked Ensemble
 - Hyperparameter: no
 
 Description
@@ -26,6 +26,8 @@ GLM-specific behavior:
 **Notes**:
 
 - This option is experimental.
+- Stacked Ensemble inherits this option from its base models: an ensemble built on base models that remove the offset removes it too, and the offset column is kept out of the level-one frame so the metalearner cannot add it back. All base models must agree on the setting; mixing offset-removed and plain base models is rejected.
+- Not available for DRF (which rejects ``offset_column`` outright), nor for ANOVAGLM and ModelSelection (which do not support scoring at all -- they report only predictor relevance, so there is nothing for this option to affect).
 - This option requires an ``offset_column``. Setting ``remove_offset_effects=True`` without one is rejected during validation.
 - GLM only: this option is not supported for multinomial, ordinal, or custom distributions, and is not available when cross validation, Lambda search, or interactions are enabled. GAM enforces the same restrictions (it trains an internal GLM).
 - Cross validation is supported for GBM and XGBoost. It is not available for GAM (GAM performs cross validation inside its internal GLM). CoxPH does not support cross validation at all.
@@ -36,7 +38,7 @@ GLM-specific behavior:
 - Computing the unrestricted view adds one extra scoring pass over the training (and validation) frame after training, and one extra holdout-scoring pass per fold under cross validation.
 - For classification models, the default prediction threshold is derived from the restricted training metrics, so predicted *labels* can differ from an equivalent plain offset model near the decision boundary even where the predicted probabilities agree.
 - A MOJO built from a remove_offset model advertises no offset column and scores without it, consistent with in-cluster predictions; an offset supplied to such a MOJO by a caller is ignored.
-- Deep Learning does **not** support this option. Deep Learning adds the offset as ``(offset - mean(response)) * scale`` in standardized response space and only for strictly positive offsets, so scoring with an offset of 0 would not remove the offset -- it would shift every prediction by ``mean(response)``.
+- Deep Learning applies the offset as ``(offset - mean(response)) * scale`` in standardized response space, and only for strictly positive offsets. Scoring with an offset of 0 would therefore take the "skip" branch and leave the response-mean term in place, biasing every prediction by ``mean(response)``; instead the zero offset is pushed through the same formula, which yields the genuinely offset-free prediction. Training is unchanged, so the fit is identical to a plain offset model.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

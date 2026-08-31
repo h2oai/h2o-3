@@ -1629,7 +1629,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_parms._remove_offset_effects) {
       if (!supportsRemoveOffsetEffects()) {
         error("_remove_offset_effects", "remove_offset_effects=True is not supported by " + _parms.fullName()
-                + ". It is available for GLM, GAM, GBM, XGBoost and CoxPH.");
+                + ". It is available for GLM, GAM, GBM, XGBoost, CoxPH, Deep Learning, HGLM and Stacked Ensemble.");
       } else if (_parms._offset_column == null) {
         error("_remove_offset_effects", "remove_offset_effects=True requires an offset_column to be specified.");
       }

@@ -58,11 +58,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
-  // NOTE: remove_offset_effects (GH-16851) is deliberately NOT supported by Deep Learning. DL applies the
-  // offset as ((offset - _normRespSub) * _normRespMul) in standardized response space and only when
-  // offset > 0 (DeepLearningTask.fpropMiniBatch), so "score as if the offset were 0" does not remove the
-  // offset - it drops the response-mean centering term and shifts every prediction by mean(response).
-  // Fixing that requires changing DL's offset semantics for existing models; tracked separately.
+  // remove_offset_effects (GH-16851). DL applies the offset as ((offset - _normRespSub) * _normRespMul) in
+  // standardized response space and only when offset > 0, so simply scoring with offset 0 takes the "skip"
+  // branch and leaves the response-mean term in place - biasing every prediction by mean(response). Instead
+  // the zero offset is pushed THROUGH the same formula at scoring time (see DeepLearningTask.fpropMiniBatch
+  // and DeeplearningMojoModel.modifyOutputs), which yields the genuinely offset-free prediction. Training is
+  // untouched, so the fit is identical to a plain model and no existing model changes behaviour.
+  @Override protected boolean supportsRemoveOffsetEffects() { return true; }
 
   @Override protected DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
 
