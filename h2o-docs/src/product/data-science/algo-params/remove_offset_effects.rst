@@ -1,7 +1,7 @@
 ``remove_offset_effects``
 -------------------------
 
-- Available in: GLM, GBM, XGBoost, Deep Learning, GAM, CoxPH
+- Available in: GLM, GBM, XGBoost, GAM, CoxPH
 - Hyperparameter: no
 
 Description
@@ -28,12 +28,15 @@ GLM-specific behavior:
 - This option is experimental.
 - This option requires an ``offset_column``. Setting ``remove_offset_effects=True`` without one is rejected during validation.
 - GLM only: this option is not supported for multinomial, ordinal, or custom distributions, and is not available when cross validation, Lambda search, or interactions are enabled. GAM enforces the same restrictions (it trains an internal GLM).
-- Cross validation is supported for GBM, XGBoost, and Deep Learning. It is not available for GAM (GAM performs cross validation inside its internal GLM). CoxPH does not support cross validation at all.
-- The unrestricted cross-validation metric is an aggregate of the per-fold metrics (no combined holdout predictions), so it has no gains/lift table, and non-averaging metrics such as AUC can differ from the restricted cross-validation metric for reasons unrelated to the offset.
+- Cross validation is supported for GBM and XGBoost. It is not available for GAM (GAM performs cross validation inside its internal GLM). CoxPH does not support cross validation at all.
+- The unrestricted cross-validation view is not available for ``distribution="huber"``, because huber's ``mean_residual_deviance`` is derived from the combined holdout predictions, which the aggregated view does not produce. The primary (offset-removed) cross-validation metrics are unaffected.
+- The unrestricted cross-validation metric is a pooled holdout metric built from the per-fold metric builders rather than from combined holdout predictions, so it has no gains/lift table. Every scalar metric (including AUC) is computed by the same accumulator as its restricted twin over the same holdout rows, so the two remain directly comparable.
+- With ``balance_classes`` enabled (GBM), the primary metrics are computed on the balanced (resampled) training frame while the offset-applied metrics are computed on the original one, so the two views cover different rows and are not directly comparable. A warning is added to the model when this happens.
+- The unrestricted view is only produced for a validation frame that actually contains the offset column. A remove_offset model accepts frames without it (a zero column is substituted), which would make the "offset applied" view numerically identical to its twin, so it is omitted instead.
 - Computing the unrestricted view adds one extra scoring pass over the training (and validation) frame after training, and one extra holdout-scoring pass per fold under cross validation.
 - For classification models, the default prediction threshold is derived from the restricted training metrics, so predicted *labels* can differ from an equivalent plain offset model near the decision boundary even where the predicted probabilities agree.
 - A MOJO built from a remove_offset model advertises no offset column and scores without it, consistent with in-cluster predictions; an offset supplied to such a MOJO by a caller is ignored.
-- Deep Learning applies only *positive* offset values (zero and negative offsets are ignored during both training and scoring). The feature is self-consistent for Deep Learning, but prefer non-negative offsets with it.
+- Deep Learning does **not** support this option. Deep Learning adds the offset as ``(offset - mean(response)) * scale`` in standardized response space and only for strictly positive offsets, so scoring with an offset of 0 would not remove the offset -- it would shift every prediction by ``mean(response)``.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

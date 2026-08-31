@@ -43,7 +43,6 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
     }
 
     _model._hasOffset = readkv("has_offset", false);
-    _model._offsetRemoved = readkv("offset_removed", false);
     _model.postReadInit();
   }
 

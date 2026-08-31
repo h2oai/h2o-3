@@ -108,9 +108,13 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public FrameV3.ColSpecifierV3 offset_column;
 
   @API(level = API.Level.expert, direction = API.Direction.INPUT,
+      // NOTE: this help text is rendered as reStructuredText in the Python docs and as Rd in the R docs, so it
+      // must stay free of markup that means something to either (a leading '*' opens RST emphasis; backticks
+      // survive literally into Rd). Plain prose only.
       help = "Train with the offset column but score and compute metrics as if the offset were 0. " +
-          "The offset-applied ('unrestricted') metrics are reported alongside in the *_unrestricted_model " +
-          "output fields. Algorithms that do not support this option reject it during validation. Experimental.")
+          "The offset-applied ('unrestricted') metrics are reported alongside in the corresponding " +
+          "training_metrics_unrestricted_model, validation_metrics_unrestricted_model and " +
+          "cross_validation_metrics_unrestricted_model output fields. Experimental.")
   public boolean remove_offset_effects;
 
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,

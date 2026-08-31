@@ -147,6 +147,67 @@ public class GBMRemoveOffsetEffectTest extends TestUtil {
     }
   }
 
+  /**
+   * GH-16851: the validation-frame half of the dual view. Also pins that every ModelMetrics key registered on
+   * the model resolves in the DKV - the unrestricted pass scores a clone that SHARES _output, so a key it
+   * registers and then removes would otherwise be left dangling.
+   */
+  @Test
+  public void dualViewOnValidationFrameAndNoDanglingMetricsKeys() {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
+      if (family == DistributionFamily.bernoulli)
+        train.replace(train.find(response), train.vec(response).toCategoricalVec()).remove();
+      Vec offset = Scope.track(train.anyVec().makeCon(0));
+      for (long i = 0; i < offset.length(); i++) offset.set(i, 0.1 * (i % 7) - 0.3);
+      train.add("offset", offset);
+      DKV.put(train);
+      // A genuinely separate validation frame. NOTE: `new Frame(key, names, train.vecs().clone())` would NOT
+      // work here - that clones the ARRAY, not the Vecs, giving a row-for-row alias of train and making the
+      // _nobs assertion below compare a frame to itself. deepSlice takes real rows.
+      long[] validRows = new long[(int) (train.numRows() / 3)];
+      for (int i = 0; i < validRows.length; i++) validRows[i] = i * 3L; // every third row
+      Frame valid = train.deepSlice(validRows, null);
+      valid._key = Key.make();   // must be set BEFORE tracking, or Scope tracks the wrong key and it leaks
+      DKV.put(valid);
+      Scope.track(valid);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._response_column = response;
+      parms._offset_column = "offset";
+      parms._remove_offset_effects = true;
+      parms._distribution = family;
+      if (family == DistributionFamily.tweedie) parms._tweedie_power = 1.5;
+      parms._ntrees = 20;
+      parms._max_depth = 4;
+      parms._seed = 42;
+      GBMModel ro = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+
+      org.junit.Assert.assertNotNull("validation metrics should be present", ro._output._validation_metrics);
+      org.junit.Assert.assertNotNull("unrestricted VALIDATION metrics should be populated",
+              ro._output._validation_metrics_unrestricted_model);
+      org.junit.Assert.assertNotEquals("restricted vs unrestricted validation metrics should differ",
+              ro._output._validation_metrics_unrestricted_model.mse(), ro._output._validation_metrics.mse(), 1e-5);
+      // both views must be computed over the same rows, otherwise comparing them is meaningless
+      org.junit.Assert.assertEquals("both validation views must cover the same rows",
+              ro._output._validation_metrics._nobs, ro._output._validation_metrics_unrestricted_model._nobs);
+      org.junit.Assert.assertEquals("both training views must cover the same rows",
+              ro._output._training_metrics._nobs, ro._output._training_metrics_unrestricted_model._nobs);
+      // the two views must be distinguishable when printed
+      org.junit.Assert.assertTrue("unrestricted view should say so in its description",
+              ro._output._training_metrics_unrestricted_model._description != null
+                      && ro._output._training_metrics_unrestricted_model._description.contains("Offset applied"));
+
+      for (Key<hex.ModelMetrics> k : ro._output.getModelMetrics())
+        org.junit.Assert.assertNotNull("dangling ModelMetrics key left on the model: " + k, DKV.get(k));
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test
   public void scoringFrameWithoutOffsetColumnWorks() {
     Scope.enter();
@@ -200,6 +261,45 @@ public class GBMRemoveOffsetEffectTest extends TestUtil {
         // the generic ModelBuilder.init() guard rejects this — make sure it failed for the right reason
         org.junit.Assert.assertTrue("unexpected failure: " + expected.getMessage(),
                 expected.getMessage() != null && expected.getMessage().contains("offset_column"));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /**
+   * balance_classes replaces the training frame with a stratified resample. SharedTree must re-point
+   * _offset at the resampled frame alongside _response and _weights, otherwise getInitialValue() combines
+   * vectors of different lengths and training dies with "Unexpected incompatible espc". This is
+   * independent of remove_offset_effects (which only affects scoring) — both are covered here.
+   */
+  @Test
+  public void balanceClassesKeepsOffsetAligned() {
+    org.junit.Assume.assumeTrue("balance_classes only applies to classification",
+            family == DistributionFamily.bernoulli);
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
+      train.replace(train.find(response), train.vec(response).toCategoricalVec()).remove();
+      Vec offset = Scope.track(train.anyVec().makeCon(0));
+      for (long i = 0; i < offset.length(); i++) offset.set(i, 0.1 * (i % 7) - 0.3);
+      train.add("offset", offset);
+      DKV.put(train);
+
+      for (boolean removeOffset : new boolean[]{false, true}) {
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = train._key;
+        parms._response_column = response;
+        parms._offset_column = "offset";
+        parms._remove_offset_effects = removeOffset;
+        parms._balance_classes = true;
+        parms._distribution = family;
+        parms._ntrees = 5;
+        parms._seed = 42;
+        GBMModel m = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+        org.junit.Assert.assertNotNull("training metrics (remove_offset_effects=" + removeOffset + ")",
+                m._output._training_metrics);
+        Scope.track(m.score(train)).remove();
       }
     } finally {
       Scope.exit();

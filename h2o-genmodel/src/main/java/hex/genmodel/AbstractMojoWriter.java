@@ -49,6 +49,15 @@ public abstract class AbstractMojoWriter {
    */
   protected abstract void writeModelData() throws IOException;
 
+  /**
+   * Hook for writing model-independent info that {@link ModelDescriptor} does not expose. Runs as part of
+   * {@code addCommonModelInfo()}, i.e. before the [info] section is flushed, so implementations may call
+   * {@link #writekv(String, Object)}. Does nothing by default.
+   */
+  protected void writeCommonExtraModelInfo() throws IOException {
+    // nothing by default
+  }
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Utility functions: subclasses should use these to implement the behavior they need
@@ -203,6 +212,7 @@ public abstract class AbstractMojoWriter {
     if (model.foldColumn() != null) {
       writekv("fold_column", model.foldColumn());
     }
+    writeCommonExtraModelInfo();
     writekv("balance_classes", model.balanceClasses());
     writekv("default_threshold", model.defaultThreshold());
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));

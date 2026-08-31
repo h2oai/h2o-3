@@ -28,7 +28,6 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "score_each_iteration",
         "weights_column",
         "offset_column",
-        "remove_offset_effects",
         "balance_classes",
         "class_sampling_factors",
         "max_after_balance_size",

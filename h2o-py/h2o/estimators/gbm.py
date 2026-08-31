@@ -150,8 +150,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                Defaults to ``None``.
         :type offset_column: str, optional
         :param remove_offset_effects: Train with the offset column but score and compute metrics as if the offset were
-               0. The offset-applied ('unrestricted') metrics are reported alongside in the *_unrestricted_model output
-               fields. Algorithms that do not support this option reject it during validation. Experimental.
+               0. The offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+               training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+               cross_validation_metrics_unrestricted_model output fields. Experimental.
                Defaults to ``False``.
         :type remove_offset_effects: bool
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
@@ -793,8 +794,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def remove_offset_effects(self):
         """
         Train with the offset column but score and compute metrics as if the offset were 0. The offset-applied
-        ('unrestricted') metrics are reported alongside in the *_unrestricted_model output fields. Algorithms that do
-        not support this option reject it during validation. Experimental.
+        ('unrestricted') metrics are reported alongside in the corresponding training_metrics_unrestricted_model,
+        validation_metrics_unrestricted_model and cross_validation_metrics_unrestricted_model output fields.
+        Experimental.
 
         Type: ``bool``, defaults to ``False``.
         """

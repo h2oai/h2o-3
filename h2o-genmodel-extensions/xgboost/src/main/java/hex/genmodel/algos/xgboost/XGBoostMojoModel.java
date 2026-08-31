@@ -59,9 +59,9 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
   public boolean _sparse;
   public String _featureMap;
   public boolean _hasOffset;
-  // remove_offset_effects (GH-16851): trained with a base margin, but scores with an explicit ZERO margin
-  // and takes no offset input (a no-margin predict would add base_score instead)
-  public boolean _offsetRemoved;
+  // remove_offset_effects (GH-16851) lives on GenModel._offsetRemoved, written/read by the base MOJO
+  // writer/reader - there is no field here. XGBoost reads that inherited flag to keep the explicit-margin
+  // path with a ZERO margin (a no-margin predict would add base_score instead).
 
   /**
    * GLM's beta used for calibrating output probabilities using Platt Scaling.

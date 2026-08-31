@@ -54,7 +54,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
-                 remove_offset_effects=False,  # type: bool
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -186,11 +185,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
                function.
                Defaults to ``None``.
         :type offset_column: str, optional
-        :param remove_offset_effects: Train with the offset column but score and compute metrics as if the offset were
-               0. The offset-applied ('unrestricted') metrics are reported alongside in the *_unrestricted_model output
-               fields. Algorithms that do not support this option reject it during validation. Experimental.
-               Defaults to ``False``.
-        :type remove_offset_effects: bool
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -466,7 +460,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
         self.score_each_iteration = score_each_iteration
         self.weights_column = weights_column
         self.offset_column = offset_column
-        self.remove_offset_effects = remove_offset_effects
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -925,22 +918,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
-
-    @property
-    def remove_offset_effects(self):
-        """
-        Train with the offset column but score and compute metrics as if the offset were 0. The offset-applied
-        ('unrestricted') metrics are reported alongside in the *_unrestricted_model output fields. Algorithms that do
-        not support this option reject it during validation. Experimental.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("remove_offset_effects")
-
-    @remove_offset_effects.setter
-    def remove_offset_effects(self, remove_offset_effects):
-        assert_is_type(remove_offset_effects, None, bool)
-        self._parms["remove_offset_effects"] = remove_offset_effects
 
     @property
     def balance_classes(self):

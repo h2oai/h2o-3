@@ -232,17 +232,19 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
     super.init(expensive);
     // remove_offset_effects (GH-16851): GAM trains an internal GLM that must also receive the flag (see
-    // copyGAMParams2GLMParams), so GLM's own restrictions would otherwise surface with GLM wording. Reject the
-    // unsupported combinations here with a GAM-worded error instead of leaking GLM's.
+    // copyGAMParams2GLMParams), so GLM's own restrictions would otherwise surface only once the internal GLM
+    // runs, referring to parameters the GAM user never set. Reject the same combinations here, up front.
+    // KEEP THE WORDING IN SYNC with GLMParameters.validate - note GAM tests _family where GLM tests
+    // _distribution, because the internal GLM is handed _distribution=AUTO and GLM's own check never fires.
     if (_parms._remove_offset_effects) {
       if (_cvOn || _parms._glmCvOn)
-        error("_remove_offset_effects", "Remove offset effects is not supported with cross-validation for GAM.");
+        error("_remove_offset_effects", "Remove offset effects option is not supported with cross-validation.");
       if (_parms._family == multinomial || _parms._family == ordinal)
-        error("_remove_offset_effects", "The " + _parms._family.name() + " distribution is not supported with remove offset effects for GAM.");
+        error("_remove_offset_effects", "The " + _parms._family.name() + " distribution is not supported with remove offset effects.");
       if (_parms._interactions != null || _parms._interaction_pairs != null)
-        error("_remove_offset_effects", "Remove offset effects is not supported with interactions for GAM.");
+        error("_remove_offset_effects", "Remove offset effects option is not supported with interactions.");
       if (_parms._lambda_search)
-        error("_remove_offset_effects", "Remove offset effects is not supported with lambda search for GAM.");
+        error("_remove_offset_effects", "Remove offset effects option is not supported with Lambda search.");
     }
     if (_parms._bs != null) {
       boolean allMonotoneSplines = Arrays.stream(_parms._bs).filter(x -> x == 2).count() == _parms._bs.length;

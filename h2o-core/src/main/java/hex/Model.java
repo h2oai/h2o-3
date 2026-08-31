@@ -56,13 +56,34 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public P _parms;   // TODO: move things around so that this can be protected
   public P _input_parms;
   public O _output;  // TODO: move things around so that this can be protected
-  // remove_offset_effects dual view (GH-16851): temporarily forces scoring to apply the offset even on a
-  // remove_offset model, so the builder can compute the "unrestricted" (offset-applied) metrics. NOT transient
-  // on purpose: scoring tasks ship the model to remote nodes, so the flag must survive serialization.
-  // INVARIANTS: (1) may only ever be set true on a transient clone, never on the DKV-shared instance —
-  // a concurrent predict() would silently apply the offset; (2) must never enter the model checksum —
-  // ModelMetrics.buildKey relies on the flagged clone hashing identically to the original.
+  // remove_offset_effects dual view (GH-16851): forces scoring to apply the offset even on a remove_offset
+  // model, so the builder can compute the "unrestricted" (offset-applied) metrics. NOT transient on purpose:
+  // scoring tasks ship the model to remote nodes, so the flag must survive serialization.
+  // Set it ONLY via cloneForOffsetAppliedScoring(), which enforces the invariants documented there.
   public boolean _scoreWithOffset = false;
+
+  /**
+   * Returns a transient clone of this model that applies the offset at scoring time even though
+   * {@code remove_offset_effects} is set — the "unrestricted" view (GH-16851). This is the only supported
+   * way to turn {@link #_scoreWithOffset} on.
+   * <p>
+   * INVARIANTS, both load-bearing:
+   * <ol>
+   *   <li>The result must never be put in the DKV. It is a shallow clone, so it shares {@code _key},
+   *       {@code _parms} and {@code _output} with the DKV-cached instance; publishing it would make every
+   *       later {@code predict()} on this model silently apply the offset.</li>
+   *   <li>{@link #_scoreWithOffset} must stay out of the model checksum. {@link ModelMetrics#buildKey} relies
+   *       on the clone hashing identically to the original — see {@link #checksum_impl()}, which derives the
+   *       checksum from {@code _parms} and {@code _output} only.</li>
+   * </ol>
+   */
+  public final M cloneForOffsetAppliedScoring() {
+    assert !_scoreWithOffset : "already an offset-applied scoring clone";
+    assert _parms._remove_offset_effects : "only meaningful for a remove_offset_effects model";
+    M scoringClone = clone();
+    ((Model<M, P, O>) scoringClone)._scoreWithOffset = true;
+    return scoringClone;
+  }
 
   /**
    * Single decision point for offset handling at scoring time (GH-16851): every scoring task (BigScore,
@@ -3533,7 +3554,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String algoFullName() { return _parms.fullName(); }
       @Override
       // A remove_offset_effects model scores without an offset, so the MOJO/POJO must neither expect nor
-      // apply one. Advertising no offset column makes the standalone scorer take the no-offset path.
+      // apply one. Advertising no offset column makes the standalone scorer take the no-offset path; the
+      // "offset_removed" MOJO key (see ModelMojoWriter.writeCommonExtraModelInfo) additionally makes score0
+      // ignore an offset a caller passes in explicitly.
       public String offsetColumn() { return _parms._remove_offset_effects ? null : _output.offsetName(); }
       @Override
       public String weightsColumn() { return _output.weightsName(); }

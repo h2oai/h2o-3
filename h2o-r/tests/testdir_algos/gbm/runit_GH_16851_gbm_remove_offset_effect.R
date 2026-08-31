@@ -30,13 +30,26 @@ test.gbm.remove_offset.effect <- function() {
   expect_equal(roPreds, plainZeroed, tolerance=1e-8)
   expect_true(max(abs(plainPreds - roPreds)) > 1e-6)
 
-  # dual view is visible in the model output (ModelOutputSchemaV3 exposure); depending on the client
-  # version the field materializes as an H2OModelMetrics object or a plain list
+  # dual view is visible in the model output (ModelOutputSchemaV3 exposure). h2o.getModel wraps it into a
+  # proper H2OModelMetrics object -- assert that, rather than tolerating a plain list, so a regression in
+  # kvstore.R's S4 wrapping fails here instead of being silently accepted.
   unrestricted <- ro@model$training_metrics_unrestricted_model
-  expect_false(is.null(unrestricted))
-  unrestrictedMse <- if (isS4(unrestricted)) unrestricted@metrics$MSE else unrestricted$MSE
+  expect_true(isS4(unrestricted))
+  expect_true(is(unrestricted, "H2OModelMetrics"))
+  unrestrictedMse <- unrestricted@metrics$MSE
   restrictedMse <- ro@model$training_metrics@metrics$MSE
   expect_true(abs(unrestrictedMse - restrictedMse) > 1e-6)
+
+  # the documented accessor returns the same object, and R partial matching still resolves the base field
+  expect_equal(h2o.mse(h2o.unrestricted_model_performance(ro, train=TRUE)), unrestrictedMse)
+  expect_equal(h2o.mse(h2o.unrestricted_model_performance(ro)), unrestrictedMse)  # train is the default
+  # a model trained WITHOUT the flag has no unrestricted view, and the NULL entry must be dropped so that
+  # partial matching on the base name keeps working
+  expect_null(h2o.unrestricted_model_performance(plain, train=TRUE))
+  expect_false("training_metrics_unrestricted_model" %in% names(plain@model))
+  expect_true(is(plain@model$training_metric, "H2OModelMetrics"))  # partial match, unambiguous again
+  # only one of train/valid/xval may be requested
+  expect_error(h2o.unrestricted_model_performance(ro, train=TRUE, valid=TRUE))
 
   # scoring a frame WITHOUT the offset column works (zero column substituted)
   noOffset <- as.h2o(df[, setdiff(names(df), "offset")])

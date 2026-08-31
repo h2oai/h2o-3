@@ -62,6 +62,12 @@ public class GBMRemoveOffsetMojoTest extends TestUtil {
         double mojoPred = wrapper.predictRegression(row).value;
         assertEquals("MOJO prediction must match in-cluster restricted prediction (row " + r + ")",
                 inCluster.vec(0).at(r), mojoPred, 1e-6);
+        // GH-16851: advertising no offset column only stops the wrapper from ASKING for one. A caller can
+        // still pass an offset explicitly (EasyPredictModelWrapper routes to score0(row, offset, preds) on
+        // offset != 0); a remove_offset model must ignore it, or the MOJO silently disagrees with the cluster.
+        double mojoPredWithOffset = wrapper.predictRegression(row, train.vec("offset").at(r)).value;
+        assertEquals("MOJO must ignore a caller-supplied offset (row " + r + ")",
+                mojoPred, mojoPredWithOffset, 0.0);
       }
     } finally {
       Scope.exit();

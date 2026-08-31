@@ -66,6 +66,10 @@ public class GAMRemoveOffsetMojoTest extends TestUtil {
         double mojoPred = wrapper.predictRegression(row).value;
         assertEquals("MOJO prediction must match in-cluster restricted prediction (row " + r + ")",
                 inCluster.vec(0).at(r), mojoPred, 1e-6);
+        // GH-16851: a caller can still pass an offset explicitly (EasyPredictModelWrapper routes to
+        // score0(row, offset, preds) when offset != 0); a remove_offset model must ignore it.
+        assertEquals("MOJO must ignore a caller-supplied offset (row " + r + ")", mojoPred,
+                wrapper.predictRegression(row, train.vec("offset").at(r)).value, 0.0);
       }
     } finally {
       Scope.exit();

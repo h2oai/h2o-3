@@ -550,11 +550,20 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
 
     def unrestricted_model_performance(self, train=False, valid=False, xval=False):
         """
-        Offset-applied ("unrestricted") model metrics of a model trained with ``remove_offset_effects=True``.
+        "Unrestricted" model metrics: the parallel view in which the effects removed for scoring are restored.
 
-        The primary metrics of such a model are computed as if the offset were 0 (the "restricted" view);
-        these are the parallel metrics with the offset applied. Returns ``None`` for models trained without
-        ``remove_offset_effects``.
+        For a model trained with ``remove_offset_effects=True`` the primary metrics are computed as if the
+        offset were 0 (the "restricted" view); these are the matching metrics with the offset applied.
+
+        GLM additionally populates this view when ``control_variables`` is set, in which case it means
+        "control-variable effects restored"; when both are set, both effects are restored. So for a GLM trained
+        with ``control_variables`` and no offset this returns metrics, not ``None``.
+
+        Returns ``None`` when the view was not produced: the model was trained with neither
+        ``remove_offset_effects`` nor (GLM only) ``control_variables``; or ``xval`` was requested without
+        cross-validation; or the view is unavailable for this model -- notably ``xval`` for
+        ``distribution="huber"``, whose ``mean_residual_deviance`` needs combined holdout predictions that the
+        aggregated view cannot supply. Check the model's warnings to tell these apart.
 
         Only one of ``train``, ``valid``, and ``xval`` may be True; otherwise an error is raised (matching
         R's ``h2o.unrestricted_model_performance``).
