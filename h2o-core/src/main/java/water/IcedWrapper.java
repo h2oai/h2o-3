@@ -39,7 +39,7 @@ public class IcedWrapper extends Iced {
   long[] l_ar;
   float[] f_ar;
   double[] d_ar;
-  // boolean[] b_ar;
+  boolean[] b_ar;
   String[] s_ar;
   String[] e_ar; // TODO: JavaAssist is blowing up on enum fields
   KeyV3[] k_ar;
@@ -91,10 +91,10 @@ public class IcedWrapper extends Iced {
         d_ar = (double[]) o;
       } else if (clz == Boolean.class) {
         t = "Bo";
-        // TODO: AutoBuffer can't serialize arrays of booleans: b_ar = (boolean[])o;
+        b_ar = ArrayUtils.toPrimitive((Boolean[]) o);
       } else if (clz == Boolean.TYPE) {
         t = "Bo";
-        // TODO: AutoBuffer etc etc.
+        b_ar = (boolean[]) o;
       } else if (clz == String.class) {
         t = "S";
         s_ar = (String[])o;
@@ -169,8 +169,7 @@ public class IcedWrapper extends Iced {
       } else if (t.equals("D")) {
         return d_ar;
       } else if (t.equals("Bo")) {
-        throw H2O.fail();
-        // TODO: AutoBuffer can't serialize arrays of booleans: b_ar = (boolean[])o;
+        return b_ar;
       } else if (t.equals("S")) {
         return s_ar;
       } else if (t.equals("E")) {
@@ -221,6 +220,8 @@ public class IcedWrapper extends Iced {
         return Arrays.toString(d_ar);
       else if (t.equals("S"))
         return Arrays.toString(s_ar);
+      else if (t.equals("Bo"))
+        return Arrays.toString(b_ar);
       else if (t.equals("E"))
         return Arrays.toString(e_ar);
       else if (t.equals("K"))
@@ -270,7 +271,7 @@ public class IcedWrapper extends Iced {
       else if (t.equals("D"))
         return ab.putJSONA8d(d_ar);
       else if (t.equals("Bo"))
-        return ab.putJSONAStr(null); // TODO: BROKEN
+        return ab.putJSONAZ(b_ar);
       else if (t.equals("S"))
         return ab.putJSONAStr(s_ar);
       else if (t.equals("E"))
