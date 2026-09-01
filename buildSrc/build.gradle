@@ -2,7 +2,7 @@ apply plugin: 'java-library'
 apply plugin: 'groovy'
 
 repositories {
-    def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: (System.getenv('H2O_NEXUS_USERNAME') && System.getenv('H2O_NEXUS_PASSWORD') ? 'true' : 'false')).toString())
+    def h2oNexusEnabled = Boolean.parseBoolean((project.findProperty('h2oNexusEnabled') ?: System.getenv('H2O_NEXUS_ENABLED') ?: 'false').toString())
     // buildSrc is a separate build and cannot see the root project's gradle.properties,
     // so read it off disk - the mirror settings have one source of truth.
     def rootProps = new Properties()
