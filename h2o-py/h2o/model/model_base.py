@@ -588,6 +588,40 @@ class ModelBase(h2o_meta(Keyed, H2ODisplay)):
                     break
             return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
 
+    def unrestricted_model_performance(self, train=False, valid=False, xval=False):
+        """
+        "Unrestricted" model metrics: the parallel view in which the effects removed for scoring are restored.
+
+        For a model trained with ``remove_offset_effects=True`` the primary metrics are computed as if the
+        offset were 0 (the "restricted" view); these are the matching metrics with the offset applied.
+
+        GLM additionally populates this view when ``control_variables`` is set, in which case it means
+        "control-variable effects restored"; when both are set, both effects are restored. So for a GLM trained
+        with ``control_variables`` and no offset this returns metrics, not ``None``.
+
+        Returns ``None`` when the view was not produced: the model was trained with neither
+        ``remove_offset_effects`` nor (GLM only) ``control_variables``; or ``xval`` was requested without
+        cross-validation; or the view is unavailable for this model -- notably ``xval`` for
+        ``distribution="huber"``, whose ``mean_residual_deviance`` needs combined holdout predictions that the
+        aggregated view cannot supply. Check the model's warnings to tell these apart.
+
+        Only one of ``train``, ``valid``, and ``xval`` may be True; otherwise an error is raised (matching
+        R's ``h2o.unrestricted_model_performance``).
+
+        :param bool train: Report the training metrics (default when no flag is set).
+        :param bool valid: Report the validation metrics.
+        :param bool xval: Report the cross-validation metrics.
+        :returns: An instance of :class:`~h2o.model.metrics_base.MetricsBase` or one of its subclass, or ``None``.
+        """
+        if (train + valid + xval) > 1:
+            raise H2OValueError("Only one of `train`, `valid`, and `xval` can be True.")
+        output = self._model_json["output"]
+        if valid:
+            return output.get("validation_metrics_unrestricted_model")
+        if xval:
+            return output.get("cross_validation_metrics_unrestricted_model")
+        return output.get("training_metrics_unrestricted_model")
+
     def scoring_history(self, as_data_frame=True):
         """
         Retrieve Model Score History.

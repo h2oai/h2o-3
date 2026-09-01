@@ -1,0 +1,76 @@
+package hex.tree.gbm;
+
+import hex.genmodel.GenModel;
+import hex.genmodel.MojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.utils.DistributionFamily;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import water.DKV;
+import water.Scope;
+import water.TestUtil;
+import water.fvec.Frame;
+import water.fvec.Vec;
+
+import static org.junit.Assert.*;
+
+/**
+ * MOJO consistency test for GH-16851: a MOJO exported from a remove_offset_effects GBM model must
+ * advertise no offset column, score WITHOUT an offset input, and reproduce the in-cluster restricted
+ * predictions.
+ */
+public class GBMRemoveOffsetMojoTest extends TestUtil {
+
+  @BeforeClass
+  public static void stall() { stall_till_cloudsize(1); }
+
+  @Test
+  public void mojoScoresWithoutOffsetAndMatchesInCluster() throws Exception {
+    Scope.enter();
+    try {
+      Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
+      Vec offset = Scope.track(train.anyVec().makeCon(0));
+      for (long i = 0; i < offset.length(); i++) offset.set(i, 0.1 * (i % 7) - 0.3);
+      train.add("offset", offset);
+      DKV.put(train);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = train._key;
+      parms._response_column = "AGE";
+      parms._offset_column = "offset";
+      parms._remove_offset_effects = true;
+      parms._distribution = DistributionFamily.gaussian;
+      parms._ntrees = 10;
+      parms._max_depth = 4;
+      parms._seed = 42;
+      GBMModel ro = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+
+      Frame inCluster = Scope.track(ro.score(train));
+
+      MojoModel mojo = ro.toMojo();
+      assertNull("remove_offset MOJO must not advertise an offset column", mojo.getOffsetName());
+      assertFalse("remove_offset MOJO must not require an offset input", mojo.requiresOffset());
+
+      EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper((GenModel) mojo);
+      for (long r = 0; r < train.numRows(); r++) {
+        RowData row = new RowData();
+        for (String col : train.names()) {
+          if (col.equals("offset")) continue; // deliberately absent — MOJO must not need it
+          row.put(col, train.vec(col).at(r));
+        }
+        double mojoPred = wrapper.predictRegression(row).value;
+        assertEquals("MOJO prediction must match in-cluster restricted prediction (row " + r + ")",
+                inCluster.vec(0).at(r), mojoPred, 1e-6);
+        // GH-16851: advertising no offset column only stops the wrapper from ASKING for one. A caller can
+        // still pass an offset explicitly (EasyPredictModelWrapper routes to score0(row, offset, preds) on
+        // offset != 0); a remove_offset model must ignore it, or the MOJO silently disagrees with the cluster.
+        double mojoPredWithOffset = wrapper.predictRegression(row, train.vec("offset").at(r)).value;
+        assertEquals("MOJO must ignore a caller-supplied offset (row " + r + ")",
+                mojoPred, mojoPredWithOffset, 0.0);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+}

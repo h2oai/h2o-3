@@ -20,6 +20,10 @@
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param remove_offset_effects \code{Logical}. Train with the offset column but score and compute metrics as if the offset were 0. The
+#'        offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+#'        training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+#'        cross_validation_metrics_unrestricted_model output fields. Experimental. Defaults to FALSE.
 #' @param stratify_by List of columns to use for stratification.
 #' @param ties Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.
 #' @param init Coefficient starting value. Defaults to 0.
@@ -62,6 +66,7 @@ h2o.coxph <- function(x,
                       stop_column = NULL,
                       weights_column = NULL,
                       offset_column = NULL,
+                      remove_offset_effects = FALSE,
                       stratify_by = NULL,
                       ties = c("efron", "breslow"),
                       init = 0,
@@ -120,6 +125,8 @@ h2o.coxph <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(stratify_by))
     parms$stratify_by <- stratify_by
   if (!missing(ties))
@@ -154,6 +161,7 @@ h2o.coxph <- function(x,
                                       stop_column = NULL,
                                       weights_column = NULL,
                                       offset_column = NULL,
+                                      remove_offset_effects = FALSE,
                                       stratify_by = NULL,
                                       ties = c("efron", "breslow"),
                                       init = 0,
@@ -217,6 +225,8 @@ h2o.coxph <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(stratify_by))
     parms$stratify_by <- stratify_by
   if (!missing(ties))

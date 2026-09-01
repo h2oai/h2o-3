@@ -409,6 +409,7 @@ reference:
       - h2o.trim
       - h2o.trunc
       - h2o.unique
+      - h2o.unrestricted_model_performance
       - h2o.upliftRandomForest
       - h2o.upload_model
       - h2o.upload_mojo

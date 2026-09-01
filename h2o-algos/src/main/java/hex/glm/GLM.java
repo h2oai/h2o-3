@@ -107,6 +107,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   @Override
+  protected boolean supportsRemoveOffsetEffects() { return true; }
+
+  @Override
   public ModelCategory[] can_build() {
     return new ModelCategory[]{
             ModelCategory.Regression,

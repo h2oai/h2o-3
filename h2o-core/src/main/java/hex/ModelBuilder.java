@@ -251,6 +251,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        scoreUnrestrictedOffsetMetrics();
         computeParameters();
         saveModelCheckpointIfConfigured();
         notifyModelListeners();
@@ -310,6 +311,125 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       res.unlock(_job);
     }
     Log.info("Completing model "+ reskey);
+  }
+
+  // GH-16851: a remove_offset model reports offset-removed ("restricted") metrics by default. Here we also
+  // compute the parallel offset-APPLIED ("unrestricted") metrics on train/valid so users can compare the two
+  // views. Generic for any algo whose scoring honors Model.applyOffsetAtScoreTime(); algos that compute their
+  // own unrestricted metrics during training (GLM) already populated the field and are skipped by the null check.
+  private void scoreUnrestrictedOffsetMetrics() {
+    if (!_parms._remove_offset_effects || _parms._is_cv_model) return;
+    // An optional diagnostic view is never worth making a cancelling user wait for a full extra scoring pass.
+    if (_job.stop_requested()) return;
+    M model = _result.get();
+    if (model == null || model._output._training_metrics_unrestricted_model != null) return;
+    // balance_classes replaces the training frame with a stratified resample, so the primary metrics are
+    // computed on the resampled rows while the offset-applied view below is scored on the original frame.
+    // Both numbers are individually correct but they cover different rows - say so, because the whole point
+    // of the dual view is that the two get compared. GH-16851.
+    if (_parms._balance_classes && model._output.isClassifier())
+      _job.warn("balance_classes: the primary metrics are computed on the balanced (resampled) training frame "
+              + "while the offset-applied ('unrestricted') metrics use the original frame, so the two views "
+              + "cover different rows and are not directly comparable.");
+    // Score a transient clone: the shared DKV-cached instance is never mutated, so a concurrent
+    // predict on this model cannot observe the offset-applied mode.
+    M unrestricted = model.cloneForOffsetAppliedScoring();
+    ModelMetrics trainMM, validMM;
+    try {
+      // Compute both views first, assign together: no half-populated dual view if the second pass throws.
+      trainMM = _parms.train() != null
+              ? makeUnrestrictedMetrics(unrestricted, _parms.train(), model._output._training_metrics) : null;
+      // Two conditions, both load-bearing. (1) The algo must have produced a restricted twin to compare
+      // against - CoxPH, for instance, never scores validation data, and a lone unrestricted view would be
+      // more confusing than none. (2) The validation frame must actually carry the offset column: a
+      // remove_offset model accepts frames without it (a zero column is substituted), which would make the
+      // "offset applied" view numerically identical to its twin and invite exactly the wrong conclusion.
+      validMM = _parms.valid() != null && model._output._validation_metrics != null
+              && _parms.valid().find(_parms._offset_column) >= 0
+              ? makeUnrestrictedMetrics(unrestricted, _parms.valid(), model._output._validation_metrics) : null;
+    } catch (Exception t) {
+      // This is an optional diagnostic view. Never fail (and, under cross-validation, never let
+      // onExceptionalCompletion delete) an otherwise complete model because the extra pass failed.
+      // Errors (OOM, StackOverflow) deliberately propagate rather than letting the build carry on into
+      // checkpoint I/O on a degraded JVM. Only the message goes to the client - the full trace is logged,
+      // because H2O exception text on the adaptation path can embed data-derived strings.
+      Log.warn("Could not compute the offset-applied (unrestricted) metrics for " + model._key
+              + "; leaving them unset.", t);
+      _job.warn("Could not compute the offset-applied (unrestricted) metrics; the model and its primary "
+              + "(offset-removed) metrics are unaffected. Cause: " + t.getMessage());
+      return;
+    }
+    model.write_lock(_job);
+    try {
+      model._output._training_metrics_unrestricted_model = trainMM;
+      model._output._validation_metrics_unrestricted_model = validMM;
+      model.update(_job);
+    } finally {
+      model.unlock(_job);
+    }
+  }
+
+  // Computes offset-applied metrics for one frame. Uses score() (not scoreMetrics) for two reasons: algos with
+  // a custom predictScoreImpl (e.g. CoxPH) don't implement the generic score0 path, and score() feeds the raw
+  // predictions to makeModelMetrics so the unrestricted view carries the same extras (gains/lift, ...) as its
+  // restricted twin. The metric lands under the model's checksum-based DKV key, colliding with the restricted
+  // metric (the clone hashes identically because _scoreWithOffset lives on Model, outside the checksum), so the
+  // restricted copy is re-put before anything slow runs - the prediction frame is deleted afterwards, in a
+  // finally, so a failure there cannot leave the offset-applied metric under the model's primary key.
+  private ModelMetrics makeUnrestrictedMetrics(M unrestricted, Frame fr, ModelMetrics restricted) {
+    Frame preds = null;
+    ModelMetrics mm = null;
+    Key<ModelMetrics> sharedKey = ModelMetrics.buildKey(unrestricted, fr);
+    try {
+      preds = unrestricted.score(fr);
+      mm = DKV.getGet(sharedKey);
+    } finally {
+      // In the finally so that a throw anywhere in score()'s tail - which DKV-puts the metric well before it
+      // returns - can never leave the offset-applied metric sitting under the model's primary lookup key.
+      restoreRestrictedMetric(unrestricted._output, sharedKey, restricted);
+      if (preds != null) preds.delete();
+    }
+    describeUnrestricted(mm, sharedKey, restricted,
+            "Offset applied (unrestricted view of a remove_offset_effects model)");
+    return mm;
+  }
+
+  // The offset-applied metric was just DKV-put under the model's checksum-based key, colliding with the
+  // restricted metric (the scoring clone hashes identically - _scoreWithOffset lives on Model, outside the
+  // checksum). Put the restricted copy back, or - when there is no twin at that key - remove the entry
+  // entirely so the model's primary lookup never resolves to the offset-applied numbers.
+  private static void restoreRestrictedMetric(Model.Output out, Key<ModelMetrics> sharedKey, ModelMetrics restricted) {
+    if (restricted != null && sharedKey.equals(restricted._key)) {
+      DKV.put(restricted); // atomic overwrite: the shared key never goes absent
+    } else {
+      // No restricted twin to restore (or it lives under a different key, e.g. GAM scores its metrics on the
+      // gam-expanded frame). Drop the key from the output BEFORE removing it from the DKV, so the array never
+      // advertises an entry that no longer resolves - Output.changeModelMetricsKey would NPE on one.
+      dropModelMetricsKey(out, sharedKey);
+      DKV.remove(sharedKey);
+    }
+  }
+
+  // Detaches the stored unrestricted object from the shared DKV slot (which now holds the restricted metric):
+  // a stale _key here is the footgun that caused the GH-16807 cascade-delete bug. Also labels it, because
+  // without a description both views print an identical header over different numbers.
+  private static void describeUnrestricted(ModelMetrics mm, Key<ModelMetrics> sharedKey,
+                                           ModelMetrics restricted, String description) {
+    if (mm == null) return;
+    mm._key = Key.make(sharedKey.toString() + "_unrestricted");
+    // Only carry the twin's description across when both views really were computed on the same frame,
+    // otherwise the unrestricted metric would inherit provenance describing data it never saw.
+    mm._description = description
+            + (restricted != null && restricted._description != null && sharedKey.equals(restricted._key)
+               ? " - " + restricted._description : "");
+  }
+
+  // Removes a ModelMetrics key from a model's output. Mirrors Model.incrementModelMetrics' locking.
+  private static void dropModelMetricsKey(Model.Output out, Key<ModelMetrics> key) {
+    synchronized (out) {
+      int idx = ArrayUtils.find(out._model_metrics, key);
+      if (idx >= 0) out._model_metrics = ArrayUtils.remove(out._model_metrics, idx);
+    }
   }
 
   private void saveModelCheckpointIfConfigured() {
@@ -835,6 +955,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   
   
+  // GH-16851: per-fold offset-APPLIED metric builders for the "unrestricted" CV view (parallel to the primary
+  // offset-removed CV metrics), captured during cv_scoreCVModels and aggregated in cv_mainModelScores.
+  private transient ModelMetrics.MetricBuilder[] _cvUnrestrictedMBs;
+
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -872,6 +996,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           } else {
             mbs[i] = cvModel.scoreMetrics(adaptFr);
           }
+          // GH-16851: also capture the offset-applied fold metrics. Skipped for huber: that distribution
+          // derives mean_residual_deviance from the combined holdout PREDICTIONS
+          // (ModelMetricsRegression.MetricBuilderRegression.computeModelMetrics), which the aggregate
+          // unrestricted view has no way to supply - it would silently report 0.0 for huber's headline
+          // metric. Leaving the fold builder null makes cv_mainModelScores drop the whole aggregate view,
+          // reusing the existing "a fold was skipped -> no aggregate view" path.
+          if (_parms._remove_offset_effects && !cvModel.isDistributionHuber()) {
+            if (_cvUnrestrictedMBs == null) _cvUnrestrictedMBs = new ModelMetrics.MetricBuilder[N];
+            // score a transient clone so the shared fold-model instance never carries the flag (no race)
+            _cvUnrestrictedMBs[i] = cvModel.cloneForOffsetAppliedScoring().scoreMetrics(adaptFr);
+          }
         }
       } finally {
         Scope.track(preds);
@@ -896,6 +1031,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   protected boolean cv_canBuildMainModelInParallel() {
+    return false;
+  }
+
+  /**
+   * Whether this algorithm implements remove_offset_effects (offset-free scoring & metrics, GH-16851).
+   * Only algorithms whose every scoring path consults {@link Model#applyOffsetAtScoreTime()} may return true.
+   */
+  protected boolean supportsRemoveOffsetEffects() {
     return false;
   }
 
@@ -971,6 +1114,44 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
+
+    // GH-16851: build the parallel offset-APPLIED ("unrestricted") CV metric from the per-fold offset-applied
+    // metric builders captured in cv_scoreCVModels.
+    boolean cvUnrestrictedComplete = _parms._remove_offset_effects && _cvUnrestrictedMBs != null;
+    if (cvUnrestrictedComplete)
+      for (ModelMetrics.MetricBuilder mb : _cvUnrestrictedMBs)
+        if (mb == null) { cvUnrestrictedComplete = false; break; } // a fold was skipped -> no aggregate view
+    if (cvUnrestrictedComplete) {
+      try {
+        cv_makeAggregateModelMetrics(_cvUnrestrictedMBs);
+        ModelMetrics uCV = _cvUnrestrictedMBs[0].makeModelMetrics(mainModel, _parms.train(), null, null);
+        mainModel._output._cross_validation_metrics_unrestricted_model = uCV;
+        Key<ModelMetrics> sharedKey = uCV._key;
+        restoreRestrictedMetric(mainModel._output, sharedKey, mainModel._output._cross_validation_metrics);
+        describeUnrestricted(uCV, sharedKey, null, N + "-fold cross-validation with the offset applied "
+                + "(unrestricted view of a remove_offset_effects model; no holdout predictions)");
+      } catch (Exception t) {
+        // Optional diagnostic view - never fail an otherwise complete CV model because of it. Note
+        // onExceptionalCompletion deletes the result model, so an escape here would destroy the whole run.
+        // Errors deliberately propagate; only the message reaches the client (see scoreUnrestrictedOffsetMetrics).
+        Log.warn("Could not compute the offset-applied (unrestricted) cross-validation metrics for "
+                + mainModel._key + "; leaving them unset.", t);
+        _job.warn("Could not compute the offset-applied (unrestricted) cross-validation metrics; the model and "
+                + "its primary (offset-removed) metrics are unaffected. Cause: " + t.getMessage());
+        mainModel._output._cross_validation_metrics_unrestricted_model = null;
+      } finally {
+        _cvUnrestrictedMBs = null;
+      }
+    } else {
+      // The view is unavailable. Say why rather than leaving the user to interpret a bare null - it is
+      // otherwise indistinguishable from "the flag was never set". GH-16851.
+      if (_parms._remove_offset_effects)
+        _job.warn("The offset-applied ('unrestricted') cross-validation view is not available for this model"
+                + (mainModel.isDistributionHuber()
+                   ? ": distribution=huber derives mean_residual_deviance from the combined holdout predictions, "
+                     + "which the aggregated view cannot supply." : "."));
+      _cvUnrestrictedMBs = null;
+    }
 
     // Put cross-validation scoring history to the main model
     if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
@@ -1441,6 +1622,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     if (_parms._nfolds > 1 && _parms._nfolds > train().numRows()) {
       error("_nfolds", "nfolds cannot be larger than the number of rows (" + train().numRows() + ").");
+    }
+    // remove_offset_effects (GH-16851): only algorithms that implement offset-free scoring may accept the
+    // flag (raw REST can set any inherited parameter regardless of the schema's fields list), and it only
+    // makes sense when there is an offset to remove. GLM adds further family/CV restrictions itself.
+    if (_parms._remove_offset_effects) {
+      if (!supportsRemoveOffsetEffects()) {
+        error("_remove_offset_effects", "remove_offset_effects=True is not supported by " + _parms.fullName()
+                + ". It is available for GLM, GAM, GBM, XGBoost, CoxPH, Deep Learning, HGLM and Stacked Ensemble.");
+      } else if (_parms._offset_column == null) {
+        error("_remove_offset_effects", "remove_offset_effects=True requires an offset_column to be specified.");
+      }
     }
     if (_parms._fold_column != null) {
       hide("_fold_assignment", "Fold assignment is ignored when a fold column is specified.");

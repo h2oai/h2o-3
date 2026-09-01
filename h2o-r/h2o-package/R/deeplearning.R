@@ -33,6 +33,10 @@
 #'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param remove_offset_effects \code{Logical}. Train with the offset column but score and compute metrics as if the offset were 0. The
+#'        offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+#'        training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+#'        cross_validation_metrics_unrestricted_model output fields. Experimental. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
 #'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
@@ -170,6 +174,7 @@ h2o.deeplearning <- function(x,
                              score_each_iteration = FALSE,
                              weights_column = NULL,
                              offset_column = NULL,
+                             remove_offset_effects = FALSE,
                              balance_classes = FALSE,
                              class_sampling_factors = NULL,
                              max_after_balance_size = 5.0,
@@ -295,6 +300,8 @@ h2o.deeplearning <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))
@@ -469,6 +476,7 @@ h2o.deeplearning <- function(x,
                                              score_each_iteration = FALSE,
                                              weights_column = NULL,
                                              offset_column = NULL,
+                                             remove_offset_effects = FALSE,
                                              balance_classes = FALSE,
                                              class_sampling_factors = NULL,
                                              max_after_balance_size = 5.0,
@@ -598,6 +606,8 @@ h2o.deeplearning <- function(x,
     parms$weights_column <- weights_column
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(balance_classes))
     parms$balance_classes <- balance_classes
   if (!missing(class_sampling_factors))

@@ -30,6 +30,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                  ignored_columns=None,  # type: Optional[List[str]]
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
+                 remove_offset_effects=False,  # type: bool
                  stratify_by=None,  # type: Optional[List[str]]
                  ties="efron",  # type: Literal["efron", "breslow"]
                  init=0.0,  # type: float
@@ -74,6 +75,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                function.
                Defaults to ``None``.
         :type offset_column: str, optional
+        :param remove_offset_effects: Train with the offset column but score and compute metrics as if the offset were
+               0. The offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+               training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+               cross_validation_metrics_unrestricted_model output fields. Experimental.
+               Defaults to ``False``.
+        :type remove_offset_effects: bool
         :param stratify_by: List of columns to use for stratification.
                Defaults to ``None``.
         :type stratify_by: List[str], optional
@@ -120,6 +127,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         self.ignored_columns = ignored_columns
         self.weights_column = weights_column
         self.offset_column = offset_column
+        self.remove_offset_effects = remove_offset_effects
         self.stratify_by = stratify_by
         self.ties = ties
         self.init = init
@@ -289,6 +297,23 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
+
+    @property
+    def remove_offset_effects(self):
+        """
+        Train with the offset column but score and compute metrics as if the offset were 0. The offset-applied
+        ('unrestricted') metrics are reported alongside in the corresponding training_metrics_unrestricted_model,
+        validation_metrics_unrestricted_model and cross_validation_metrics_unrestricted_model output fields.
+        Experimental.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("remove_offset_effects")
+
+    @remove_offset_effects.setter
+    def remove_offset_effects(self, remove_offset_effects):
+        assert_is_type(remove_offset_effects, None, bool)
+        self._parms["remove_offset_effects"] = remove_offset_effects
 
     @property
     def stratify_by(self):

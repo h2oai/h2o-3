@@ -28,6 +28,12 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
+  /**
+   * Model was trained with an offset but scores as if the offset were 0 (remove_offset_effects, GH-16851).
+   * Such a model exposes no {@link #_offsetColumn}; this flag additionally makes {@code score0} ignore an
+   * offset passed directly by a caller, so MOJO predictions match in-cluster predictions either way.
+   */
+  public boolean _offsetRemoved;
   public String _foldColumn;
   
   /** Name of the column determine treatment group, currently only for UpliftDRF models */
@@ -376,6 +382,9 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public abstract double[] score0(double[] row, double[] preds);
 
   public double[] score0(double[] row, double offset, double[] preds) {
+    // remove_offset_effects (GH-16851): the model scores as if the offset were 0, so an offset supplied by a
+    // caller is ignored rather than rejected - same contract as the algos that do consume an offset.
+    if (_offsetRemoved) return score0(row, preds);
     throw new UnsupportedOperationException("`offset` column is not supported");
   }
 

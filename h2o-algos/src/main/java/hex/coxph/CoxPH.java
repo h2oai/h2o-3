@@ -32,6 +32,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public ModelCategory[] can_build() { return new ModelCategory[] { ModelCategory.CoxPH }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
   @Override public boolean isSupervised() { return true; }
+  @Override protected boolean supportsRemoveOffsetEffects() { return true; }
 
   public CoxPH(boolean startup_once) {
     super(new CoxPHModel.CoxPHParameters(), startup_once);
