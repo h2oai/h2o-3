@@ -1107,10 +1107,10 @@ public class DeepLearningTest {
       // Build a first model; all remaining models should be equal
       dl = new DeepLearning(parms).trainModel().get();
 
-      URI uri = dl.exportMojo("prcak", true);
-      
+      URI uri = dl.exportMojo(tmp.newFile("dl_autoencoder_mojo").getAbsolutePath(), true);
+
       MojoModel aeMojo = MojoModel.load(uri.getPath(), true);
-      
+
 
       assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
 
