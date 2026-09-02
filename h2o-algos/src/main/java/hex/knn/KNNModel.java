@@ -21,7 +21,7 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         }
         
         public int _k = 3;
-        public KNNDistance _distance;
+        public DistanceType _distance;
         public boolean _compute_metrics;
 
         @Override
@@ -53,6 +53,10 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
         public Frame getDistances(){
             return DKV.get(_distances_key).get();
         }
+
+        public Key<Frame> getDistancesKey() {
+            return _distances_key;
+        }
     }
 
     public KNNModel(Key<KNNModel> selfKey, KNNModel.KNNParameters parms, KNNModel.KNNOutput output) {
@@ -72,11 +76,13 @@ public class KNNModel extends Model<KNNModel, KNNModel.KNNParameters, KNNModel.K
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        Frame train = _parms._train.get(); 
+        Frame train = new Frame(_parms.train());
+        adaptTestForTrain(train, false, false);
         int idIndex = train.find(_parms._id_column);
         int responseIndex = train.find(_parms._response_column);
         byte idType = train.types()[idIndex];
-        preds = new KNNScoringTask(data, _parms._k, _output.nclasses(), _parms._distance, idIndex, idType, 
+        
+        preds = new KNNScoringTask(data, _parms._k, _output.nclasses(), KNNDistanceFactory.createDistance(_parms._distance), idIndex, idType, 
                                     responseIndex).doAll(train).score();
         Scope.untrack(train);
         return preds;
