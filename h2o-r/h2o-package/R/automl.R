@@ -69,6 +69,7 @@
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
 #'        Must be one of NULL (live log disabled), "debug", "info", "warn", "error". Defaults to "warn".
+#' @param auc_type (Optional)
 #' @param ... Additional (experimental) arguments to be passed through; Optional.        
 #' @return An \linkS4class{H2OAutoML} object.
 #' @details AutoML trains several models, cross-validated by default, by using the following available algorithms:
@@ -138,6 +139,7 @@ h2o.automl <- function(x, y, training_frame,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
                        verbosity = "warn",
+                       auc_type="NONE",
                        ...)
 {
   dots <- list(...)
@@ -339,6 +341,12 @@ h2o.automl <- function(x, y, training_frame,
     if(is.null(algo_parameters)) algo_parameters <- list()
     algo_parameters$monotone_constraints <- monotone_constraints
   }
+  if (!is.null(auc_type)) {
+    if(!(toupper(auc_type) %in% list("MACRO_OVO", "WEIGHTED_OVO", "MACRO_OVR", "WEIGHTED_OVR", "NONE", "AUTO")))
+        stop("The auc_type must be MACRO_OVO, WEIGHTED_OVO, MACRO_OVR, WEIGHTED_OVR, NONE or AUTO.")
+    if(is.null(algo_parameters)) algo_parameters <- list()
+        algo_parameters$auc_type <- auc_type
+    }
   if (!is.null(algo_parameters)) {
     keys <- names(algo_parameters)
     algo_parameters_json <- lapply(keys, function(k) {
