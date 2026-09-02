@@ -37,7 +37,7 @@ public class SplittingTest extends TestUtil {
 
             DataFeaturesLimits wholeDataLimits = getInitialFeaturesLimits(basicData);
 
-            Histogram histogram = new Histogram(basicData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH);
+            Histogram histogram = new Histogram(basicData, wholeDataLimits, BinningStrategy.EQUAL_WIDTH, 2);
             // count of features
             assertEquals(basicData.numCols() - 1, histogram.featuresCount());
             int numRows = (int) basicData.numRows();
@@ -49,13 +49,13 @@ public class SplittingTest extends TestUtil {
                     histogram.getFeatureBins(0).stream().map(b -> b._count).collect(Collectors.toList()));
             // feature 0, count 0
             assertEquals(Arrays.asList(0, 0, 1, 0, 1, 0, 1, 0, 0, 0), 
-                    histogram.getFeatureBins(0).stream().map(b -> b._count0).collect(Collectors.toList()));
+                    histogram.getFeatureBins(0).stream().map(b -> b._classesDistribution[0]).collect(Collectors.toList()));
             // feature 1, count all
             assertEquals(Arrays.asList(4, 3, 3),
                     histogram.getFeatureBins(1).stream().map(b -> b._count).collect(Collectors.toList()));
             // feature 1, count 0
             assertEquals(Arrays.asList(1, 1, 1),
-                    histogram.getFeatureBins(1).stream().map(b -> b._count0).collect(Collectors.toList()));
+                    histogram.getFeatureBins(1).stream().map(b -> b._classesDistribution[0]).collect(Collectors.toList()));
             
         } finally {
             Scope.exit();
