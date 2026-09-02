@@ -154,22 +154,13 @@ def glm_derived_model():
 
     # should fail
     try:
-        glm_model_ro.make_derived_glm_model(dest="ro_true", remove_offset_effects=True)
-        assert False, "Should have throw exception."
-    except Exception as ex:
-        print(ex)
-        temp = str(ex)
-        assert "GLM wasn't trained with both control variables and with remove offset effects feature set, the remove_control_variables_effects and remove_offset_effects features cannot be used." in temp, \
-            "Wrong exception was received."
-
-    try:
-        glm_model_cv_ro.make_derived_glm_model(dest="ro_true", remove_offset_effects=True,
+        glm_model_cv_ro.make_derived_glm_model(dest="ro_true_fail_1", remove_offset_effects=True,
                                                remove_control_variables_effects=True)
         assert False, "Should have throw exception."
     except Exception as ex:
         print(ex)
         temp = str(ex)
-        assert "The remove_control_variables_effects and remove_offset_effects feature cannot be used together. It produces the same model as the main model." in temp, \
+        assert "remove_control_variables_effects and remove_offset_effects cannot both be True: they produce the same model as the main model." in temp, \
             "Wrong exception was received."
 
 

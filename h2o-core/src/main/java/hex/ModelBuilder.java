@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -661,8 +662,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
+      if (!cvModelBuilders[0].getName().equals("infogram")) { // infogram does not support scoring
         cv_mainModelScores(N, mbs, cvModelBuilders);
+      }
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -846,6 +848,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     Log.info("Scoring the "+N+" CV models");
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
+    cv_prepareAdditionalScoring(N);
     Futures fs = new Futures();
     for (int i=0; i<N; ++i) {
       if (_job.stop_requested()) {
@@ -853,37 +856,67 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new Job.JobCancelledException(_job);
       }
       Frame cvValid = cvModelBuilders[i].valid();
-      Frame preds = null;
+      List<Frame> outerScopeFrames = new ArrayList<>();
       try (Scope.Safe s = Scope.safe(cvValid)) {
         Frame adaptFr = new Frame(cvValid);
         if (makeCVMetrics(cvModelBuilders[i])) {
           M cvModel = cvModelBuilders[i].dest().get();
           cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+          String predName = cvModelBuilders[i].getPredictionKey();
           if (nclasses() == 2 /* need holdout predictions for gains/lift table */
                   || _parms._keep_cross_validation_predictions
                   || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-            String predName = cvModelBuilders[i].getPredictionKey();
-            Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
-            preds = result.getPredictions();
-            Scope.untrack(preds);
-            result.makeModelMetrics(cvValid, adaptFr);
-            mbs[i] = result.getMetricBuilder();
+            mbs[i] = cv_scoreFold(cvModel, cvValid, adaptFr, predName, outerScopeFrames);
             DKV.put(cvModel);
           } else {
             mbs[i] = cvModel.scoreMetrics(adaptFr);
           }
+          cv_additionalScoringPerFold(i, cvModel, cvValid, adaptFr, predName, outerScopeFrames);
         }
       } finally {
-        Scope.track(preds);
+        for (Frame f : outerScopeFrames) Scope.track(f);
       }
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
-    
+
     fs.blockForPending();
     return mbs;
+  }
+
+  /**
+   * Hook invoked once at the start of {@link #cv_scoreCVModels} before the per-fold loop.
+   * Subclasses can override to allocate per-fold state (e.g., a parallel array sized by {@code N}
+   * for an additional metric view). Default is a no-op.
+   */
+  protected void cv_prepareAdditionalScoring(int N) {}
+
+  /**
+   * Hook invoked after the standard per-fold scoring in {@link #cv_scoreCVModels} but before
+   * the per-fold train/valid frames and weight vecs are removed from DKV. Runs inside the
+   * active per-fold {@link Scope.Safe}; prediction frames created here and added to
+   * {@code outerScopeFrames} survive the scope and are tracked by the outer finally-block.
+   * Default is a no-op.
+   */
+  protected void cv_additionalScoringPerFold(int i, M cvModel, Frame cvValid, Frame adaptFr,
+                                              String predName, List<Frame> outerScopeFrames) {}
+
+  /**
+   * Encapsulates the predict+makeModelMetrics flow used by both the base loop and subclass hooks.
+   * Untracks the predictions frame from the active inner scope and appends it to
+   * {@code outerScopeFrames} so the caller's finally-block can re-track it on the outer scope.
+   */
+  protected final ModelMetrics.MetricBuilder cv_scoreFold(M cvModel, Frame cvValid, Frame adaptFr,
+                                                          String predName, List<Frame> outerScopeFrames) {
+    Model.PredictScoreResult result = cvModel.predictScoreImpl(
+        cvValid, adaptFr, predName, _job, true, CFuncRef.from(_parms._custom_metric_func));
+    Frame preds = result.getPredictions();
+    Scope.untrack(preds);
+    outerScopeFrames.add(preds);
+    result.makeModelMetrics(cvValid, adaptFr);
+    return result.getMetricBuilder();
   }
 
   protected boolean makeCVMetrics(ModelBuilder<?, ?, ?> cvModelBuilder) {
@@ -960,7 +993,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (fr != null) Scope.untrack(fr);
       }
     } else {
-      int count = Model.deleteAll(predKeys);
+      int count = Keyed.removeAll(predKeys);
       Log.info(count+" CV predictions were removed");
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
@@ -999,7 +1032,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (!_parms._keep_cross_validation_models) {
-      int count = Model.deleteAll(cvModKeys);
+      int count = Keyed.removeAll(cvModKeys);
       Log.info(count+" CV models were removed");
     }
 
@@ -1958,7 +1991,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   //stitch together holdout predictions into one large Frame
-  Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
+  protected Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
     int precision = _parms._keep_cross_validation_predictions_precision;
     if (precision < 0) {
       precision = isClassifier() ? 8 : 0;
@@ -2030,6 +2063,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   private TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels) {
+    return makeCrossValidationSummaryTable(cvmodels, m -> m._output._validation_metrics);
+  }
+
+  // Picker-parameterized variant: lets subclasses build a summary from an alternate per-fold
+  // ModelMetrics slot. The 1-arg overload above delegates with the default validation-metrics picker.
+  protected TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels, Function<Model, ModelMetrics> picker) {
     if (cvmodels == null || cvmodels.length == 0) return null;
     int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
@@ -2059,7 +2098,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);
-      ModelMetrics mm = m._output._validation_metrics;
+      ModelMetrics mm = picker.apply(m);
 
       if (mm != null) {
 
@@ -2102,34 +2141,37 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             null,
             rowNames.toArray(new String[0]), colNames, colTypes, colFormats, "");
 
-    MathUtils.BasicStats stats = new MathUtils.BasicStats(numMetrics);
     double[][] vals = new double[N][numMetrics];
-    int i = 0;
-    for (Key<Model> km : cvmodels) {
-      Model m = DKV.getGet(km);
+    int filled = 0;   // rows of vals[] actually populated; only these feed mean/sigma
+    // The column index must stay the fold ordinal - colNames[fold+extra_length] is "cv_<fold+1>_valid" - while
+    // vals[] is packed. Using one counter for both would write a later fold's numbers under an earlier fold's
+    // header whenever a fold is skipped.
+    for (int fold = 0; fold < cvmodels.length; fold++) {
+      Model m = DKV.getGet(cvmodels[fold]);
       if (m==null) continue;
-      ModelMetrics mm = m._output._validation_metrics;
+      ModelMetrics mm = picker.apply(m);
+      if (mm == null) continue;
       int j=0;
       for (Method meth : meths) {
         if (excluded.contains(meth.getName())) continue;
         try {
           double val = (double) meth.invoke(mm);
-          vals[i][j] = val;
-          table.set(j++, i+extra_length, (float)val);
+          vals[filled][j] = val;
+          table.set(j++, fold+extra_length, (float)val);
         } catch (Throwable e) { }
         if (mm.cm()==null) continue;
         try {
           double val = (double) meth.invoke(mm.cm());
-          vals[i][j] = val;
-          table.set(j++, i+extra_length, (float)val);
+          vals[filled][j] = val;
+          table.set(j++, fold+extra_length, (float)val);
         } catch (Throwable e) { }
       }
-      i++;
+      filled++;
     }
     MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
-    for (i=0;i<N;++i)
-      simpleStats.add(vals[i],1);
-    for (i=0;i<numMetrics;++i) {
+    for (int i = 0; i < filled; ++i)
+      simpleStats.add(vals[i], 1);
+    for (int i = 0; i < numMetrics; ++i) {
       table.set(i, 0, (float)simpleStats.mean()[i]);
       table.set(i, 1, (float)simpleStats.sigma()[i]);
     }

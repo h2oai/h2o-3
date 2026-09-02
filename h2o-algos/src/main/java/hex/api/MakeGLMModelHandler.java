@@ -3,12 +3,12 @@ package hex.api;
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
 import hex.Model;
-import hex.ModelMetrics;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
 import hex.gram.Gram;
 import hex.schemas.*;
 import water.DKV;
+import water.Iced;
 import water.Key;
 import water.MRTask;
 import water.api.Handler;
@@ -23,7 +23,44 @@ import java.util.Map;
  * Created by tomasnykodym on 3/25/15.
  */
 public class MakeGLMModelHandler extends Handler {
-  
+
+  /**
+   * Identifies the exact fit a derived model was built from. Deliberately not Keyed.checksum(): that value is
+   * memoized in a non-transient field (so it is a snapshot from whenever the model was first scored, and
+   * deepClone copies it verbatim into a checkpoint continuation), it is derived from the training frame's own
+   * checksum (so deleting the frame changes it), and GLMModel.checksum_impl() collapses to the constant 1 for
+   * any model whose _train key is gone. The end timestamp plus the fitted coefficients are intrinsic to the
+   * fit and cannot drift after training.
+   */
+  private static long fitToken(GLMModel model) {
+    return model._output._end_time * 31 + Arrays.hashCode(model._output.beta());
+  }
+
+  // Deep-copies a source model's CV holdout-predictions frame into a key owned by the derived
+  // model, rather than transferring the source's pointer: the source model keeps its own
+  // reference (repeated derive calls stay possible, and deleting either model does not
+  // invalidate the other's frame).
+  private static void copyHoldoutPreds(Key<Frame> sourceHoldout, GLMModel derived, Key derivedKey) {
+    if (sourceHoldout == null) return;
+    Frame sourceHoldoutFrame = sourceHoldout.get();
+    if (sourceHoldoutFrame == null) return;
+    // derivedKey is user-controlled (args.dest), and the caller's collision check covers only that key - not this
+    // second key derived from it. deepCopy + DKV.put would overwrite whatever sits here and orphan its Vecs, so
+    // check before allocating anything: on collision nothing has been created and nothing has to be cleaned up.
+    // ponytail: check-then-act, not a CAS. Two concurrent derives at the same dest can still race here (as they
+    // can on the derived model key itself, and as computeGram does for its gram frame). Closing it properly
+    // needs DKV.DputIfMatch, whose "match against null" does not compose with delete tombstones - a re-derive
+    // after the previous derived model was removed would start failing. Revisit only with a real report.
+    String holdoutName = derivedKey.toString() + "_cv_holdout_preds";
+    if (DKV.get(Key.make(holdoutName)) != null) {
+      throw new IllegalArgumentException("Cannot store the derived model's cross-validation holdout predictions: " +
+              holdoutName + " already exists. Pass a different destination key, or remove that object first.");
+    }
+    Frame holdoutCopy = sourceHoldoutFrame.deepCopy(holdoutName);
+    DKV.put(holdoutCopy);
+    derived._output._cross_validation_holdout_predictions_frame_id = holdoutCopy._key;
+  }
+
   public GLMModelV3 make_model(int version, MakeGLMModelV3 args){
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)
@@ -43,11 +80,17 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu,
             Double.NaN, Double.NaN, -1);
     m.setInputParms(model._input_parms);
-    DataInfo dinfo = model.dinfo();
+    // beta above is in the raw (denormalized) coefficient space, so the new model's DataInfo must not carry the
+    // source's STANDARDIZE transform - otherwise isStandardized() reports true for a model whose beta is raw and the
+    // denormalizeBeta consumers gated on it (beta(lambda), getRegularizationPath's coefficients) silently rescale
+    // already-raw values. Clone first: model.dinfo() returns the source's live _output._dinfo, and the base code
+    // mutated it in place, permanently flipping the *source* model to NONE.
+    DataInfo dinfo = model.dinfo().clone();
     dinfo.setPredictorTransform(TransformType.NONE);
-    m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
-            model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial, 
+    m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
+            model._output.coefficientNames(), beta, model._output._binomial, model._output._multinomial,
             model._output._ordinal, model._parms._control_variables);
+    m._reportingOnly = true;
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();
     res.fillFromImpl(m);
@@ -68,17 +111,22 @@ public class MakeGLMModelHandler extends Handler {
       if (model == null)
           throw new IllegalArgumentException("Missing source model " + args.model);
       if (model._parms._control_variables == null && !model._parms._remove_offset_effects) {
-          throw new IllegalArgumentException("Source model is not trained with control variables or remove offset effects.");
+          throw new IllegalArgumentException("Source model must be trained with control_variables or remove_offset_effects=True.");
       }
       Key generatedKey;
-      if ((args.remove_control_variables_effects || args.remove_offset_effects) &&
-              (model._parms._control_variables == null || !model._parms._remove_offset_effects)) {
-          throw new IllegalArgumentException("You can set remove_control_variables_effects to true or " +
-                  "remove_offset_effects to true only if control_variables and remove_offset_effects are both set.");
-      } else if (args.remove_control_variables_effects && args.remove_offset_effects) {
-          throw new IllegalArgumentException("The remove_control_variables_effects and remove_offset_effects feature " +
-                  "cannot be used together. It produces the same model as the main model.");
-      } else if (args.remove_offset_effects) {
+      if (args.remove_control_variables_effects && model._parms._control_variables == null) {
+          throw new IllegalArgumentException("remove_control_variables_effects requires the source model " +
+                  "to have been trained with control_variables.");
+      }
+      if (args.remove_offset_effects && !model._parms._remove_offset_effects) {
+          throw new IllegalArgumentException("remove_offset_effects requires the source model " +
+                  "to have been trained with remove_offset_effects=True.");
+      }
+      if (args.remove_control_variables_effects && args.remove_offset_effects) {
+          throw new IllegalArgumentException("remove_control_variables_effects and remove_offset_effects cannot both be set: " +
+                  "they produce the same model as the main model.");
+      }
+      if (args.remove_offset_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_offset_effects");
       } else if (args.remove_control_variables_effects) {
           generatedKey = Key.make(model._key.toString() + "_remove_control_variables_effects");
@@ -86,9 +134,35 @@ public class MakeGLMModelHandler extends Handler {
           generatedKey = Key.make(model._key.toString()+"_unrestricted_model");
       }
       Key key = args.dest != null ? Key.make(args.dest) : generatedKey;
-      GLMModel modelUnrestricted = DKV.getGet(key);
-      if (modelUnrestricted != null) {
-          throw new IllegalArgumentException("Model with "+key+" already exists.");
+      Iced existingAtKey = DKV.getGet(key);
+      if (existingAtKey != null) {
+          if (!(existingAtKey instanceof GLMModel)) {
+              throw new IllegalArgumentException("Key " + key + " already exists and does not refer to a GLM model.");
+          }
+          GLMModel existingModel = (GLMModel) existingAtKey;
+          // Idempotent re-derive: only trust a model at this key if it was produced by a previous
+          // make_derived_model call from this same source model with the same view requested. The fit token is part
+          // of the identity on purpose - H2O lets you retrain into an existing model_id, so key equality alone would
+          // return the *previous* fit's metrics as the derived view of the retrained model.
+          boolean sameProvenance = model._key.equals(existingModel._derivedFromModelId)
+                  && fitToken(model) == existingModel._derivedFromFitToken
+                  && existingModel._useControlVariables == args.remove_control_variables_effects
+                  && existingModel._useRemoveOffsetEffects == args.remove_offset_effects;
+          if (sameProvenance) {
+              GLMModelV3 existing = new GLMModelV3();
+              existing.fillFromImpl(existingModel);
+              return existing;
+          }
+          // Distinguish the two cases: _derivedFromModelId is null on any normally trained model, so the common
+          // collision is a user pointing dest at a model of their own rather than at a stale derivation.
+          if (existingModel._derivedFromModelId == null) {
+              throw new IllegalArgumentException("Key " + key + " already holds a GLM model that was not produced by" +
+                      " make_derived_glm_model. Pass a different destination key, or remove that model first.");
+          }
+          throw new IllegalArgumentException("Key " + key + " already holds a derived model from a different source" +
+                  " model, from a different fit of the same source model, or with a different combination of" +
+                  " remove_offset_effects / remove_control_variables_effects. Pass a different destination key, or" +
+                  " remove that model first.");
       }
       GLMModel.GLMParameters parms = (GLMModel.GLMParameters) model._parms.clone();
       GLMModel.GLMParameters inputParms = (GLMModel.GLMParameters) model._input_parms.clone();
@@ -111,49 +185,87 @@ public class MakeGLMModelHandler extends Handler {
           m._input_parms._remove_offset_effects = false;
           m._parms._remove_offset_effects = false;
       }
+      // beta() is in the raw (denormalized) coefficient space, so the derived model's DataInfo must
+      // not carry the source's STANDARDIZE transform, or coef_norm() will re-standardize raw values.
       DataInfo dinfo = model.dinfo().clone();
       dinfo.setPredictorTransform(TransformType.NONE);
-      m._output = new GLMOutput(model.dinfo(), model._output._names, model._output._column_types, model._output._domains,
+      m._output = new GLMOutput(dinfo, model._output._names, model._output._column_types, model._output._domains,
               model._output.coefficientNames(), model._output.beta(), model._output._binomial, model._output._multinomial,
               model._output._ordinal, null);
+      // The GLMOutput ctor above synthesizes a placeholder submodel at lambda=0/alpha=0. Carry the source's
+      // selected lambda/alpha over, otherwise the derived model reports lambda_best()/alpha_best() == 0 - and
+      // learning_curve_plot(), which filters the copied scoring history by alpha_best, silently plots nothing.
+      // The source's full submodel array is deliberately not adopted - see retagDerivedSubmodel for why - so a
+      // derived model carries no regularization path; read that from the source model.
+      m._output.retagDerivedSubmodel(model._output.lambda_best(), model._output.alpha_best());
+      // _training_metrics/_validation_metrics/_cross_validation_metrics below are shared by reference
+      // with the source model, not deep-copied: they're inline (non-Key) ModelMetrics fields, so the
+      // DKV.put(key, m) at the end of this method already serializes them by value into the derived
+      // model's own DKV entry. The derived model never re-resolves them through DKV afterward (no code
+      // in the codebase does an independent by-key ModelMetrics lookup for a derived model), so sharing
+      // the reference is safe regardless of what later happens to the source model.
       if (args.remove_control_variables_effects) {
-          ModelMetrics mt = model._output._training_metrics_restricted_model_contr_vals;
-          ModelMetrics mv = model._output._validation_metrics_restricted_model_contr_vals;
-          m._output._training_metrics = mt;
-          m._output._validation_metrics = mv;
-          m._output._scoring_history = model._output._scoring_history_restricted_model_contr_vals;
+          // _contr_vals slots are only populated when both control_variables + remove_offset_effects are combined;
+          // with control_variables alone the main slots already hold the restricted view.
+          boolean hasBothFeatures = model._parms._remove_offset_effects;
+          m._output._training_metrics = hasBothFeatures
+                  ? model._output._training_metrics_restricted_model_contr_vals
+                  : model._output._training_metrics;
+          m._output._validation_metrics = hasBothFeatures
+                  ? model._output._validation_metrics_restricted_model_contr_vals
+                  : model._output._validation_metrics;
+          m._output._scoring_history = hasBothFeatures
+                  ? model._output._scoring_history_restricted_model_contr_vals
+                  : model._output._scoring_history;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances;
           m._output.setAndMapControlVariablesNames(model._parms._control_variables);
       } else if (args.remove_offset_effects) {
-          ModelMetrics mt = model._output._training_metrics_restricted_model_ro;
-          ModelMetrics mv = model._output._validation_metrics_restricted_model_ro;
-          m._output._training_metrics = mt;
-          m._output._validation_metrics = mv;
-          m._output._scoring_history = model._output._scoring_history_restricted_model_ro;
+          // _restricted_model_ro slots are only populated when control_variables + remove_offset_effects
+          // are combined; with remove_offset_effects alone the main slots already hold the restricted view.
+          boolean hasBothFeatures = model._parms._control_variables != null;
+          m._output._training_metrics = hasBothFeatures
+                  ? model._output._training_metrics_restricted_model_ro
+                  : model._output._training_metrics;
+          m._output._validation_metrics = hasBothFeatures
+                  ? model._output._validation_metrics_restricted_model_ro
+                  : model._output._validation_metrics;
+          m._output._scoring_history = hasBothFeatures
+                  ? model._output._scoring_history_restricted_model_ro
+                  : model._output._scoring_history;
+          m._output._cross_validation_metrics = model._output._cross_validation_metrics;
+          m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
+          copyHoldoutPreds(model._output._cross_validation_holdout_predictions_frame_id, m, key);
       } else {
-          ModelMetrics mt = model._output._training_metrics_unrestricted_model;
-          ModelMetrics mv = model._output._validation_metrics_unrestricted_model;
-          m._output._training_metrics = mt;
-          m._output._validation_metrics = mv;
+          m._output._training_metrics = model._output._training_metrics_unrestricted_model;
+          m._output._validation_metrics = model._output._validation_metrics_unrestricted_model;
           m._output._scoring_history = model._output._scoring_history_unrestricted_model;
           m.resetThreshold(model.defaultThreshold());
           m._output._variable_importances = model._output._variable_importances_unrestricted_model;
+          // Unrestricted (with-offset) CV view from source's parity slots; null when
+          // _remove_offset_effects=false or nfolds=0.
+          m._output._cross_validation_metrics = model._output._cross_validation_metrics_unrestricted_model;
+          m._output._cross_validation_metrics_summary = model._output._cross_validation_metrics_summary_unrestricted_model;
+          copyHoldoutPreds(model._output._cross_validation_holdout_predictions_frame_id_unrestricted_model, m, key);
       }
       m._output._model_summary = model._output._model_summary;
       m._key = key;
       // setting these flags is important for right scoring
       m._useControlVariables = args.remove_control_variables_effects;
       m._useRemoveOffsetEffects = args.remove_offset_effects;
+      m._derivedFromModelId = model._key;
+      m._derivedFromFitToken = fitToken(model);
+      m._reportingOnly = true;
 
       DKV.put(key, m);
+
       GLMModelV3 res = new GLMModelV3();
       res.fillFromImpl(m);
       return res;
   }
-  
+
   public GLMRegularizationPathV3 extractRegularizationPath(int v, GLMRegularizationPathV3 args) {
     GLMModel model = DKV.getGet(args.model.key());
     if(model == null)

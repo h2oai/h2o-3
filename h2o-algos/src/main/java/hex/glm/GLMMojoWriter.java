@@ -15,7 +15,11 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
 
   @Override
   public String mojoVersion() {
-    return "1.00";
+    // Only remove-offset models get 1.01, so an old scorer rejects them instead of ignoring the unknown
+    // remove_offset_effects key and silently adding the offset back into eta; every other GLM MOJO stays
+    // at 1.00 and keeps loading. Patch-level, to stay below the 1.1 "GLM MOJO supports offset" sentinel
+    // in GlmMojoModelBase.
+    return model != null && model._useRemoveOffsetEffects ? "1.01" : "1.00";
   }
 
   @Override
@@ -35,6 +39,11 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
       writekv("beta", model._output.getControlValBeta(model.beta_internal().clone()));  // "The Control Variables Coefficients"
     else
       writekv("beta", model.beta_internal());  // "The Coefficients"
+
+    // Mirror the flag GLMScore reads rather than _parms._remove_offset_effects: a model derived through
+    // MakeGLMModelHandler carries its view in this field, so keying off it makes the MOJO agree with the
+    // in-H2O predictions by construction. Older MOJOs have no such key and default to false in the reader.
+    writekv("remove_offset_effects", model._useRemoveOffsetEffects);
 
     writekv("family", model._parms._family);
     writekv("link", model._parms._link);
