@@ -1664,6 +1664,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   (source == null ? "" : " (" + source + ")") + " as the checkpoint instead.");
         }
         CheckpointUtils.getAndValidateCheckpointModel(this, CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
+        // lambda_search/nlambdas/lambda/alpha are not pinned, so a continuation may run a smaller alpha/lambda grid
+        // than the checkpoint did. The resume indexes the continuation's _lambda by the checkpoint's submodel count
+        // (ComputationState.copyCheckModel2State, and alphaStart/lambdaStart in the alpha/lambda loop), so a smaller
+        // grid either throws ArrayIndexOutOfBounds or starts past the end of the loop and silently does nothing.
+        if (checkpointObj instanceof GLMModel && ((GLMModel) checkpointObj)._output._submodels != null
+                && _parms._lambda != null && _parms._alpha != null) {
+          int checkpointSubmodels = ((GLMModel) checkpointObj)._output._submodels.length;
+          int gridSize = _parms._lambda.length * _parms._alpha.length;
+          if (gridSize < checkpointSubmodels)
+            error("_checkpoint", "The checkpointed model was trained over " + checkpointSubmodels + " alpha/lambda" +
+                    " values but this continuation only has " + gridSize + ", so there is nothing to resume from." +
+                    " Keep lambda_search and use at least as many alpha and lambda (nlambdas) values as the" +
+                    " checkpointed model.");
+        }
       }
 
       if (_parms._influence != null) {

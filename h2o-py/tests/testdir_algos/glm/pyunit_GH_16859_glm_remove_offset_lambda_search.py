@@ -211,6 +211,31 @@ def glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search():
         assert False, "flipping remove_offset_effects across a checkpoint must be rejected"
 
 
+# The resume indexes the continuation's lambda grid by the checkpoint's submodel count, so a continuation with a
+# smaller alpha/lambda grid than the checkpoint (fewer nlambdas, or lambda_search switched off) must be rejected
+# up front instead of throwing ArrayIndexOutOfBounds or silently doing no work.
+def glm_remove_offset_lambda_search_checkpoint_rejects_smaller_grid():
+    df = _prostate_with_offset()
+    df["CAPSULE"] = df["CAPSULE"].asfactor()
+    x = ["RACE", "DPROS", "PSA", "VOL", "GLEASON"]
+    common = dict(family="binomial", remove_offset_effects=True, solver="IRLSM", seed=0xC0FFEE)
+
+    base = H2OGeneralizedLinearEstimator(lambda_search=True, nlambdas=8, early_stopping=False, **common)
+    base.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
+    n_submodels = len(H2OGeneralizedLinearEstimator.getGLMRegularizationPath(base)["lambdas"])
+    assert n_submodels > 4, "the checkpoint must have walked more than 4 lambdas, got %d" % n_submodels
+
+    for bad in (H2OGeneralizedLinearEstimator(lambda_search=True, nlambdas=4, checkpoint=base.model_id, **common),
+                H2OGeneralizedLinearEstimator(lambda_search=False, checkpoint=base.model_id, **common)):
+        try:
+            bad.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
+        except Exception as e:
+            assert "_checkpoint" in str(e) and "alpha/lambda" in str(e), \
+                "expected a _checkpoint grid-size error, got: %s" % str(e)[:300]
+        else:
+            assert False, "a continuation with a smaller alpha/lambda grid than the checkpoint must be rejected"
+
+
 # remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
 # history's cross-validation deviance is offset-removed, so its deviance_xval must differ from the
 # unrestricted history's deviance_xval (removing the offset changes the deviance).
@@ -559,6 +584,7 @@ pyunit_utils.run_tests([
     glm_remove_offset_lambda_search_scoring_history,
     glm_remove_offset_lambda_search_scoring_history_no_gaps,
     glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search,
+    glm_remove_offset_lambda_search_checkpoint_rejects_smaller_grid,
     glm_remove_offset_lambda_search_cross_validation,
     glm_remove_offset_lambda_search_mojo,
     glm_remove_offset_lambda_search_families,

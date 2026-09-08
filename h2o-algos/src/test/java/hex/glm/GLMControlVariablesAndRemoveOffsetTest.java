@@ -4320,10 +4320,10 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
     }
 
     /**
-     * Verifies that remove_impl cleans up _training_metrics_unrestricted_model and
-     * _validation_metrics_unrestricted_model from DKV when the model is deleted.
-     * These metrics are Keyed but not tracked in _model_metrics, so without the explicit
-     * remove_impl override they would leak in DKV.
+     * Verifies that deleting the model also removes _training_metrics_unrestricted_model and
+     * _validation_metrics_unrestricted_model from DKV. They come out of a regular score() pass, so their keys are
+     * registered in _output._model_metrics and removed by Model.remove_impl; there is no dedicated cleanup for them
+     * (see GLMModel.remove_impl).
      */
     @Test
     public void testRemoveImplCleansUpUnrestrictedMetrics() {
