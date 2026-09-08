@@ -323,6 +323,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (_job.stop_requested()) return;
     M model = _result.get();
     if (model == null || model._output._training_metrics_unrestricted_model != null) return;
+    if (!supportsUnrestrictedOffsetView()) {
+      _job.warn("The offset-applied ('unrestricted') metrics view is not available for " + _parms.algoName()
+              + " models; only the primary (offset-removed) metrics are reported.");
+      return;
+    }
     // balance_classes replaces the training frame with a stratified resample, so the primary metrics are
     // computed on the resampled rows while the offset-applied view below is scored on the original frame.
     // Both numbers are individually correct but they cover different rows - say so, because the whole point
@@ -389,6 +394,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       restoreRestrictedMetric(unrestricted._output, sharedKey, restricted);
       if (preds != null) preds.delete();
     }
+    // score() computes no metrics when e.g. the response is all-NA; the shared key then still holds the
+    // restricted metric, and relabeling it would make both views point at one object. Treat as unavailable.
+    if (mm == restricted) mm = null;
     describeUnrestricted(mm, sharedKey, restricted,
             "Offset applied (unrestricted view of a remove_offset_effects model)");
     return mm;
@@ -1004,8 +1012,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           // reusing the existing "a fold was skipped -> no aggregate view" path.
           if (_parms._remove_offset_effects && !cvModel.isDistributionHuber()) {
             if (_cvUnrestrictedMBs == null) _cvUnrestrictedMBs = new ModelMetrics.MetricBuilder[N];
-            // score a transient clone so the shared fold-model instance never carries the flag (no race)
-            _cvUnrestrictedMBs[i] = cvModel.cloneForOffsetAppliedScoring().scoreMetrics(adaptFr);
+            try {
+              // score a transient clone so the shared fold-model instance never carries the flag (no race)
+              _cvUnrestrictedMBs[i] = cvModel.cloneForOffsetAppliedScoring().scoreMetrics(adaptFr);
+            } catch (Exception t) {
+              // Optional diagnostic view: a null fold builder makes cv_mainModelScores drop (and warn about)
+              // the aggregate view instead of failing the whole CV run.
+              Log.warn("Could not compute the offset-applied (unrestricted) metrics for fold model "
+                      + cvModel._key + "; the unrestricted cross-validation view will be unavailable.", t);
+            }
           }
         }
       } finally {
@@ -1040,6 +1055,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected boolean supportsRemoveOffsetEffects() {
     return false;
+  }
+
+  /**
+   * Whether the offset-applied ("unrestricted") metrics view of a remove_offset_effects model can be obtained
+   * by re-scoring through {@link Model#cloneForOffsetAppliedScoring()}. False for composite models whose
+   * scoring delegates to other DKV-resident models (the clone's flag never reaches them).
+   */
+  protected boolean supportsUnrestrictedOffsetView() {
+    return true;
   }
 
   protected boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {

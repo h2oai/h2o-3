@@ -26,7 +26,7 @@ GLM-specific behavior:
 **Notes**:
 
 - This option is experimental.
-- Stacked Ensemble inherits this option from its base models: an ensemble built on base models that remove the offset removes it too, and the offset column is kept out of the level-one frame so the metalearner cannot add it back. All base models must agree on the setting; mixing offset-removed and plain base models is rejected.
+- Stacked Ensemble inherits this option from its base models: an ensemble built on base models that remove the offset removes it too, and the offset column is kept out of the level-one frame so the metalearner cannot add it back. All base models must agree on the setting; mixing offset-removed and plain base models is rejected. The unrestricted (offset-applied) metrics view is not produced for a Stacked Ensemble: the ensemble scores through its offset-free base models and a metalearner trained without the offset, so there is no meaningful offset-applied ensemble to report. A warning is added to the model instead.
 - Not available for DRF (which rejects ``offset_column`` outright), nor for ANOVAGLM and ModelSelection (which do not support scoring at all -- they report only predictor relevance, so there is nothing for this option to affect).
 - This option requires an ``offset_column``. Setting ``remove_offset_effects=True`` without one is rejected during validation.
 - GLM only: this option is not supported for multinomial, ordinal, or custom distributions, and is not available when cross validation, Lambda search, or interactions are enabled. GAM enforces the same restrictions (it trains an internal GLM).

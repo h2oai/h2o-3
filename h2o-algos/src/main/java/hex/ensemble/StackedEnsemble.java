@@ -73,6 +73,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   protected boolean supportsRemoveOffsetEffects() { return true; }
 
+  // The ensemble scores through its base models' own DKV instances (which stay offset-free) and a metalearner
+  // trained without the offset, so re-scoring an offset-applied clone would just reproduce the restricted
+  // numbers under a different header.
+  @Override
+  protected boolean supportsUnrestrictedOffsetView() { return false; }
+
   @Override
   protected void ignoreBadColumns(int npredictors, boolean expensive){
     HashSet usedColumns = new HashSet();
@@ -125,6 +131,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   public void init(boolean expensive) {
     expandBaseModels();
+    // remove_offset_effects set directly on the ensemble: inherit the offset column now, or ModelBuilder.init's
+    // "requires an offset_column" check fires before validateBaseModels() gets a chance to inherit it.
+    if (_parms._remove_offset_effects && _parms._offset_column == null
+            && _parms._base_models != null && _parms._base_models.length > 0)
+      _parms._offset_column = ((Model) DKV.getGet(_parms._base_models[0]))._parms._offset_column;
     super.init(expensive);
 
     if (_parms._distribution != DistributionFamily.AUTO) {

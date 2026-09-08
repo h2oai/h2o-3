@@ -110,6 +110,34 @@ public class StackedEnsembleRemoveOffsetEffectTest {
               se._parms._remove_offset_effects);
       assertEquals("the ensemble must not re-apply the offset its base models removed",
               0.0, maxOffsetSensitivity(se, train), 1e-9);
+      // Re-scoring an offset-applied SE clone would just go through the base models' offset-free DKV instances,
+      // so the "unrestricted" view would silently equal the restricted one. It must be absent, with a warning.
+      assertNull("SE must not report a bogus offset-applied view", se._output._training_metrics_unrestricted_model);
+      assertTrue("SE must warn that the offset-applied view is unavailable",
+              String.join("\n", se._output._job.warns()).contains("unrestricted"));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  /** Setting the flag directly on the ensemble (without re-specifying offset_column) must inherit the column. */
+  @Test
+  public void flagSetOnEnsembleInheritsOffsetColumn() {
+    Scope.enter();
+    try {
+      Frame train = makeTrain();
+      GBMModel b1 = baseGbm(train, true, 1);
+      GBMModel b2 = baseGbm(train, true, 2);
+      StackedEnsembleParameters seParms = new StackedEnsembleParameters();
+      seParms._train = train._key;
+      seParms._response_column = "AGE";
+      seParms._ignored_columns = new String[]{"ID"};
+      seParms._base_models = new Key[]{b1._key, b2._key};
+      seParms._remove_offset_effects = true;
+      seParms._seed = 42;
+      StackedEnsembleModel se = (StackedEnsembleModel) Scope.track_generic(new StackedEnsemble(seParms).trainModel().get());
+      assertEquals("offset", se._parms._offset_column);
+      assertEquals(0.0, maxOffsetSensitivity(se, train), 1e-9);
     } finally {
       Scope.exit();
     }
