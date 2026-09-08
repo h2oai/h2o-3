@@ -30,6 +30,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
     _model._beta = readkv("beta");
     _model._family = readkv("family");
     _model._dispersion_estimated = readkv("dispersion_estimated", 1.0);
+    _model._removeOffsetEffects = readkv("remove_offset_effects", false);
 
     if (_model instanceof GlmMojoModel) {
       GlmMojoModel m = (GlmMojoModel) _model;
@@ -62,7 +63,10 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    // Highest GLM MOJO version this reader understands. 1.01 adds the remove_offset_effects key; 1.00 MOJOs
+    // still load (the key defaults to false above), so this is backwards compatible in the read direction.
+    // Deliberately below 1.1, which GlmMojoModelBase still treats as "GLM MOJO supports offset".
+    return "1.01";
   } // add support to offset
 
 }
