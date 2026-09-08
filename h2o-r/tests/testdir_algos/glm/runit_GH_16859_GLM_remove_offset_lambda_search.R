@@ -79,7 +79,7 @@ glm_remove_offset_lambda_search_scoring_history_test <- function() {
                           generate_scoring_history = TRUE, seed = 0xC0FFEE)
 
     restricted <- glm_ro@model$scoring_history
-    unrestricted <- glm_ro@model$scoring_history_unrestricted_model
+    unrestricted <- h2o.scoring_history_unrestricted_model(glm_ro)
     plain <- glm_offset@model$scoring_history
     print(restricted)
     print(unrestricted)
@@ -102,7 +102,7 @@ glm_remove_offset_lambda_search_scoring_history_test <- function() {
     expect_true(any(abs(restricted$deviance_train[1:n] - unrestricted$deviance_train[1:n]) > 1e-6))
 
     # a plain offset model must not carry an unrestricted scoring history
-    expect_true(is.null(glm_offset@model$scoring_history_unrestricted_model))
+    expect_true(is.null(h2o.scoring_history_unrestricted_model(glm_offset)))
 }
 
 # remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
@@ -119,7 +119,7 @@ glm_remove_offset_lambda_search_cross_validation_test <- function() {
                          lambda_search = TRUE, nfolds = 3, generate_scoring_history = TRUE, seed = 0xC0FFEE)
 
     restricted <- glm_ro@model$scoring_history
-    unrestricted <- glm_ro@model$scoring_history_unrestricted_model
+    unrestricted <- h2o.scoring_history_unrestricted_model(glm_ro)
     plain <- glm_plain@model$scoring_history
     expect_false(is.null(restricted))
     expect_false(is.null(unrestricted))
@@ -278,7 +278,7 @@ glm_remove_offset_lambda_search_derive_errors_test <- function() {
     both <- h2o.glm(family = "binomial", x = X, y = Y, training_frame = df, offset_column = "AGE",
                     control_variables = c("PSA"), remove_offset_effects = TRUE, seed = 0xC0FFEE)
     expect_error(h2o.make_derived_glm_model(both, remove_control_variables_effects = TRUE, remove_offset_effects = TRUE),
-                 "cannot both be TRUE")
+                 "cannot both be enabled")
 
     # a reporting-only derived model holds no solver state, so it cannot seed a continuation
     derived <- h2o.make_unrestricted_glm_model(ro)

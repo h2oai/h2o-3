@@ -49,6 +49,13 @@ glm_remove_offset_cv <- function() {
                 info = paste("CV residual deviance must differ between remove_offset_effects=TRUE",
                              sprintf("(%.6f) and FALSE (%.6f)", dev_roe, dev_baseline)))
 
+    # Exact oracle: remove_offset_effects never changes the fit, and both models share seed/nfolds (same fold
+    # split), so the unrestricted (with-offset) CV deviance must EQUAL the plain offset model's CV deviance.
+    dev_roe_unrestricted <- h2o.cross_validation_metrics_unrestricted_model(glm_roe)$residual_deviance
+    expect_true(abs(dev_roe_unrestricted - dev_baseline) < 1e-6,
+                info = paste("Unrestricted CV deviance must equal the plain offset model's CV deviance;",
+                             sprintf("unrestricted=%.10f baseline=%.10f", dev_roe_unrestricted, dev_baseline)))
+
     # With generate_scoring_history=T, deviance_xval and deviance_se must appear.
     glm_sh <- h2o.glm(
         x = c("x1", "x2"),
@@ -89,10 +96,10 @@ glm_remove_offset_cv <- function() {
         nfolds = 3,
         seed = cv_seed
     )
-    unrestricted_cv <- glm_dual_cv@model$cross_validation_metrics_unrestricted_model
+    unrestricted_cv <- h2o.cross_validation_metrics_unrestricted_model(glm_dual_cv)
     expect_false(is.null(unrestricted_cv),
                  info = "cross_validation_metrics_unrestricted_model must be populated when remove_offset_effects=TRUE and nfolds>0")
-    unrestricted_summary <- glm_dual_cv@model$cross_validation_metrics_summary_unrestricted_model
+    unrestricted_summary <- h2o.cross_validation_metrics_summary_unrestricted_model(glm_dual_cv)
     expect_false(is.null(unrestricted_summary),
                  info = "cross_validation_metrics_summary_unrestricted_model must be populated")
 
@@ -116,7 +123,7 @@ glm_remove_offset_cv <- function() {
         nfolds = 3,
         seed = cv_seed
     )
-    expect_true(is.null(glm_no_roe@model$cross_validation_metrics_unrestricted_model),
+    expect_true(is.null(h2o.cross_validation_metrics_unrestricted_model(glm_no_roe)),
                 info = "cross_validation_metrics_unrestricted_model must be NULL when remove_offset_effects=FALSE")
 
     # make_unrestricted_glm_model must expose the with-offset CV metrics as the derived model's main CV slot.
@@ -134,7 +141,7 @@ glm_remove_offset_cv <- function() {
         keep_cross_validation_predictions = TRUE
     )
     derived <- h2o.make_unrestricted_glm_model(glm_kcp)
-    src_unrestricted_dev <- glm_kcp@model$cross_validation_metrics_unrestricted_model$residual_deviance
+    src_unrestricted_dev <- h2o.cross_validation_metrics_unrestricted_model(glm_kcp)$residual_deviance
     derived_cv_dev        <- h2o.residual_deviance(derived, xval = TRUE)
     expect_true(abs(src_unrestricted_dev - derived_cv_dev) < 1e-10,
                 info = paste("Derived model CV deviance must equal source unrestricted CV deviance;",

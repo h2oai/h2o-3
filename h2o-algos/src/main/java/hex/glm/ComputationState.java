@@ -200,6 +200,8 @@ public final class ComputationState {
     // Rebuild the resume candidate beta from the last submodel rather than from the stored
     // model._betaCndCheckpoint: that vector is in the solver's active-column basis, so scattering it through
     // the submodel's non-zero index set (idxs) is invalid whenever the two bases differ.
+    // Note _activeData._activeCols is NOT necessarily null here: the setLambda call above applies strong rules
+    // and can select an active-column subset, so the extract branch below is live.
     // Clone, because when idxs == null expandedBeta *is* the submodel's beta array and genInitBeta() hands
     // _betaCndCheckpoint to the solver, which mutates it in place - aliasing would corrupt the stored
     // coefficients.
@@ -217,10 +219,6 @@ public final class ComputationState {
                 : extractSubRange(expandedBeta.length, 0, activeData()._activeCols, expandedBeta);
         assert model._betaCndCheckpoint != expandedBeta :
                 "betaCndCheckpoint must not alias the submodel beta: the solver mutates betaCnd in place";
-        assert model._betaCndCheckpoint.length == (_activeData._activeCols == null
-                ? expandedBeta.length : _activeData._activeCols.length) :
-                "betaCndCheckpoint must be in the solver's active-column basis, got length "
-                        + model._betaCndCheckpoint.length;
       }
     }
   }

@@ -81,10 +81,7 @@ public abstract class GLMTask  {
     double _resDevOffsetRemoved = 0;
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta) {
-      super(null,dinfo, jobKey);
-      _glmf = new GLMWeightsFun(parms);
-      _beta = beta;
-      _sparseOffset = _sparse?GLM.sparseOffset(_beta,_dinfo):0;
+      this(jobKey, dinfo, parms, beta, false);
     }
 
     public GLMResDevTask(Key jobKey, DataInfo dinfo,GLMParameters parms, double [] beta, boolean removeOffsetEffects) {

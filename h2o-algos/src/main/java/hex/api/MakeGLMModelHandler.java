@@ -40,6 +40,9 @@ public class MakeGLMModelHandler extends Handler {
   // model, rather than transferring the source's pointer: the source model keeps its own
   // reference (repeated derive calls stay possible, and deleting either model does not
   // invalidate the other's frame).
+  // Known cost: the deep copy materializes a full nrows-sized frame just so a reporting-view model can answer
+  // cross_validation_holdout_predictions(); sharing the source's frame read-only would need ownership tracking
+  // in the removal cascade. Revisit if the memory cost is ever reported.
   private static void copyHoldoutPreds(Key<Frame> sourceHoldout, GLMModel derived, Key derivedKey) {
     if (sourceHoldout == null) return;
     Frame sourceHoldoutFrame = sourceHoldout.get();
@@ -47,7 +50,7 @@ public class MakeGLMModelHandler extends Handler {
     // derivedKey is user-controlled (args.dest), and the caller's collision check covers only that key - not this
     // second key derived from it. deepCopy + DKV.put would overwrite whatever sits here and orphan its Vecs, so
     // check before allocating anything: on collision nothing has been created and nothing has to be cleaned up.
-    // ponytail: check-then-act, not a CAS. Two concurrent derives at the same dest can still race here (as they
+    // Known gap: check-then-act, not a CAS. Two concurrent derives at the same dest can still race here (as they
     // can on the derived model key itself, and as computeGram does for its gram frame). Closing it properly
     // needs DKV.DputIfMatch, whose "match against null" does not compose with delete tombstones - a re-derive
     // after the previous derived model was removed would start failing. Revisit only with a real report.
@@ -123,7 +126,9 @@ public class MakeGLMModelHandler extends Handler {
                   "to have been trained with remove_offset_effects=True.");
       }
       if (args.remove_control_variables_effects && args.remove_offset_effects) {
-          throw new IllegalArgumentException("remove_control_variables_effects and remove_offset_effects cannot both be set: " +
+          // Keep this wording aligned with the Python/R client-side pre-checks (gen_glm.py), which raise first
+          // with the same sentence - the message a user sees must not depend on which layer catches it.
+          throw new IllegalArgumentException("remove_control_variables_effects and remove_offset_effects cannot both be enabled: " +
                   "they produce the same model as the main model.");
       }
       if (args.remove_offset_effects) {

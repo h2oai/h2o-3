@@ -82,24 +82,26 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
 
   @Override public double[] perRow(double ds[], float[] yact, double weight, double offset, Model m) {
     if(weight == 0)return ds;
-    _metricBuilder.perRow(ds,yact,weight,offset,m);
     GLMModel gm = (GLMModel) m;
-    if ((gm._finalScoring && gm._parms._calc_like && _familyAllowsFinalLikelihoodCalculation) /*final scoring, _calc_like flag is on*/ 
+    // Every GLM scoring path routes through GLMScore, which already passes offset=0 when
+    // _useRemoveOffsetEffects is set (GLMScore.map) - required to keep null_deviance on the same scale as the
+    // offset-removed residual_deviance baked into ds. Assert the invariant instead of silently re-zeroing here,
+    // which would mask a non-GLMScore caller passing the raw offset to _metricBuilder.perRow below.
+    assert !gm._useRemoveOffsetEffects || offset == 0
+            : "remove_offset_effects scoring must reach the metric builder with offset already zeroed";
+    _metricBuilder.perRow(ds,yact,weight,offset,m);
+    if ((gm._finalScoring && gm._parms._calc_like && _familyAllowsFinalLikelihoodCalculation) /*final scoring, _calc_like flag is on*/
             || (!gm._finalScoring && _glmf._family.equals(Family.negativebinomial)) /*model build*/) {
       _log_likelihood += m.likelihood(weight, yact[0], ds);
     }
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
-      // Defence in depth: every GLM scoring path currently routes through GLMScore, which already passes 0 for the
-      // offset when _useRemoveOffsetEffects is set (GLMScore.map), so this is a no-op today. It keeps null_deviance on
-      // the same scale as the offset-removed residual_deviance baked into ds should a non-GLMScore caller ever appear.
-      double effectiveOffset = gm._useRemoveOffsetEffects ? 0 : offset;
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
-        add2(yact[0], ds, weight, effectiveOffset);
+        add2(yact[0], ds, weight, offset);
       else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
               _glmf._family.equals(Family.fractionalbinomial))
-        add2(yact[0], ds[2], weight, effectiveOffset);
+        add2(yact[0], ds[2], weight, offset);
       else
-        add2(yact[0], ds[0], weight, effectiveOffset);
+        add2(yact[0], ds[0], weight, offset);
     }
     return ds;
   }

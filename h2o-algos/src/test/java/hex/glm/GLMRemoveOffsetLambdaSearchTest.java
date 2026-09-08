@@ -122,7 +122,9 @@ public class GLMRemoveOffsetLambdaSearchTest extends TestUtil {
             preds = glm.score(test);
             Scope.track_generic(preds);
 
-            // same settings, offset effect kept -> what the unrestricted model must reproduce
+            // Offset effect kept -> what the unrestricted model must reproduce. Note the params object is
+            // deliberately REUSED: the first GLM.init wrote its materialized lambda grid / max_iterations back
+            // into it, so the second model trains on exactly the same grid, making the comparison exact.
             params._remove_offset_effects = false;
             glm2 = new GLM(params).trainModel().get();
             Scope.track_generic(glm2);

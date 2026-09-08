@@ -160,7 +160,7 @@ def glm_derived_model():
     except Exception as ex:
         print(ex)
         temp = str(ex)
-        assert "remove_control_variables_effects and remove_offset_effects cannot both be True: they produce the same model as the main model." in temp, \
+        assert "remove_control_variables_effects and remove_offset_effects cannot both be enabled: they produce the same model as the main model." in temp, \
             "Wrong exception was received."
 
 

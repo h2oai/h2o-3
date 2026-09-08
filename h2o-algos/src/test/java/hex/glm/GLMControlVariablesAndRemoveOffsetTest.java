@@ -2604,7 +2604,7 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
                 fail("Should have thrown IllegalArgumentException when both flags are true");
             } catch (IllegalArgumentException e) {
                 assertTrue("Error message should mention the flags cannot be used together",
-                        e.getMessage().contains("cannot both be set"));
+                        e.getMessage().contains("cannot both be enabled"));
             }
 
             // Model trained with only control_variables (no remove_offset_effects) should succeed.
@@ -3024,8 +3024,9 @@ public class GLMControlVariablesAndRemoveOffsetTest extends TestUtil {
             assertNotNull("In-memory unrestricted CV metric must have a description",
                     unrestrictedCvMM._description);
 
-            // Force a fresh deserialization from DKV bytes, bypassing the in-memory object that
-            // would show the correct value regardless of when _description was set relative to the put.
+            // Fetch through the DKV key. On a single-node test cluster this returns the cached POJO rather
+            // than re-deserializing bytes, so this asserts the metric is registered at the expected key -
+            // byte-level persistence of _description is not (and cannot be) proven here.
             ModelMetrics fromDkv = DKV.getGet(unrestrictedCvMM._key);
             assertNotNull("Unrestricted CV metric must be retrievable from DKV", fromDkv);
             assertNotNull("Unrestricted CV metric's description must be persisted to DKV, not just set "

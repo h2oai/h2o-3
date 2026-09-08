@@ -894,7 +894,7 @@ h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_con
     stop("remove_offset_effects=TRUE requires the source model to have been trained with remove_offset_effects=TRUE.")
   }
   if (isTRUE(remove_control_variables_effects) && isTRUE(remove_offset_effects)) {
-    stop("remove_control_variables_effects and remove_offset_effects cannot both be TRUE: they produce the same model as the main model.")
+    stop("remove_control_variables_effects and remove_offset_effects cannot both be enabled: they produce the same model as the main model.")
   }
   query <- list(method = "POST", .h2o.__GLMMakeDerivedModel, model = model@model_id,
     remove_control_variables_effects=remove_control_variables_effects, remove_offset_effects=remove_offset_effects)
@@ -915,6 +915,29 @@ h2o.make_derived_glm_model <- function(model, destination_key = NULL, remove_con
 #' @export
 h2o.scoring_history_unrestricted_model <- function(model) {
   model@model$scoring_history_unrestricted_model
+}
+
+#' Extract the cross-validation metrics of the with-offset (unrestricted) view from a glm model.
+#'
+#' Available when the model was trained with \code{remove_offset_effects=TRUE} and cross-validation
+#' (\code{nfolds} or \code{fold_column}); NULL otherwise. Returns the metrics as a named list
+#' (e.g. \code{...$residual_deviance}), the with-offset counterpart of the model's main
+#' cross-validation metrics, which are offset-removed.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.cross_validation_metrics_unrestricted_model <- function(model) {
+  model@model$cross_validation_metrics_unrestricted_model
+}
+
+#' Extract the cross-validation metrics summary of the with-offset (unrestricted) view from a glm model.
+#'
+#' Available when the model was trained with \code{remove_offset_effects=TRUE} and cross-validation
+#' (\code{nfolds} or \code{fold_column}); NULL otherwise. The with-offset counterpart of
+#' \code{h2o.cross_validation_metrics_summary}.
+#' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
+#' @export
+h2o.cross_validation_metrics_summary_unrestricted_model <- function(model) {
+  model@model$cross_validation_metrics_summary_unrestricted_model
 }
 
 #' Extract best lambda value found from glm model.

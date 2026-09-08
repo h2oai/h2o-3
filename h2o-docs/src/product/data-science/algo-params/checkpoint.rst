@@ -81,10 +81,15 @@ The following options cannot be modified when rebuilding a model using ``checkpo
     - solver
     - y (response_column)
 
-**GLM notes**
+ **GLM notes**
 
 GLM checkpointing additionally requires ``solver="IRLSM"`` to be set explicitly on both the original and the
 continuation model (``AUTO`` is not accepted).
+
+Cross-validation results are not carried over to a continuation: the continued model reports no
+cross-validation metrics, models, or predictions of its own unless the continuation run itself enables
+cross-validation. (Earlier releases copied the checkpointed model's stale cross-validation results into the
+continuation, which also misled metric-based early stopping.)
 
 Unlike the fields listed above, ``lambda_search`` *may* be changed on a continuation, so you can fit a model
 without regularization search and then refine it with ``lambda_search=True``. Because the two modes record

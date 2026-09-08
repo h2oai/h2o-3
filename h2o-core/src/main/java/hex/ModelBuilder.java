@@ -2168,12 +2168,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       filled++;
     }
-    MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
-    for (int i = 0; i < filled; ++i)
-      simpleStats.add(vals[i], 1);
-    for (int i = 0; i < numMetrics; ++i) {
-      table.set(i, 0, (float)simpleStats.mean()[i]);
-      table.set(i, 1, (float)simpleStats.sigma()[i]);
+    // Skip the mean/sigma columns entirely when no fold produced metrics: SimpleStats with zero weight would
+    // render NaN cells, empty cells read better and match the empty per-fold columns.
+    if (filled > 0) {
+      MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
+      for (int i = 0; i < filled; ++i)
+        simpleStats.add(vals[i], 1);
+      for (int i = 0; i < numMetrics; ++i) {
+        table.set(i, 0, (float)simpleStats.mean()[i]);
+        table.set(i, 1, (float)simpleStats.sigma()[i]);
+      }
     }
     Log.info(table);
     return table;

@@ -538,7 +538,7 @@ def glm_remove_offset_lambda_search_fold_column():
         "the per-lambda deviance_se column requires nfolds; it must be omitted with a fold_column"
 
     # the restricted history must still be the offset-removed one, and the unrestricted slot must still be filled
-    unrestricted = ro.scoring_history_unrestricted_model
+    unrestricted = ro.scoring_history_unrestricted_model()
     assert unrestricted is not None and len(unrestricted.cell_values) > 0, \
         "a fold_column must still produce an unrestricted scoring history"
     dev_col = unrestricted.col_header.index("deviance_train")

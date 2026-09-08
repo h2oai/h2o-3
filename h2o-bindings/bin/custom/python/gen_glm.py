@@ -316,15 +316,14 @@ def class_extensions():
         else:
             raise H2OValueError("allConstraintsPassed can only be called when there are linear constraints.")
 
-    @property
     def cross_validation_metrics_unrestricted_model(self):
         """
         Cross-validation metrics for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns a ``dict``
-        (key-accessible as ``metrics["residual_deviance"]``, ``metrics["MSE"]``, etc.), or
-        ``None`` when the model was not trained with both ``remove_offset_effects=True`` and
-        cross-validation.
+        Available when ``remove_offset_effects=True`` and cross-validation is enabled (``nfolds``
+        or ``fold_column``). Returns a ``dict`` (key-accessible as ``metrics["residual_deviance"]``,
+        ``metrics["MSE"]``, etc. — not a wrapped metrics object), or ``None`` when the model was
+        not trained with both ``remove_offset_effects=True`` and cross-validation.
 
         :examples:
 
@@ -337,18 +336,18 @@ def class_extensions():
         >>> # Offset-removed CV deviance (main CV slot)
         >>> restricted_dev = m.model_performance(xval=True).residual_deviance()
         >>> # With-offset CV deviance (unrestricted slot)
-        >>> unrestricted_dev = m.cross_validation_metrics_unrestricted_model["residual_deviance"]
+        >>> unrestricted_dev = m.cross_validation_metrics_unrestricted_model()["residual_deviance"]
         """
         return self._model_json.get("output", {}).get("cross_validation_metrics_unrestricted_model")
 
-    @property
     def cross_validation_metrics_summary_unrestricted_model(self):
         """
         Cross-validation metrics summary table for the with-offset (unrestricted) view.
 
-        Available when ``remove_offset_effects=True`` and ``nfolds > 0``. Returns an
-        ``H2OTwoDimTable``, or ``None`` when the model was not trained with both
-        ``remove_offset_effects=True`` and cross-validation.
+        Available when ``remove_offset_effects=True`` and cross-validation is enabled (``nfolds``
+        or ``fold_column``). Returns an ``H2OTwoDimTable``, or ``None`` when the model was not
+        trained with both ``remove_offset_effects=True`` and cross-validation. A method, mirroring
+        :meth:`~h2o.model.ModelBase.cross_validation_metrics_summary`.
 
         :examples:
 
@@ -358,19 +357,19 @@ def class_extensions():
         ...                                   nfolds=3, seed=1)
         >>> m.train(x=["AGE", "RACE", "DPROS", "DCAPS", "GLEASON"], y="CAPSULE",
         ...         training_frame=d, offset_column="VOL")
-        >>> m.cross_validation_metrics_summary_unrestricted_model
+        >>> m.cross_validation_metrics_summary_unrestricted_model()
         """
         return self._model_json.get("output", {}).get("cross_validation_metrics_summary_unrestricted_model")
 
-    @property
     def scoring_history_unrestricted_model(self):
         """
         Scoring history for the with-offset (unrestricted) view.
 
         Available when ``remove_offset_effects=True`` or ``control_variables`` was set; ``None``
-        otherwise. Returns an ``H2OTwoDimTable``. Under ``lambda_search`` this is the per-lambda
-        deviance that ``lambda_best`` selection is based on, while :meth:`scoring_history` reports
-        the offset-removed view.
+        otherwise. Returns an ``H2OTwoDimTable``. A method, mirroring
+        :meth:`~h2o.model.ModelBase.scoring_history` (which returns a ``pandas.DataFrame``).
+        Under ``lambda_search`` this is the per-lambda deviance that ``lambda_best`` selection is
+        based on, while :meth:`scoring_history` reports the offset-removed view.
 
         :examples:
 
@@ -383,7 +382,7 @@ def class_extensions():
         >>> # Offset-removed per-lambda history
         >>> m.scoring_history()
         >>> # With-offset per-lambda history - the deviance lambda selection uses
-        >>> m.scoring_history_unrestricted_model
+        >>> m.scoring_history_unrestricted_model()
         """
         return self._model_json.get("output", {}).get("scoring_history_unrestricted_model")
 
@@ -412,7 +411,7 @@ def class_extensions():
         >>> m2 = m.make_unrestricted_glm_model()
         >>> print(m2.model_performance(xval=True).residual_deviance())
         """
-        if self.actual_params["control_variables"] is None and not self.actual_params.get("remove_offset_effects"):
+        if self.actual_params.get("control_variables") is None and not self.actual_params.get("remove_offset_effects"):
             raise H2OValueError("Source model must be trained with control_variables or remove_offset_effects=True.")
         model_json = h2o.api(
             "POST /3/MakeUnrestrictedGLMModel",
@@ -467,16 +466,16 @@ def class_extensions():
         >>> m_ro = m.make_derived_glm_model(remove_offset_effects=True)
         >>> print(m_ro.model_performance(d).residual_deviance())
         """
-        if self.actual_params["control_variables"] is None and not self.actual_params.get("remove_offset_effects"):
+        if self.actual_params.get("control_variables") is None and not self.actual_params.get("remove_offset_effects"):
             raise H2OValueError("Source model must be trained with control_variables or remove_offset_effects=True.")
-        if remove_control_variables_effects and self.actual_params["control_variables"] is None:
+        if remove_control_variables_effects and self.actual_params.get("control_variables") is None:
             raise H2OValueError("remove_control_variables_effects=True requires the source model to have been "
                                 "trained with control_variables.")
         if remove_offset_effects and not self.actual_params.get("remove_offset_effects"):
             raise H2OValueError("remove_offset_effects=True requires the source model to have been trained "
                                 "with remove_offset_effects=True.")
         if remove_control_variables_effects and remove_offset_effects:
-            raise H2OValueError("remove_control_variables_effects and remove_offset_effects cannot both be True: "
+            raise H2OValueError("remove_control_variables_effects and remove_offset_effects cannot both be enabled: "
                                 "they produce the same model as the main model.")
         model_json = h2o.api(
             "POST /3/MakeDerivedGLMModel",

@@ -80,8 +80,28 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="True if all constraints conditions are satisfied.  Otherwise, false.")
     boolean all_constraints_satisfied;
     
-    @API(help="Scoring history of the unrestricted model (used when control variables are provided)", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    @API(help="Scoring history of the unrestricted model; populated when control_variables or remove_offset_effects is set", direction=API.Direction.OUTPUT, level=API.Level.secondary)
     public TwoDimTableV3 scoring_history_unrestricted_model;
+
+    @API(help="Training metrics with the offset and control-variables effects preserved; populated when control_variables or remove_offset_effects is set.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public ModelMetricsBaseV3 training_metrics_unrestricted_model;
+
+    @API(help="Validation metrics with the offset and control-variables effects preserved; populated when control_variables or remove_offset_effects is set and a validation frame is used.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public ModelMetricsBaseV3 validation_metrics_unrestricted_model;
+
+    @API(help="Variable importances of the unrestricted model; populated when control_variables or remove_offset_effects is set.",
+         direction=API.Direction.OUTPUT, level=API.Level.secondary)
+    public TwoDimTableV3 variable_importances_unrestricted_model;
+
+    @API(help="Scoring history with only the control-variables effects removed; populated when control_variables and remove_offset_effects are combined.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public TwoDimTableV3 scoring_history_restricted_model_contr_vals;
+
+    @API(help="Scoring history with only the offset effects removed; populated when control_variables and remove_offset_effects are combined.",
+         direction=API.Direction.OUTPUT, level=API.Level.expert)
+    public TwoDimTableV3 scoring_history_restricted_model_ro;
 
     @API(help="Cross-validation metrics with offset preserved; populated when remove_offset_effects=true and CV is enabled.",
          direction=API.Direction.OUTPUT, level=API.Level.secondary)

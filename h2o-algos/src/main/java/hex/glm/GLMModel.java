@@ -625,6 +625,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     newModel._output._cross_validation_metrics_summary_unrestricted_model = null;
     newModel._output._cross_validation_predictions_unrestricted_model = null;
     newModel._output._cross_validation_holdout_predictions_frame_id_unrestricted_model = null;
+    newModel._output._cv_scoring_history = null;
+    // The per-view ModelMetrics slots also describe the checkpointed run and, crucially, still carry the
+    // *source* model's DKV keys (their key covers only _parms/_output, so both offset views share it) - any
+    // by-key removal through a stale slot would delete the source model's metrics. Null them; the continuation's
+    // own scoring repopulates whichever ones its parameters call for.
+    newModel._output._training_metrics_unrestricted_model = null;
+    newModel._output._validation_metrics_unrestricted_model = null;
+    newModel._output._training_metrics_restricted_model_ro = null;
+    newModel._output._validation_metrics_restricted_model_ro = null;
+    newModel._output._training_metrics_restricted_model_contr_vals = null;
+    newModel._output._validation_metrics_restricted_model_contr_vals = null;
     return newModel;
   }
 
@@ -1637,6 +1648,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public double[] stdErr(double[] zValues, double[] beta) {
       return calculateStdErrFromZValues(zValues, beta);
+    }
+
+    // Overload for the restrictedHistoryIsMain path: sets devianceValidRestricted at construction so callers
+    // don't have to mutate the field after handing the instance to addSubmodel/updateSubmodel.
+    public Submodel(double lambda, double alpha, double[] beta, int iteration, double devTrain, double devValid,
+                    int totBetaLen, double[] zValues, boolean dispersionEstimated, double devValidRestricted) {
+      this(lambda, alpha, beta, iteration, devTrain, devValid, totBetaLen, zValues, dispersionEstimated);
+      this.devianceValidRestricted = devValidRestricted;
     }
 
     public Submodel(double lambda, double alpha, double[] beta, int iteration, double devTrain, double devValid,
@@ -2716,14 +2735,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
+    // _training/_validation_metrics_unrestricted_model need no explicit removal: they come out of a regular
+    // score() pass, so their keys are registered in _output._model_metrics (and shared with the restricted
+    // metrics, since ModelMetrics.buildKey does not cover _useRemoveOffsetEffects), which super already removes.
+    // Removing them by key here would be worse than redundant: a checkpoint continuation deep-copies these slots
+    // from the source model, so an explicit remove would delete the *source* model's metrics from the DKV.
     super.remove_impl(fs, cascade);
-    GLMOutput out = (GLMOutput) _output;
-    // _training/_validation_metrics_unrestricted_model are Keyed but not tracked in _model_metrics,
-    // so they must be removed explicitly.
-    if (out._training_metrics_unrestricted_model != null)
-      Keyed.remove(out._training_metrics_unrestricted_model._key, fs, true);
-    if (out._validation_metrics_unrestricted_model != null)
-      Keyed.remove(out._validation_metrics_unrestricted_model._key, fs, true);
     Keyed.remove(_output._regression_influence_diagnostics, fs, cascade);
     return fs;
   }
