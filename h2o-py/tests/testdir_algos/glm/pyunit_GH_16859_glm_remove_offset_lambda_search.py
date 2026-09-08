@@ -199,15 +199,16 @@ def glm_remove_offset_lambda_search_checkpoint_may_enable_lambda_search():
     assert "lambda" in history.col_header, \
         "the continued model's scoring history must be in lambda format"
     # remove_offset_effects stays pinned, so flipping it must still be refused
+    bad = H2OGeneralizedLinearEstimator(lambda_search=True, checkpoint=base.model_id,
+                                        family="binomial", remove_offset_effects=False,
+                                        solver="IRLSM", seed=0xC0FFEE)
     try:
-        bad = H2OGeneralizedLinearEstimator(lambda_search=True, checkpoint=base.model_id,
-                                            family="binomial", remove_offset_effects=False,
-                                            solver="IRLSM", seed=0xC0FFEE)
         bad.train(x=x, y="CAPSULE", training_frame=df, offset_column="off")
-        assert False, "flipping remove_offset_effects across a checkpoint must be rejected"
     except Exception as e:
         assert "_remove_offset_effects" in str(e), \
             "expected a _remove_offset_effects checkpoint error, got: %s" % str(e)[:300]
+    else:
+        assert False, "flipping remove_offset_effects across a checkpoint must be rejected"
 
 
 # remove_offset_effects + lambda_search + cross-validation: the model trains and the restricted scoring
