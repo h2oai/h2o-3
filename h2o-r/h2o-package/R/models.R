@@ -1245,6 +1245,51 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   }
 }
 
+#' "Unrestricted" Model Metrics: the View With the Removed Effects Restored
+#'
+#' Given a model trained with \code{remove_offset_effects = TRUE}, return the parallel
+#' offset-applied ("unrestricted") metrics computed during training. The primary metrics of
+#' such a model are computed as if the offset were 0 (the "restricted" view); these are the
+#' matching metrics with the offset applied.
+#'
+#' GLM additionally populates this view when \code{control_variables} is set, in which case it means
+#' "control-variable effects restored"; when both are set, both effects are restored. So for a GLM trained
+#' with \code{control_variables} and no offset this returns metrics, not \code{NULL}.
+#'
+#' Returns \code{NULL} when the view was not produced: the model was trained with neither
+#' \code{remove_offset_effects} nor (GLM only) \code{control_variables}; or \code{xval} was requested without
+#' cross-validation; or the view is unavailable for this model -- notably \code{xval} for
+#' \code{distribution="huber"}, whose \code{mean_residual_deviance} needs combined holdout predictions that the
+#' aggregated view cannot supply. Check the model's warnings to tell these apart.
+#'
+#' Only one of \code{train}, \code{valid}, and \code{xval} may be TRUE; otherwise an error is raised.
+#'
+#' @param model An \linkS4class{H2OModel} object trained with \code{remove_offset_effects = TRUE}
+#'        (or, for GLM, with \code{control_variables})
+#' @param train A logical value indicating whether to return the training metrics (the default when no flag is set).
+#' @param valid A logical value indicating whether to return the validation metrics.
+#' @param xval A logical value indicating whether to return the cross-validation metrics.
+#' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass, or \code{NULL}.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.uploadFile(path = prostate_path)
+#' gbm <- h2o.gbm(c("CAPSULE", "RACE", "PSA", "VOL", "DPROS"), "AGE", prostate,
+#'                offset_column = "GLEASON", remove_offset_effects = TRUE)
+#' h2o.performance(gbm, train = TRUE)                    # offset-removed (primary) metrics
+#' h2o.unrestricted_model_performance(gbm, train = TRUE) # offset-applied metrics
+#' }
+#' @export
+h2o.unrestricted_model_performance <- function(model, train=FALSE, valid=FALSE, xval=FALSE) {
+  if(!is(model, "H2OModel")) stop("`model` must be an H2OModel object")
+  if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
+  if( valid )     model@model$validation_metrics_unrestricted_model
+  else if( xval ) model@model$cross_validation_metrics_unrestricted_model
+  else            model@model$training_metrics_unrestricted_model
+}
+
 #' Create Model Metrics from predicted and actual values in H2O
 #'
 #' Given predicted values (target for regression, class-1 probabilities or binomial

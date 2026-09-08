@@ -82,6 +82,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
+                 remove_offset_effects=False,  # type: bool
                  custom_metric_func=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  score_training_samples=10000,  # type: int
@@ -154,6 +155,12 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                function.
                Defaults to ``None``.
         :type offset_column: str, optional
+        :param remove_offset_effects: Train with the offset column but score and compute metrics as if the offset were
+               0. The offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+               training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+               cross_validation_metrics_unrestricted_model output fields. Experimental.
+               Defaults to ``False``.
+        :type remove_offset_effects: bool
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
@@ -196,6 +203,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self.max_runtime_secs = max_runtime_secs
         self.weights_column = weights_column
         self.offset_column = offset_column
+        self.remove_offset_effects = remove_offset_effects
         self.custom_metric_func = custom_metric_func
         self.seed = seed
         self.score_training_samples = score_training_samples
@@ -725,6 +733,23 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
+
+    @property
+    def remove_offset_effects(self):
+        """
+        Train with the offset column but score and compute metrics as if the offset were 0. The offset-applied
+        ('unrestricted') metrics are reported alongside in the corresponding training_metrics_unrestricted_model,
+        validation_metrics_unrestricted_model and cross_validation_metrics_unrestricted_model output fields.
+        Experimental.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("remove_offset_effects")
+
+    @remove_offset_effects.setter
+    def remove_offset_effects(self, remove_offset_effects):
+        assert_is_type(remove_offset_effects, None, bool)
+        self._parms["remove_offset_effects"] = remove_offset_effects
 
     @property
     def custom_metric_func(self):

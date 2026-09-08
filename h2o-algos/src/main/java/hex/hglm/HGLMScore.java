@@ -43,6 +43,7 @@ public class HGLMScore extends MRTask<HGLMScore> {
   double[][] _tmat;
   Random randomObj;
   final double _noiseStd;
+  private final boolean _applyOffset; // remove_offset_effects (GH-16851): score/metrics as if offset==0
   
   public HGLMScore(final Job j, final HGLMModel model, DataInfo dinfo, final String[] respDomain, 
                    final boolean computeMetrics, final boolean makePredictions) {
@@ -56,6 +57,7 @@ public class HGLMScore extends MRTask<HGLMScore> {
     _predDomains = respDomain;
     _nclass = model._output.nclasses();
     _parms = model._parms;
+    _applyOffset = model.applyOffsetAtScoreTime();
     _level2UnitIndex = model._output._level2UnitIndex;
     _fixedCatIndices = model._output._fixedCatIndices;
     _numLevel2Units = model._output._numLevel2Units;
@@ -93,6 +95,9 @@ public class HGLMScore extends MRTask<HGLMScore> {
     int level2Index;
     for (int rid = 0; rid < chkLen; rid++) {
       _dinfo.extractDenseRow(chks, rid, r);
+      // remove_offset_effects: zeroing r.offset once here covers BOTH scoreRow (which adds r.offset to the
+      // linear predictor) and _mb.perRow below, so predictions and metrics stay consistent. GH-16851.
+      if (!_applyOffset) r.offset = 0;
       level2Index = _parms._use_all_factor_levels ? r.binIds[_level2UnitIndex] - _dinfo._catOffsets[_level2UnitIndex] :
               (int) chks[_level2UnitIndex].at8(rid);
       processRow(r, predictVals, nc, numPredValues, xji, zji, level2Index);

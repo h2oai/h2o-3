@@ -71,6 +71,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   public XGBoost(boolean startup_once) { super(new XGBoostModel.XGBoostParameters(),startup_once); }
   public boolean isSupervised(){return true;}
 
+  @Override protected boolean supportsRemoveOffsetEffects() { return true; }
+
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
 

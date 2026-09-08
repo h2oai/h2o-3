@@ -29,6 +29,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "ignore_const_cols",
             "score_each_iteration",
             "offset_column",
+            "remove_offset_effects",
             "weights_column",
             "family",
             "tweedie_variance_power",

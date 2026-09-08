@@ -38,6 +38,10 @@ public class HGLM extends ModelBuilder<HGLMModel, HGLMModel.HGLMParameters, HGLM
     return new ModelCategory[]{ModelCategory.Regression};
   }
 
+  // GH-16851: HGLM adds the offset directly to the linear predictor, and HGLMScore consults
+  // Model.applyOffsetAtScoreTime() for both predictions and metrics.
+  @Override protected boolean supportsRemoveOffsetEffects() { return true; }
+
   @Override
   public boolean isSupervised() {
     return true;

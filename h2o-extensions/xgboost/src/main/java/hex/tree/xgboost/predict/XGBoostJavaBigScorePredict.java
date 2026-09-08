@@ -21,12 +21,14 @@ public class XGBoostJavaBigScorePredict implements XGBoostBigScorePredict {
   private final double _threshold;
   private final Predictor _predictor;
   private final boolean[] _usedColumns;
+  private final boolean _useOffset; // false for remove_offset_effects models outside the unrestricted pass (GH-16851)
 
   public XGBoostJavaBigScorePredict(
       XGBoostModelInfo model_info,
       XGBoostOutput output,
       DataInfo di,
-      XGBoostModel.XGBoostParameters parms, double threshold
+      XGBoostModel.XGBoostParameters parms, double threshold,
+      boolean useOffset
   ) {
     _di = di;
     _output = output;
@@ -34,11 +36,12 @@ public class XGBoostJavaBigScorePredict implements XGBoostBigScorePredict {
     _threshold = threshold;
     _predictor = PredictorFactory.makePredictor(model_info._boosterBytes);
     _usedColumns = findUsedColumns(_predictor.getBooster(), di, _output.nfeatures());
+    _useOffset = useOffset;
   }
 
   @Override
   public XGBoostPredict initMap(Frame fr, Chunk[] chks) {
-    return new XGBoostJavaBigScoreChunkPredict(_di, _output, _parms, _threshold, _predictor, _usedColumns, fr);
+    return new XGBoostJavaBigScoreChunkPredict(_di, _output, _parms, _threshold, _predictor, _usedColumns, fr, _useOffset);
   }
 
   /**

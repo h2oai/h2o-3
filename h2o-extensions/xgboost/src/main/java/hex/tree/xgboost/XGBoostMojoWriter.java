@@ -60,5 +60,9 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
       }
     }
     writekv("has_offset", model._output.hasOffset());
+    // NOTE: remove_offset_effects is written generically as "offset_removed" by
+    // ModelMojoWriter.writeCommonExtraModelInfo() (from model._parms._remove_offset_effects), and read back
+    // into GenModel._offsetRemoved. XGBoostJavaMojoModel consumes it to keep the explicit-margin path with a
+    // ZERO margin, since a no-margin predict would add base_score instead.
   }
 }

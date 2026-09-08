@@ -327,7 +327,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       
     DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
 
-    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified(), null != _parms._offset_column);
+    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified(),
+            null != _parms._offset_column, !applyOffsetAtScoreTime());
     final Frame scored = score
                          .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
                          .outputFrame(Key.make(destination_key), new String[]{"lp"}, null);
@@ -370,11 +371,13 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     private int _numStart;
     private boolean _hasStrata;
 
-    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata, boolean hasOffsets) {
+    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata, boolean hasOffsets, boolean removeOffset) {
       final int strataCount = o._x_mean_cat.length;
       _dinfo = dinfo;
       _hasStrata = hasStrata;
-      _coef = hasOffsets ? ArrayUtils.append(o._coef, 1.0) : o._coef;
+      // remove_offset_effects: keep the offset in the row/coef layout but give it weight 0 so it drops out of
+      // the linear predictor (the fit still used the offset). _lpBase excludes the offset mean either way. GH-16851.
+      _coef = hasOffsets ? ArrayUtils.append(o._coef, removeOffset ? 0.0 : 1.0) : o._coef;
       _numStart = o._x_mean_cat[0].length;
       _lpBase = new double[strataCount];
       for (int s = 0; s < strataCount; s++) {

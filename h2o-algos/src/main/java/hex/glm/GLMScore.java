@@ -130,7 +130,12 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double x = r.innerProduct(_beta);
-      if(!_m._useRemoveOffsetEffects) {
+      // _scoreWithOffset forces the offset-applied ("unrestricted") view (GH-16851). GLM computes its own
+      // unrestricted metrics during training, so ModelBuilder's generic clone pass is skipped for the main
+      // model, and GLMParameters.validate rejects remove_offset_effects together with cross-validation - so
+      // no GLM fold clone carries the flag either. The clause is therefore defensive today: it keeps GLMScore
+      // honouring the same seam as every other scorer should ModelBuilder ever drive it.
+      if(!_m._useRemoveOffsetEffects || _m._scoreWithOffset) {
         x += o;
       }
       double mu = _m._parms.linkInv(x);
@@ -153,7 +158,7 @@ public class GLMScore extends CMetricScoringTask<GLMScore> {
     } else if(r.weight == 0) {
       Arrays.fill(ps,0);
     } else {
-      double offset = _m._useRemoveOffsetEffects ? 0 : r.offset;  
+      double offset = (_m._useRemoveOffsetEffects && !_m._scoreWithOffset) ? 0 : r.offset;
       scoreRow(r, offset, ps);
       if (_computeMetrics && !r.response_bad) {
         _mb.perRow(ps, res, r.weight, offset, _m);

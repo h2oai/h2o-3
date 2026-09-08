@@ -63,6 +63,8 @@ Common parameters
    
    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (``y``) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
+-  `remove_offset_effects <algo-params/remove_offset_effects.html>`__: Train with the offset column, but score and compute metrics as if the offset were 0 (the offset-applied metrics are reported alongside as the unrestricted-model view). This option is experimental.
+
 - `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets). This defaults to ``False``.
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 

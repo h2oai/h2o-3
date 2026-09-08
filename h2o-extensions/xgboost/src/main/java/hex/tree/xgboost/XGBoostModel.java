@@ -686,11 +686,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private XGBoostBigScorePredict setupBigScorePredictNative(DataInfo di) {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    return new XGBoostNativeBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
+    return new XGBoostNativeBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold(),
+            applyOffsetAtScoreTime());
   }
 
   private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di) {
-    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
+    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold(),
+            applyOffsetAtScoreTime());
   }
   
   public XGBoostVariableImportance setupVarImp() {

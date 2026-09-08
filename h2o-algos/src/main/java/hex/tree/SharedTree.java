@@ -301,6 +301,11 @@ public abstract class SharedTree<
               _train = stratified;
               _response = stratified.vec(_parms._response_column);
               _weights = stratified.vec(_parms._weights_column);
+              // The offset must follow the resample too: getInitialValue() combines _response, _weights and
+              // _offset in one MRTask, so leaving _offset pointing into the ORIGINAL frame makes them
+              // different lengths ("Unexpected incompatible espc"). Frame.vec(null) is safe when there is
+              // no offset column, exactly as for _weights above.
+              _offset = stratified.vec(_parms._offset_column);
               // Recompute distribution since the input frame was modified
               if (isQuasibinomial){
                   MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?

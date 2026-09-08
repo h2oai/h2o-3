@@ -25,6 +25,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "ignored_columns",
         "ignore_const_cols",
         "offset_column",
+        "remove_offset_effects",
         "weights_column",
         "stopping_rounds",
         "stopping_metric",
