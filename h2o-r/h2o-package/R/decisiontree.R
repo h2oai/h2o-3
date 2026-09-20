@@ -19,6 +19,8 @@
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
+#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param max_depth Max depth of tree. Defaults to 20.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
@@ -48,6 +50,7 @@ h2o.decision_tree <- function(x,
                               ignore_const_cols = TRUE,
                               categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                               seed = -1,
+                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                               max_depth = 20,
                               min_rows = 10)
 {
@@ -94,6 +97,7 @@ h2o.decision_tree <- function(x,
                                               ignore_const_cols = TRUE,
                                               categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                               seed = -1,
+                                              distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                               max_depth = 20,
                                               min_rows = 10,
                                               segment_columns = NULL,
