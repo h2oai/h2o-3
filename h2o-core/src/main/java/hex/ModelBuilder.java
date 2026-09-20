@@ -78,16 +78,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Unique new job and named result key */
   protected ModelBuilder(P parms, Key<M> key) {
     _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
-    _parms = parms;
     _input_parms = (P) parms.clone();
+    _parms = (P) parms.clone();
   }
 
   /** Shared pre-existing Job and unique new result key */
   protected ModelBuilder(P parms, Job<M> job) {
     _job = job;
     _result = defaultKey(parms.algoName());
-    _parms = parms;
     _input_parms = (P) parms.clone();
+    _parms = (P) parms.clone();
   }
 
   /** List of known ModelBuilders with all default args; endlessly cloned by

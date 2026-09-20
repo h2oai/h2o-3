@@ -1319,6 +1319,37 @@ public class DeepLearningTest {
   }
 
   @Test
+  public void testCheckpointAutoDistribution() {
+    Frame tfr = null;
+    DeepLearningModel dl = null;
+    DeepLearningModel dl2 = null;
+
+    try {
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 1;
+      parms._response_column = "C5";
+      parms._reproducible = true;
+      parms._hidden = new int[]{2, 2};
+      parms._seed = 0xdecaf;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      DeepLearningParameters parms2 = (DeepLearningParameters) parms.clone();
+      parms2._epochs = 2;
+      parms2._checkpoint = dl._key;
+      
+      dl2 = new DeepLearning(parms2).trainModel().get();
+      Assert.assertTrue(dl2.epoch_counter > dl.epoch_counter);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
   public void testConvergenceLogloss() {
     Frame tfr = null;
     DeepLearningModel dl = null;
