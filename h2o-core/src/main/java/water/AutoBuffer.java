@@ -8,6 +8,7 @@ import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.apache.commons.io.serialization.ValidatingObjectInputStream;
 import water.network.SocketChannelUtils;
 import water.util.Log;
 import water.util.StringUtils;
@@ -1577,9 +1578,27 @@ public final class AutoBuffer implements AutoCloseable {
     }
   }
 
-  public static Object javaSerializeReadPojo(byte [] bytes) {
+  public static Object javaSerializeReadBytes(byte [] bytes) {
     try {
-      final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+      final ValidatingObjectInputStream ois = new ValidatingObjectInputStream(new ByteArrayInputStream(bytes));
+      // GH-16174 this method is used for HyperParameter serialization and allow execution of malicious code
+      // if the object type is not checked -> the acceptable objects are Integer, Number and String
+      // TODO: see what happens with other usage of this method -> edit acceptable classes based on the tests results
+      // TODO: find better way to define acceptable classes
+      ois.accept(Integer.class, Number.class, String.class, 
+              water.exceptions.H2OIllegalArgumentException.class, 
+              water.exceptions.H2OAbstractRuntimeException.class,
+              java.lang.RuntimeException.class,
+              java.lang.Exception.class,
+              java.lang.Throwable.class,
+              java.lang.StackTraceElement.class,
+              java.util.ArrayList.class,
+              water.util.IcedHashMapGeneric.class,
+              water.Iced.class);
+      ois.accept("[Ljava.lang.StackTraceElement;", 
+              "java.util.Collections$UnmodifiableList", 
+              "java.util.Collections$UnmodifiableCollection", 
+              "water.util.IcedHashMapGeneric$IcedHashMapStringObject");
       Object o = ois.readObject();
       return o;
     } catch (IOException e) {
@@ -1638,7 +1657,7 @@ public final class AutoBuffer implements AutoCloseable {
 
   @SuppressWarnings("unused") public Object getSer() {
     byte[] ba = getA1();
-    return ba == null ? null : javaSerializeReadPojo(ba);
+    return ba == null ? null : javaSerializeReadBytes(ba);
   }
 
   @SuppressWarnings("unused") public <T> T getSer(Class<T> tc) {
