@@ -35,7 +35,7 @@ public class KNNTest extends TestUtil {
             KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
             parms._train = fr._key;
             parms._k = 3;
-            parms._distance = new EuclideanDistance();
+            parms._distance = DistanceType.EUCLIDEAN;
             parms._response_column = response;
             parms._id_column = idColumn;
             parms._auc_type = MultinomialAucType.MACRO_OVR;
@@ -55,9 +55,7 @@ public class KNNTest extends TestUtil {
             ModelMetricsMultinomial mm1 = (ModelMetricsMultinomial) knn._output._training_metrics;
             Assert.assertEquals(mm.auc(), mm1.auc(), 0);
             
-            // test after KNN API will be ready
-            //knn.testJavaScoring(fr, preds, 0);
-            
+            knn.testJavaScoring(fr, preds, 0);
         } finally {
             if (knn != null){
                 knn.delete();
@@ -90,7 +88,7 @@ public class KNNTest extends TestUtil {
             KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
             parms._train = fr._key;
             parms._k = 2;
-            parms._distance = new EuclideanDistance();
+            parms._distance = DistanceType.EUCLIDEAN;
             parms._response_column = response;
             parms._id_column = idColumn;
             parms._auc_type = MultinomialAucType.MACRO_OVR;
@@ -165,7 +163,7 @@ public class KNNTest extends TestUtil {
             KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
             parms._train = fr._key;
             parms._k = 2;
-            parms._distance = new ManhattanDistance();
+            parms._distance = DistanceType.MANHATTAN;
             parms._response_column = response;
             parms._id_column = idColumn;
             parms._auc_type = MultinomialAucType.MACRO_OVR;
@@ -240,7 +238,7 @@ public class KNNTest extends TestUtil {
             KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
             parms._train = fr._key;
             parms._k = 2;
-            parms._distance = new CosineDistance();
+            parms._distance = DistanceType.COSINE;
             parms._response_column = response;
             parms._id_column = idColumn;
             parms._auc_type = MultinomialAucType.MACRO_OVR;
@@ -332,7 +330,7 @@ public class KNNTest extends TestUtil {
             KNNModel.KNNParameters parms = new KNNModel.KNNParameters();
             parms._train = fr._key;
             parms._k = 2;
-            parms._distance = new EuclideanDistance();
+            parms._distance = DistanceType.EUCLIDEAN;
             parms._response_column = "class";
             parms._id_column = null;
 
