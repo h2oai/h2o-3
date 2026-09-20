@@ -71,6 +71,15 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
       Log.debug("Failed to remove key " + k, e);
     }
   }
+
+  /** Removes all Keyed objects in the array; returns the number of keys that were present.
+   *  Null entries are skipped and do not count toward the returned total (callers legitimately
+   *  hold arrays with null slots, e.g. per-fold prediction keys that were never created). */
+  public static <T extends Keyed<T>> int removeAll(Key<T>[] keys) {
+    int count = 0;
+    for (Key<T> k : keys) if (remove(k)) count++;
+    return count;
+  }
   /** Remove the Keyed object associated to the key, and all subparts. */
   public static Futures remove( Key k, Futures fs, boolean cascade) {
     if (k==null) return fs;

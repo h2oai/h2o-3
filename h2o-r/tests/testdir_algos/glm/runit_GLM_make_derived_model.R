@@ -58,7 +58,24 @@ glm_make_derived_model_test <- function() {
                               control_variables = c("PSA"))
 
     assertError(h2o.make_derived_glm_model(prostate_glm_2, remove_offset_effects=TRUE))
-    assertError(h2o.make_derived_glm_model(prostate_glm_2, remove_control_variables_effects=TRUE))
+    # single-feature derivation is legal: control_variables-only source, exclude the control-variables effects
+    derived_glm_2_cv <- h2o.make_derived_glm_model(prostate_glm_2, remove_control_variables_effects=TRUE)
+    expect_false(is.null(derived_glm_2_cv))
+
+    # remove_offset_effects-only source: excluding the (untrained) control-variables effects must hit the
+    # flag-specific error, not the generic "must be trained with control_variables or remove_offset_effects" gate
+    prostate_glm_3 <- h2o.glm(family = "binomial",
+                              y = response,
+                              training_frame = df,
+                              generate_scoring_history = T,
+                              score_each_iteration = T,
+                              offset_column = "AGE",
+                              remove_offset_effects = TRUE)
+
+    assertError(h2o.make_derived_glm_model(prostate_glm_3, remove_control_variables_effects=TRUE))
+    # ...while excluding the offset effects from the same source is legal
+    derived_glm_3_ro <- h2o.make_derived_glm_model(prostate_glm_3, remove_offset_effects=TRUE)
+    expect_false(is.null(derived_glm_3_ro))
 }
 
 doTest("GLM: Test make derived model", glm_make_derived_model_test)

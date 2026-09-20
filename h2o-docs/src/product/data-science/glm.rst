@@ -71,6 +71,8 @@ Algorithm-specific parameters
 
 -  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
 
+-  `remove_offset_effects <algo-params/remove_offset_effects.html>`__: Specify whether to exclude the ``offset_column`` from the linear predictor when the model scores, so that predictions and metrics are reported with the offset's effect removed. Requires ``offset_column``. This feature is experimental. This option defaults to ``False`` (disabled).
+
 - `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
 
 Shared GLM family parameters
