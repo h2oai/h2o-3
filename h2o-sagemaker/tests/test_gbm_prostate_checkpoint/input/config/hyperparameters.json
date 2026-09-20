@@ -1,0 +1,6 @@
+{
+  "training": "{'target': 'CAPSULE', 'distribution': 'AUTO', 'categorical_columns': 'RACE,CAPSULE'}",
+  "learn_rate": 0.5,
+  "ntrees": 10
+}
+
