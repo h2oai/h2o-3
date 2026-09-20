@@ -39,10 +39,10 @@ timestamps {
         if (pipelineContext == null) {
           def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
           pipelineContext = initPipelineContext(scmEnv, 'MODE_NIGHTLY', true)
-          // Execute nightly for master at 22:XX
-          // for rel- branches on weekends at 21:XX - this line is in maintenance only, so a
-          // daily full run costs build capacity that active development needs on weekdays.
-          String scheduleString = 'H 22 * * *'
+          // Execute nightly on weekends only - for master at 22:XX, for rel- branches at 21:XX.
+          // A full run is expensive, so it takes build capacity at the weekend rather than
+          // competing with active development during the week.
+          String scheduleString = 'H 22 * * 0,6'
           if (env.BRANCH_NAME.startsWith('rel-')) {
             scheduleString = 'H 21 * * 0,6'
           }
