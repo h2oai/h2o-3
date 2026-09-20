@@ -1,4 +1,4 @@
-Cox Proportional Hazards (CoxPH)
+Cox proportional hazards (CoxPH)
 --------------------------------
 
 Introduction
@@ -18,12 +18,12 @@ This combination of a non-parametric baseline hazard function and a parametric r
 
 `An R demo is available here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.coxph.R>`__. This uses the CoxPH algorithm along with the WA\_Fn-UseC\_-Telco-Customer-Churn.csv dataset. 
 
-MOJO Support
+MOJO support
 ''''''''''''
 
 CoxPH supports importing and exporting `MOJOs <../save-and-load-model.html#supported-mojos>`__.
 
-Defining a CoxPH Model
+Defining a CoxPH model
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Parameters are optional unless specified as *required*.
@@ -67,7 +67,7 @@ Common parameters
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. 
   
-    **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+    **Note**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
 - `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. This option defaults to ``True`` (enabled).
 
@@ -77,11 +77,11 @@ Common parameters
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
-- `x <algo-params/x.html>`__: Specify a vector containing the names or indicies of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
+- `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
 -  `y <algo-params/y.html>`__ (Python) / **event_column** (R): *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
-Cox Proportional Hazards Model Results
+Cox proportional hazards model results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Data
@@ -104,7 +104,7 @@ Coefficients
 
 :math:`\tt{z}`: The z statistic, which is the ratio of the coefficient estimate to its standard error.
 
-Model Statistics
+Model statistics
 ''''''''''''''''
 
 -  Cox and Snell Generalized :math:`R^2`
@@ -152,7 +152,7 @@ Model Statistics
 
 .. _coxph_model_details:
 
-Cox Proportional Hazards Model Details
+Cox proportional hazards model details
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A Cox proportional hazards model measures time on a scale defined by the ranking of the :math:`M` distinct observed event occurrence times, :math:`t_1 < t_2 < \dots < t_M`. When no two events occur at the same time, the partial likelihood for the observations is given by
@@ -165,7 +165,7 @@ where :math:`R_m` is the set of all observations at risk of an event at time :ma
 
 where :math:`R_m` is the risk set and :math:`D_m` is the set of observations of size :math:`d_m` with an observed event at time :math:`t_m` respectively. Due to the combinatorial nature of the denominator, this exact partial likelihood becomes prohibitively expensive to calculate, leading to the common use of Efron's and Breslow's approximations.
 
-Efron's Approximation
+Efron's approximation
 '''''''''''''''''''''
 
 Of the two approximations, Efron's produces results closer to the exact combinatoric solution than Breslow's. Under this approximation, the partial likelihood and log partial likelihood are defined as
@@ -174,7 +174,7 @@ Of the two approximations, Efron's produces results closer to the exact combinat
 
 :math:`pl(\beta) = \sum_{m=1}^M \big[\sum_{j \in D_m} w_j\mathbf{x}_j^T\beta - \frac{\sum_{j \in D_m} w_j}{d_m} \sum_{k=1}^{d_m} \log(\sum_{j \in R_m} w_j \exp(\mathbf{x}_j^T\beta) - \frac{k-1}{d_m} \sum_{j \in D_m} w_j \exp(\mathbf{x}_j^T\beta))\big]`
 
-Breslow's Approximation
+Breslow's approximation
 '''''''''''''''''''''''
 
 Under Breslow's approximation, the partial likelihood and log partial likelihood are defined as
@@ -185,7 +185,7 @@ Under Breslow's approximation, the partial likelihood and log partial likelihood
 
 .. _coxph_algorithm:
 
-Cox Proportional Hazards Model Algorithm
+Cox proportional hazards model algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O uses the Newton-Raphson algorithm to maximize the partial log-likelihood, an iterative procedure defined by the steps:
@@ -216,7 +216,7 @@ To add numeric stability to the model fitting calculations, the numeric predicto
 Examples
 ~~~~~~~~
 
-Below is a simple example showing how to build a CoxPH model.
+The following example builds a CoxPH model in R and Python. It covers data import, training, performance evaluation, and retrieval of baseline hazard, baseline survival, and model concordance.
 
 .. tabs::
    .. code-tab:: r R
