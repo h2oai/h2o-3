@@ -5,11 +5,10 @@ import com.google.gson.reflect.TypeToken;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
-import hex.schemas.*;
+import hex.schemas.InfogramV3;
 import water.*;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -55,10 +54,10 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
     public String[] _protected_columns = null;    // store features to be excluded from final model
     public double _cmi_threshold = 0.1;           // default set by Deep
     public double _relevance_threshold = 0.1;         // default set by Deep
-    public double _total_information_threshold = -1;  // relevance threshold for core infogram
-    public double _net_information_threshold = -1;    // cmi threshold for core infogram
-    public double _safety_index_threshold = -1;       // cmi threshold for safe infogram
-    public double _relevance_index_threshold = -1;    // relevance threshold for safe infogram
+    public double _total_information_threshold = 0.1;  // relevance threshold for core infogram
+    public double _net_information_threshold = 0.1;    // cmi threshold for core infogram
+    public double _safety_index_threshold = 0.1;       // cmi threshold for safe infogram
+    public double _relevance_index_threshold = 0.1;    // relevance threshold for safe infogram
     public double _data_fraction = 1.0;               // fraction of data to use to calculate infogram
     public Model.Parameters _infogram_algorithm_parameters;   // store parameters of chosen algorithm
     public int _top_n_features = 50;                          // if 0 consider all predictors, otherwise, consider topk predictors

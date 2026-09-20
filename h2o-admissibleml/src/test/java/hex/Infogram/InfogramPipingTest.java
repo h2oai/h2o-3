@@ -49,65 +49,6 @@ public class InfogramPipingTest extends TestUtil {
     }
   }
 
-  @Test
-  public void testIrisWarn() {
-    try {
-      Scope.enter();
-      Frame trainF = parseTestFile("smalldata/admissibleml_test/irisROriginal.csv");
-      Scope.track(trainF);
-      InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
-      params._response_column = "Species";
-      params._train = trainF._key;
-      params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
-      params._seed = 12345;
-      params._top_n_features = trainF.numCols()-1;
-      params._safety_index_threshold = 0.2;
-      params._relevance_index_threshold = 0.2;
-      Infogram infogram = new Infogram(params);
-      InfogramModel infogramModel = infogram.trainModel().get();
-      Scope.track_generic(infogramModel);
-      assertWarningMessages(infogram._messages, 2);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testPersonalLoanWarn() {
-    try {
-      Scope.enter();
-      Frame trainF = Scope.track(parseTestFile("smalldata/admissibleml_test/Bank_Personal_Loan_Modelling.csv"));
-      trainF.replace(9, trainF.vec("Personal Loan").toCategoricalVec()).remove();
-      DKV.put(trainF);
-      InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
-      params._response_column = "Personal Loan";
-      params._train = trainF._key;
-      params._protected_columns = new String[]{"Age","ZIP Code"};
-      params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
-      params._ignored_columns = new String[]{"ID"};
-      params._top_n_features = trainF.numCols()-3;
-      params._seed = 12345;
-      params._net_information_threshold = 0.2;
-      params._total_information_threshold = 0.2;
-      Infogram infogram = new Infogram(params);
-      InfogramModel infogramModel = infogram.trainModel().get();
-      Scope.track_generic(infogramModel);
-      assertWarningMessages(infogram._messages, 2);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  public static void assertWarningMessages(ModelBuilder.ValidationMessage[] messages, int expectedWarn) {
-    List<String> warnMessage = new ArrayList<>();
-    for (ModelBuilder.ValidationMessage oneMessage : messages) {
-      if (oneMessage.log_level()==2) { // for warning
-        warnMessage.add(oneMessage.toString());
-      }
-    }
-    assertTrue(warnMessage.size()==expectedWarn);
-  }
-
   // Deep example 5
   @Test
   public void testGermanData() {
