@@ -192,6 +192,7 @@ public class AutoMLBuildSpec extends Iced {
     // let's limit the list of allowed custom parameters by default for now: we can always decide to open this later.
     private static final String[] ALLOWED_PARAMETERS = {
             "monotone_constraints",
+            "auc_type"
 //            "ntrees",
     };
     private static final String ROOT_PARAM = "algo_parameters";
