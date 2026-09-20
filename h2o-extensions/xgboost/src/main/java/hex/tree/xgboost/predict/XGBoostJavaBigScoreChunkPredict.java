@@ -16,6 +16,7 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
   private final Predictor _predictor;
   private final MutableOneHotEncoderFVec _row;
   private final int _offsetIndex;
+  private final boolean _useOffset; // remove_offset_effects (GH-16851): score with margin 0 instead of the offset
   private final boolean[] _usedColumns;
 
   public XGBoostJavaBigScoreChunkPredict(
@@ -25,7 +26,8 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
       double threshold,
       Predictor predictor,
       boolean[] usedColumns,
-      Frame data
+      Frame data,
+      boolean useOffset
   ) {
     _output = output;
     _threshold = threshold;
@@ -33,6 +35,7 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
     _row = new MutableOneHotEncoderFVec(di, _output._sparse);
 
     _offsetIndex = data.find(parms._offset_column);
+    _useOffset = useOffset;
     _usedColumns = usedColumns;
   }
 
@@ -70,7 +73,9 @@ public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.Bi
       }
       _row.setInput(tmp);
       if (_offsetIndex >= 0) {
-        float offset = (float) cs[_offsetIndex].atd(row);
+        // remove_offset_effects: use an explicit ZERO margin, not the no-margin overload — without a margin
+        // the predictor would add the booster's base_score instead (GH-16851)
+        float offset = _useOffset ? (float) cs[_offsetIndex].atd(row) : 0f;
         preds[row] = _predictor.predict(_row, offset);
       } else {
         preds[row] = _predictor.predict(_row);

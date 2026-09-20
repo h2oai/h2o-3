@@ -133,6 +133,8 @@ Common parameters
 
 -  `offset_column <algo-params/offset_column.html>`__: (Availability depends on the ``metalearner_algorithm``) Specify a column to use as the offset.
 
+-  `remove_offset_effects <algo-params/remove_offset_effects.html>`__: Inherited from the base models: an ensemble built on base models that remove the offset removes it too, and the offset column is kept out of the level-one frame. All base models must agree on the setting. The unrestricted (offset-applied) metrics view is not produced for Stacked Ensembles. This option is experimental.
+
 -  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. This option defaults to ``-1`` (time-based random number).
 
 -  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  

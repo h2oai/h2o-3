@@ -122,6 +122,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/rate_annealing
    data-science/algo-params/rate_decay
    data-science/algo-params/remove_collinear_columns
+   data-science/algo-params/remove_offset_effects
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
    data-science/algo-params/sample_size

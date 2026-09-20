@@ -283,9 +283,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             direction=Direction.INPUT, level=Level.expert)
     public String[] control_variables;
 
-    @API(help="Remove offset effects from scoring and metric calculation. Experimental.",
-            direction=Direction.INPUT, level=Level.expert)
-    public boolean remove_offset_effects;
+    // remove_offset_effects now lives on the base ModelParametersSchemaV3 (GH-16851, generalized to all algos)
 
       // dead unused args, formely inherited from supervised model schema
     /**

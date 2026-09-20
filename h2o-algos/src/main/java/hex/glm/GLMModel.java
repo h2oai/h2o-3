@@ -661,8 +661,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double _constraint_beta = 0.9; // eta_k+1 = eta_k/pow(c_k, beta)
     public double _constraint_c0 = 10; // set initial epsilon k as 1/c0
     public String[] _control_variables; // control variables definition, list of column names
-    public boolean _remove_offset_effects; // control offset effect from prediction and metric calculation 
-    
+    // _remove_offset_effects now lives on the base Model.Parameters (GH-16851, generalized to all algos)
+
     public void validate(GLM glm) {
       if (_remove_collinear_columns) {
         if (!(Solver.IRLSM.equals(_solver) || Solver.AUTO.equals(_solver)))
@@ -840,9 +840,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         }
       }
       if (_remove_offset_effects) {
-          if (_offset_column == null) {
-              glm.error("_remove_offset_effects", "Remove offset effects option (remove_offset_effects=True) requires the offset_column to be specified.");
-          }
+          // offset_column requirement is enforced generically in ModelBuilder.init() (GH-16851)
           if (_distribution.equals(DistributionFamily.multinomial) || _distribution.equals(DistributionFamily.ordinal) || _distribution.equals(DistributionFamily.custom)){
               glm.error("_remove_offset_effects", "The "+_distribution.name()+ " distribution is not supported with remove offset effects.");
           }
@@ -1714,10 +1712,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     private int[] _control_values_idxs_in_adapted_frame;
     private String[] _control_variables_names;
 
-    // Unrestricted model is produced when control variables or remove offset features are used.
-    public TwoDimTable _scoring_history_unrestricted_model;
-    public ModelMetrics _training_metrics_unrestricted_model;
-    public ModelMetrics _validation_metrics_unrestricted_model;
+    // Unrestricted model view (_scoring_history/_training_metrics/_validation_metrics _unrestricted_model)
+    // now lives on the base Model.Output (GH-16851, shared by all remove_offset algos).
 
     // Other two restricted models is produced when control variables and remove offset features are used together
     // Output for restricted model where control variables feature is enabled
@@ -2563,17 +2559,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
-  @Override
-  public ModelDescriptor modelDescriptor() {
-    if (!_parms._remove_offset_effects)
-      return super.modelDescriptor();
-    return new H2OModelDescriptor() {
-      @Override
-      public String offsetColumn() {
-        return null;
-      }
-    };
-  }
+  // modelDescriptor() override removed: base Model.H2OModelDescriptor.offsetColumn() now returns null
+  // when _remove_offset_effects is set (GH-16851), which is identical behavior for all algos.
 
   private boolean isFeatureUsedInPredict(int featureIdx, double[] beta) {
     if (_useControlVariables && _output._control_values_idxs_in_adapted_frame != null && Arrays.binarySearch(_output._control_values_idxs_in_adapted_frame, featureIdx) >= 0) {

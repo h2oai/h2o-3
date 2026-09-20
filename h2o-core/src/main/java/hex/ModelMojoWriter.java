@@ -98,6 +98,16 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   protected abstract void writeModelData() throws IOException;
 
   @Override
+  protected void writeCommonExtraModelInfo() throws IOException {
+    // remove_offset_effects (GH-16851): such a model advertises no offset column, which already stops
+    // EasyPredictModelWrapper from supplying one. Record the reason as well, so score0 can also ignore an
+    // offset a caller passes explicitly and the MOJO matches in-cluster predictions either way.
+    if (model != null && model._parms._remove_offset_effects) {
+      writekv("offset_removed", true);
+    }
+  }
+
+  @Override
   protected void writeExtraInfo() throws IOException {
     super.writeExtraInfo();
     writeModelDetails();

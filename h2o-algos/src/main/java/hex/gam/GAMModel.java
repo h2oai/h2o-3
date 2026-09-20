@@ -765,6 +765,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     private int _lastClass;
     private ModelMetrics.MetricBuilder _mb;
     final boolean _generatePredictions;
+    private final boolean _applyOffset; // remove_offset_effects (GH-16851): score/metrics as if offset==0
     private transient double[][] _vcov;
     private transient double[] _tmp;
     private boolean _classifier2class;
@@ -810,6 +811,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       _defaultThreshold = m.defaultThreshold();
       _family = m._parms._family;
       _lastClass = _nclass-1;
+      _applyOffset = m.applyOffsetAtScoreTime();
     }
 
     @Override
@@ -832,6 +834,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       int chkLen = chks[0]._len;
       for (int rid = 0; rid < chkLen; rid++) {  // extract each row
         _dinfo.extractDenseRow(chks, rid, r);
+        if (!_applyOffset) r.offset = 0; // remove_offset_effects: predictions AND metrics see offset==0
         processRow(r, predictVals, nc, numPredVals);
         if (_computeMetrics && !r.response_bad) {
           trueResponse[0] = (float) r.response[0];

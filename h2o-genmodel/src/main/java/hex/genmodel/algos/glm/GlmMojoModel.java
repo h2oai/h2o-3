@@ -63,7 +63,8 @@ public class GlmMojoModel extends GlmMojoModelBase {
     for(int i = _cats; i < _beta.length - 1 - noff; ++i)
       eta += _beta[noff + i] * data[i];
     eta += _beta[_beta.length - 1]; // reduce intercept
-    eta += offset;
+    // remove_offset_effects: score as if the offset were 0, ignoring one a caller supplies (GH-16851)
+    if (!_offsetRemoved) eta += offset;
 
     double mu = _linkFn.eval(eta);
 

@@ -25,6 +25,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "ignored_columns",
       "ignore_const_cols",
       "offset_column",
+      "remove_offset_effects",
       "weights_column",
       "balance_classes",
       "class_sampling_factors",

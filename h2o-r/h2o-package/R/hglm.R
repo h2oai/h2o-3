@@ -20,6 +20,10 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param remove_offset_effects \code{Logical}. Train with the offset column but score and compute metrics as if the offset were 0. The
+#'        offset-applied ('unrestricted') metrics are reported alongside in the corresponding
+#'        training_metrics_unrestricted_model, validation_metrics_unrestricted_model and
+#'        cross_validation_metrics_unrestricted_model output fields. Experimental. Defaults to FALSE.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
@@ -82,6 +86,7 @@ h2o.hglm <- function(x,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
                      offset_column = NULL,
+                     remove_offset_effects = FALSE,
                      weights_column = NULL,
                      max_runtime_secs = 0,
                      custom_metric_func = NULL,
@@ -142,6 +147,8 @@ h2o.hglm <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(max_runtime_secs))
@@ -199,6 +206,7 @@ h2o.hglm <- function(x,
                                      validation_frame = NULL,
                                      ignore_const_cols = TRUE,
                                      offset_column = NULL,
+                                     remove_offset_effects = FALSE,
                                      weights_column = NULL,
                                      max_runtime_secs = 0,
                                      custom_metric_func = NULL,
@@ -264,6 +272,8 @@ h2o.hglm <- function(x,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(offset_column))
     parms$offset_column <- offset_column
+  if (!missing(remove_offset_effects))
+    parms$remove_offset_effects <- remove_offset_effects
   if (!missing(weights_column))
     parms$weights_column <- weights_column
   if (!missing(max_runtime_secs))

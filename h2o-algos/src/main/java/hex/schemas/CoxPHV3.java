@@ -18,6 +18,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "ignored_columns",
               "weights_column",
               "offset_column",
+              "remove_offset_effects",
               "stratify_by",
               "ties",
               "init",

@@ -22,6 +22,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
   private final double _threshold;
   private final int _responseIndex;
   private final int _offsetIndex;
+  private final boolean _useOffset; // remove_offset_effects (GH-16851): score with margin 0 instead of the offset
 
   private final XGBoostModelInfo _modelInfo;
   private final XGBoostModel.XGBoostParameters _parms;
@@ -39,7 +40,8 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       double threshold,
       XGBoostOutput output,
       Frame fr,
-      Chunk[] chks
+      Chunk[] chks,
+      boolean useOffset
   ) {
     _modelInfo = modelInfo;
     _parms = parms;
@@ -47,13 +49,14 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
     _boosterParms = boosterParms;
     _threshold = threshold;
     _output = output;
-    
+
     if (fr.vec(_parms._response_column).isBad()) {
       _responseIndex = -1;
     } else {
       _responseIndex = fr.find(_parms._response_column);
     }
     _offsetIndex = fr.find(_parms._offset_column);
+    _useOffset = useOffset;
     _preds = scoreChunk(chks, XGBoostPredict.OutputType.PREDICT);
   }
 
@@ -92,6 +95,11 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       // No local chunks for this frame
       if (data.rowNum() == 0) {
         return new float[0][];
+      }
+      if (!_useOffset && _offsetIndex >= 0) {
+        // remove_offset_effects: replace the offset base margin with explicit ZEROS — without a margin the
+        // native booster would add its base_score instead (GH-16851)
+        data.setBaseMargin(new float[(int) data.rowNum()]);
       }
       // Initialize Booster
       booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);

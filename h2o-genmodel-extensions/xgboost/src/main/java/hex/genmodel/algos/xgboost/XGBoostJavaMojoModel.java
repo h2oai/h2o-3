@@ -107,7 +107,9 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     FVec row = _1hotFactory.fromArray(doubles);
     float[] out;
     if (_hasOffset) {
-      out = _predictor.predict(row, (float) offset);
+      // offset_removed: margin-trained booster must still take the explicit-margin path, but with margin 0,
+      // ignoring any supplied offset — mirrors in-cluster remove_offset_effects scoring (GH-16851)
+      out = _predictor.predict(row, _offsetRemoved ? 0f : (float) offset);
     } else if (offset != 0) {
       throw new UnsupportedOperationException("Unsupported: offset != 0");
     } else {

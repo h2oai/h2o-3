@@ -20,6 +20,7 @@ public class HGLMV3 extends ModelBuilderSchema<HGLM, HGLMV3, HGLMV3.HGLMParamete
             "ignored_columns",
             "ignore_const_cols",
             "offset_column",
+            "remove_offset_effects",
             "weights_column",
             "max_runtime_secs",
             "custom_metric_func",
