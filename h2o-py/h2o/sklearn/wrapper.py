@@ -313,9 +313,19 @@ class BaseEstimatorMixin(object):
         return hasattr(self, distribution_prop) and getattr(self, distribution_prop) not in (None,)+self._classifier_distributions
 
     def is_classifier(self):
+        est_type = getattr(self, "_estimator_type", None)
+        if est_type == "classifier":
+            return True
+        if est_type == "regressor":
+            return False
         return is_classifier(self) or self._is_classifier_distribution()
 
     def is_regressor(self):
+        est_type = getattr(self, "_estimator_type", None)
+        if est_type == "regressor":
+            return True
+        if est_type == "classifier":
+            return False
         return is_regressor(self) or self._is_regressor_distribution()
 
 
@@ -445,7 +455,7 @@ class H2OConnectionMonitorMixin(object):
 
 class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonitorMixin):
 
-    _reserved_params = ('data_conversion',)
+    _reserved_params = ('data_conversion', 'init_connection_args', 'estimator_type')
     """Params required when `sklearn` is cloning the estimator (e.g. in search estimators),
     but that should not be forwarded to the original wrapped estimator"""
 
@@ -471,6 +481,7 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         self._estimator = None
         self._estimator_cls = estimator_cls
         estimator_type = self._get_custom_param('default_estimator_type', estimator_type)
+        self.estimator_type = estimator_type
         if estimator_type:
             self._estimator_type = estimator_type
 
@@ -481,7 +492,25 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         self.set_params(**estimator_params)
 
         self._frame_params = None
+        self.init_connection_args = init_connection_args
         self._init_connection_args = init_connection_args
+
+    def __sklearn_tags__(self):
+        """
+        Keep sklearn estimator type tags aligned with wrappers that set `_estimator_type`
+        dynamically (generic wrappers) to support newer sklearn type-dispatch logic.
+        """
+        parent = super(BaseSklearnEstimator, self)
+        if hasattr(parent, '__sklearn_tags__') and callable(parent.__sklearn_tags__):
+            tags = parent.__sklearn_tags__()
+            est_type = getattr(self, "_estimator_type", None)
+            if est_type in ("classifier", "regressor") and hasattr(tags, "estimator_type"):
+                tags.estimator_type = est_type
+                target_tags = getattr(tags, "target_tags", None)
+                if target_tags is not None and hasattr(target_tags, "required"):
+                    target_tags.required = True
+            return tags
+        return {}
 
 
     @classmethod
@@ -528,6 +557,14 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             if delim:
                 nested_params[key][sub_key] = value
             else:
+                if key == 'init_connection_args':
+                    self._init_connection_args = value
+                elif key == 'estimator_type':
+                    assert value in (None, 'classifier', 'regressor')
+                    if value:
+                        self._estimator_type = value
+                    elif hasattr(self, '_estimator_type'):
+                        del self._estimator_type
                 setattr(self, self._no_conflict(key), value)
 
         for key, sub_params in nested_params.items():
@@ -546,6 +583,9 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
         :return: Parameter names mapped to their values.
         """
         params = {k: getattr(self, self._no_conflict(k), None) for k in self._estimator_param_names}
+        params.update(init_connection_args=getattr(self, '_init_connection_args', None))
+        if self.__class__.__name__.endswith('Estimator'):
+            params.update(estimator_type=getattr(self, '_estimator_type', None))
         if deep:
             out = dict()
             for k, v in params.items():
