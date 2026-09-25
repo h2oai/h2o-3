@@ -1,220 +1,125 @@
 Docker users
 ============
 
-This section describes how to use H2O-3 on Docker. It walks you through the following steps:
+A container is a convenient way to package the H2O-3 engine for a platform to launch. The container runs the engine for one user or job, and the REST API on port 54321 is the control channel for the client code that drives it. Keep that port private to the client. See `Deployment model and responsibilities <../deployment-model.html>`__.
 
-1. Installing Docker on Mac or Linux OS.
-2. Creating and modifying your Dockerfile.
-3. Building a Docker image from the Dockerfile.
-4. Running the Docker build.
-5. Launching H2O-3.
-6. Accessing H2O-3 from the web browser or from Python/R.
+This walkthrough describes:
+
+-  Building an image that runs H2O-3 as an unprivileged user
+-  Running the container with the control port bound to the local host
+-  Connecting from Python or R
+
+For H2O-3 Secure deployments, use the container image supplied with your enterprise distribution. Contact enterprise@h2o.ai.
 
 Prerequisites
 -------------
 
-- Linux kernel verison 3.8+ or Mac OS 10.6+
-- VirtualBox
-- Latest version of Docker installed and configured
-- Docker daemon running (enter all following commands in the Docker daemon window)
-- In ``User`` directory (not ``root``)
-
-.. note::
-	
-	- Older Linux kernel versions can cause kernel panics that break Docker. There are ways around it, but attempt these at your own risk. Check the version of your kernel by running ``uname -r``.
-	- The Dockerfile always pulls the latest H2O-3 release.
-	- The Docker image only needs to be built once.
+-  Linux kernel version 3.8+ or macOS
+-  Latest version of Docker installed and configured, with the Docker daemon running
+-  ``h2o.jar`` from the `H2O-3 download page <https://h2o.ai/download>`__
+-  Java 17 or later in the image (the example uses an Eclipse Temurin 17 base image)
 
 Walkthrough
 -----------
 
-The following steps walk you through how to use H2O-3 on Docker.
+**Step 1 - Install and launch Docker**
 
-.. note::
-	
-	If the following commands don't work, prepend them with ``sudo``.
+Follow the `Docker installation instructions <https://docs.docker.com/get-docker/>`__ for your operating system.
 
-Step 1: Install and launch Docker
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Step 2 - Create a Dockerfile**
 
-Depending on your operating system, select the appropriate installation method:
+Create a folder that contains ``h2o.jar`` and the following ``Dockerfile``:
 
-- `Mac installation <https://docs.docker.com/installation/mac/#installation>`__
-- `Ubuntu installation <https://docs.docker.com/installation/ubuntulinux/>`__
-- `Other OS installations <https://docs.docker.com/installation/>`__
+.. code:: dockerfile
 
-.. note::
-	
-	By default, Docker allocates 2GB of memory for Mac installations. Be sure to increase this value. We suggest 3-4 times the size of the dataset for the amount of memory required.
+   FROM eclipse-temurin:17-jre
 
-Step 2: Create or download Dockerfile
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   # Run the engine as a dedicated, unprivileged user.
+   RUN groupadd --gid 10001 h2o \
+    && useradd --uid 10001 --gid h2o --create-home --shell /usr/sbin/nologin h2o
 
-1. Create a folder on the Host OS to host your Dockerfile:
+   COPY --chown=root:root h2o.jar /opt/h2o/h2o.jar
 
-.. code-block:: bash
+   USER h2o
+   WORKDIR /home/h2o
 
-      mkdir -p /data/h2o-{{branch_name}}
+   EXPOSE 54321 54322
 
-2. Download or create a Dockerfile, which is a build recipe that builds the container. Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__:
+   ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=50", "-jar", "/opt/h2o/h2o.jar"]
 
-.. code-block:: bash
-	
-	cd /data/h2o-<branch_name>
-	wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
+The image:
 
-This Dockerfile will do the following:
+-  uses a Java 17 runtime,
+-  runs H2O-3 as the unprivileged ``h2o`` user,
+-  keeps ``h2o.jar`` owned by ``root`` so the engine can't modify it,
+-  declares ports 54321 (control) and 54322 (node-to-node).
 
-- Obtain and update the base image (Ubuntu 14.0.4).
-- Install Java 8.
-- Obtain and download the H2O-3 build from H2O-3's S3 repository.
-- Expose ports ``54321`` and ``54322`` in preparation for launching H2O-3 on those ports.
+**Step 3 - Build the image**
 
-Step 3: Build a Docker image from the Dockerfile
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+From the folder with the Dockerfile, run:
 
-From the ``/data/h2o-<branch_name>`` directory, run the following (note that ``v5`` represents the current version number):
+.. code:: bash
 
-.. code-block:: bash
-	
-	docker build -t "h2o.ai/{{branch_name}}:v5"
+   docker build -t h2o:local .
 
-.. note::
-	
-	This process can take a few minutes because it assembles all the necessary parts for the image.
+**Step 4 - Run the container**
 
-Step 4: Run the Docker build
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Bind the control port to the host's loopback interface so only local clients can reach it, and apply resource and privilege limits:
 
-On a mac, use the argument ``-p 54321:54321`` to expressly map the port ``54321`` (this is not necessary on Linux). 
+.. code:: bash
 
-.. code-block:: bash
-	
-	docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
+   docker run -d --name h2o \
+     -p 127.0.0.1:54321:54321 \
+     --memory 4g --cpus 2 \
+     --read-only --tmpfs /tmp:rw,exec,size=1g \
+     --cap-drop ALL --security-opt no-new-privileges \
+     h2o:local
 
-Step 5: Launch H2O-3
-~~~~~~~~~~~~~~~~~~~~
+-  ``-p 127.0.0.1:54321:54321`` publishes the control port on the host's loopback interface only. Don't publish it on ``0.0.0.0`` or on a public interface.
+-  ``--memory`` and ``--cpus`` set the resources the engine can use. ``-XX:MaxRAMPercentage=50`` sizes the Java heap from the container memory limit.
+-  ``--read-only --tmpfs /tmp:rw,exec,size=1g`` makes the root filesystem read-only and gives the engine a writable ``/tmp`` for temporary files. ``exec`` is needed because native libraries such as XGBoost are extracted there. A tmpfs counts against the container's memory limit, so for large jobs mount a volume instead and point ``-ice_root`` at it.
+-  ``--cap-drop ALL`` removes Linux capabilities the engine doesn't need, and ``--security-opt no-new-privileges`` prevents the process from gaining privileges after it starts.
 
-Navigate to the ``/opt`` directory and launch H2O-3. Update the value of ``-Xmx`` to the amount of memory you want ot allocate to the H2O-3 instance. By default, H2O-3 will launch on port ``54321``.
+To pass H2O-3 options, append them after the image name. For example, to enable hash-file authentication with a ``realm.properties`` file mounted read-only:
 
-.. code-block:: bash
-	
-	cd /opt
-	java -Xmx1g -jar h2o.jar
+.. code:: bash
 
-Step 6: Access H2O-3 from the web browser or Python/R
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   docker run -d --name h2o \
+     -p 127.0.0.1:54321:54321 \
+     --memory 4g --cpus 2 \
+     --read-only --tmpfs /tmp:rw,exec,size=1g \
+     --cap-drop ALL --security-opt no-new-privileges \
+     -v /secure/realm.properties:/etc/h2o/realm.properties:ro \
+     h2o:local -hash_login -login_conf /etc/h2o/realm.properties
 
-.. tabs::
-	.. tab:: On Linux
+**Step 5 - Connect from Python or R**
 
-		After H2O-3 launches, copy and paste the IP address and port of the H2O-3 instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
+.. code:: python
 
-		.. code-block:: bash
+   import h2o
+   h2o.connect(url="http://localhost:54321")
 
-			03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
+.. code:: r
 
-	.. tab:: On MacOS
+   library(h2o)
+   h2o.connect(ip = "localhost", port = 54321)
 
-		Locate the IP address of the Docker's network (``192.168.59.103`` in the following example) that bridges to your Host OS by opening a new terminal window (not a bash for your container) and running ``boot2docker ip``.
+If you enabled authentication, pass ``username`` and ``password`` (or an ``auth`` object) to ``h2o.connect``.
 
-		.. code-block:: bash
+**Step 6 - View logs and stop the engine**
 
-			$ boot2docker ip
-			192.168.59.103  		
+.. code:: bash
 
+   docker logs h2o
+   docker stop h2o && docker rm h2o
 
-You can also view the IP address (``192.168.99.100`` in the following example) by scrolling to the top of the Docker daemon window:
+Stop the engine when the work is done. Data is held in memory and is lost when the container stops.
 
-::
+Security
+--------
 
-
-                            ##         .
-                      ## ## ##        ==
-                   ## ## ## ## ##    ===
-               /"""""""""""""""""\___/ ===
-          ~~~ {~~ ~~~~ ~~~ ~~~~ ~~~ ~ /  ===- ~~~
-               \______ o           __/
-                 \    \         __/
-                  \____\_______/
-
-
-    docker is configured to use the default machine with IP 192.168.99.100
-    For help getting started, check out the docs at https://docs.docker.com
-
-Access Flow
-'''''''''''
-
-After obtaining the IP address, point your browser to the specified IP address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O-3:
-
-.. tabs::
-	.. code-tab:: python
-
-		# Initialize H2O 
-		import h2o
-		docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321)
-
-	.. code-tab:: r R
-
-		# Initialize H2O
-		library(h2o)
-		dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
-
-Running H2O in detached mode
------------------------------
-
-For running H2O in the background (detached mode), you can build and run the Docker image from the repository root:
-
-Step 1: Build the Docker image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-From the repository root directory, build the Docker image using the Dockerfile:
-
-.. code-block:: bash
-
-	docker build -t h2o:latest .
-
-Step 2: Run H2O in detached mode
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Run the container in detached mode with H2O automatically started:
-
-.. code-block:: bash
-
-	docker run -d -p 54321:54321 --name h2o h2o:latest java -Xmx2g -jar /opt/h2o.jar -port 54321
-
-This will start H2O in the background and map port 54321 to your local machine.
-
-Step 3: Access H2O
-~~~~~~~~~~~~~~~~~~
-
-After the container starts, you can access 
-
-``
->>> import h2o
->>> h2o.connect("localhost:54321")
-`` in your python client.
-
-To view the H2O logs:
-
-.. code-block:: bash
-
-	docker logs h2o
-
-To access the container shell:
-
-.. code-block:: bash
-
-	docker exec -it h2o /bin/bash
-
-To stop the container:
-
-.. code-block:: bash
-
-	docker stop h2o
-
-To restart the container:
-
-.. code-block:: bash
-
-	docker start h2o
+-  **Keep the control port private.** Publish it only on the loopback interface, or not at all when the client runs in the same container network. Other containers on the same Docker network can still reach the port, so run the engine and its client on a dedicated network (``docker network create``).
+-  **Run as non-root.** The Dockerfile above creates a dedicated user.
+-  **Limit resources and privileges** with ``--memory``, ``--cpus``, ``--read-only``, and ``--cap-drop ALL``.
+-  **Enable authentication and TLS** when the client connects over a network that isn't fully trusted. See `Security <../security.html>`__.
+-  **Mount data read-only** where possible, and grant the container access only to the data the job needs.
