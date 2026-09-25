@@ -62,6 +62,7 @@ The following are additional resources to learn more information about H2O-3:
 .. toctree::
    :maxdepth: 2
    
+   deployment-model
    starting-h2o
 
 .. toctree::

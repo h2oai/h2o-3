@@ -1,1036 +1,747 @@
 Security
 ========
 
-H2O contains security features intended for deployment inside a secure
-data center.
+H2O-3 is a machine learning library with a distributed, in-memory compute engine. The engine is launched for one user or one job, runs inside a platform you control, and is driven by client code over a REST control channel. Its security depends on that platform keeping the control channel private. Read `Deployment model and responsibilities <deployment-model.html>`__ first; this page builds on it.
 
-Security Model
+.. _assumptions-threat-model:
+
+.. _what-is-secured-today:
+
+.. _what-is-being-secured-today:
+
+Security model
 --------------
-
-Below is a discussion of what the security assumptions are, and what the
-H2O software does and does not do.
 
 Terms
 ~~~~~
 
-+-------------------------------------+---------------------------------+
-| Term                                | Definition                      |
-+=====================================+=================================+
-| **H2O Cluster**                     | A collection of H2O nodes that  | 
-|                                     | work together. In the H2O Flow  | 
-|                                     | Web UI, the cluster status menu |
-|                                     | item shows the list of nodes in | 
-|                                     | an H2O cluster.                 |
-+-------------------------------------+---------------------------------+
-| **H2O node**                        | One VM instance running the H2O |
-|                                     | main class. One H2O node        | 
-|                                     | corresponds to one OS-level     | 
-|                                     | process. In the YARN case, one  | 
-|                                     | H2O node corresponds to one     |
-|                                     | mapper instance and one YARN    |
-|                                     | container.                      |
-+-------------------------------------+---------------------------------+
-| **H2O embedded web port**           | Each H2O node contains an       |
-|                                     | embedded web port (by default   |
-|                                     | port 54321). This web port      |
-|                                     | hosts H2O Flow as well as the   |
-|                                     | H2O REST API. The user interacts|
-|                                     | directly with this web port.    |
-+-------------------------------------+---------------------------------+
-| **H2O Internal communication port** | Each H2O node also has an       |
-|                                     | internal port (web port+1, so by| 
-|                                     | default port 54322) for internal| 
-|                                     | node-to-node communication. This| 
-|                                     | is a proprietary binary         |
-|                                     | protocol. An attacker using a   |
-|                                     | tool like tcpdump or wireshark  |
-|                                     | may be able to reverse engineer |
-|                                     | data captured on this           |
-|                                     | communication path.             |
-+-------------------------------------+---------------------------------+
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Term                                                                                              | Definition                                                                                                                                                                                                                            |
++===================================================================================================+=======================================================================================================================================================================================================================================+
+| **H2O-3 cluster (engine)**                                                                        | A collection of H2O-3 nodes that work together on behalf of one user or job.                                                                                                                                                          |
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **H2O-3 node**                                                                                    | One JVM process running the H2O-3 main class. On YARN, one node is one mapper in one YARN container. On Kubernetes, one node is one pod.                                                                                              |
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Control port (REST API)**                                                                       | Each node exposes a REST API, by default on port 54321. Client libraries (Python, R, Java, Scala) use it to drive the engine. If Flow is included in your distribution, it is served from this port too.                              |
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Internal communication port**                                                                   | Each node uses the next port (by default 54322) for node-to-node traffic in a proprietary binary protocol. It is unencrypted unless you enable internal TLS. Anyone who can capture this traffic may be able to reconstruct the data. |
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Launching platform**                                                                            | Whatever starts the engine and owns its environment: a Python or R session, a YARN or Spark job, a Kubernetes deployment, or a managed platform such as H2O AI Cloud or H2O Driverless AI.                                            |
++---------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
-Assumptions (Threat Model)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Threat model
+~~~~~~~~~~~~
 
-1. H2O lives in a secure data center.
+H2O-3 is designed and supported under the following assumptions:
 
-2. Denial of service is not a concern.
+1. **The engine runs inside a trusted environment controlled by the launching platform.** The platform owns network isolation, identity, and operating-system boundaries.
+2. **Only the user or platform that launched the engine can reach its ports.** The control port and internal port are not reachable from shared, public, or untrusted networks.
+3. **One engine serves one user or one job.** Engines aren't shared between users. H2O-3 supports authentication but not authorization: once authenticated, a caller has full access to the engine.
+4. **The control channel is fully capable.** A caller who can reach the control port, and pass authentication if it's enabled, can run computation, read and write files, and use data-source credentials with the permissions of the engine process. See `Behavior by design <#behavior-by-design>`__.
+5. **Denial of service is out of scope.** The engine is built to consume the CPU, memory, and disk it's given, and isn't designed to withstand resource-exhaustion attacks. The platform enforces resource limits.
+6. **Traffic is encrypted wherever the network isn't trusted.** Use TLS on the REST API, internal TLS between nodes, or both.
+7. **The person or platform that starts H2O-3 configures it correctly.** Security features must be turned on with the correct startup options.
+8. **Engines are short-lived.** Data is held in memory and lives only as long as the engine. Sessions don't expire before the engine stops unless you enable ``-form_auth`` with ``-session_timeout``, which ends idle sessions. Data can spill to ``ice_root`` on local disk, and OS swap can write memory to disk, so use encrypted volumes for both.
 
-   -  H2O is not designed to withstand a DOS attack.
+What H2O-3 secures
+~~~~~~~~~~~~~~~~~~
 
-3. HTTP traffic between the user client and H2O cluster needs to be
-   encrypted.
+1. **File and data access** is enforced by the operating system and by HDFS or object-store permissions of the user the engine runs as.
 
-   -  This is true for both interactive sessions (e.g the H2O Flow Web
-      UI) and programmatic sessions (e.g. an R program).
+2. **The control port** can be protected with:
 
-4. Man-in-the-middle attacks are of low concern.
+   ============== ==================================================================================================================================
+   Method         Description
+   ============== ==================================================================================================================================
+   TLS (HTTPS)    Encrypts traffic between the client and the control port.
+   Authentication LDAP, Kerberos (HTTP Basic or SPNEGO), PAM, or hash-file credentials. Optional form-based login and idle session timeout for Flow.
+   ============== ==================================================================================================================================
 
-   -  Certificate checking on the client side for R/python is not yet
-      implemented.
+   TLS and authentication can be used separately or together.
 
-5. You may want to secure internal binary H2O node-to-H2O node traffic
-   via encryption.
+3. **Node-to-node traffic** can be encrypted with internal TLS.
 
-6. You trust the person that starts H2O to start it correctly.
+4. **File paths** reached through the REST API can be restricted with ``-file_deny_glob`` as a defense-in-depth control. It doesn't replace running the engine as an unprivileged user.
 
-   -  Enabling H2O security requires specifying the correct security
-      options.
+Behavior by design
+------------------
 
-7. User client sessions do not need to expire. A session lives at most
-   as long as the cluster lifetime. H2O clusters are started and stopped
-   "frequently enough".
+The REST API is a programmable compute interface. The following behaviors are features. They are frequently reported by security scanners and bug-bounty researchers when the report assumes the control port is exposed to an untrusted caller.
 
-   -  All data is stored in-memory, so restarting the H2O cluster wipes
-      all data from memory, and there is nothing to clean from disk.
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| Capability                                                      | What it does                                                                                                                                                                                             | How to control it                                                                                                           |
++=================================================================+==========================================================================================================================================================================================================+=============================================================================================================================+
+| Expression evaluation (Rapids)                                  | Evaluates caller-supplied expressions over frames and models.                                                                                                                                            | Restrict who can reach the control port.                                                                                    |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| User-supplied functions                                         | Custom metrics and custom distributions uploaded by the client run inside the engine.                                                                                                                    | Restrict who can reach the control port. Only upload code you trust.                                                        |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| File import, parse, and export                                  | Reads from and writes to caller-supplied paths on local disk, HDFS, and object storage, including overwriting existing files when ``force=True``. File-name lookups (typeahead) list directory contents. | Run the engine as an unprivileged user with only the access the job needs. Use ``-file_deny_glob`` as an extra restriction. |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| Model import                                                    | Binary model import deserializes Java objects.                                                                                                                                                           | Import only models you created or otherwise trust.                                                                          |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| Data-source connections                                         | JDBC (``import_sql_table``), Hive, and cloud-storage imports use caller-supplied connection details.                                                                                                     | Restrict who can reach the control port. Supply credentials through the platform's secret management.                       |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| Parsing                                                         | Parse setup accepts caller-supplied options, including regular expressions. Very large or compressed inputs consume memory and CPU.                                                                      | Resource limits. Denial of service is out of scope.                                                                         |
++-----------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
-8. Once a user is authenticated for access to H2O, they have full
-   access.
+How H2O.ai evaluates vulnerability reports
+------------------------------------------
 
-   -  H2O supports authentication but not authorization or access
-      control (ACLs).
+H2O.ai reviews every report and every customer scanner finding. Findings generally fall into one of these categories:
 
-9. H2O clusters are meant to be accessed by only one user.
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Category                                                                                                                                                | How it's handled                                                                                                                                                                                                                                                    |
++=========================================================================================================================================================+=====================================================================================================================================================================================================================================================================+
+| **A control doesn't work as documented** (for example, an authentication, TLS, or file-restriction bypass)                                              | Treated as a defect and fixed.                                                                                                                                                                                                                                      |
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **A vulnerability in a bundled third-party dependency**                                                                                                 | Evaluated for reachability and fixed by upgrading the dependency. H2O-3 Secure releases address NIST Critical and High findings. Fixes are delivered in H2O-3 Secure releases and in later H2O-3 OSS releases.                                                      |
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **An engine capability reported as a vulnerability** (code execution, file access, or model deserialization by a caller who can reach the control port) | Behavior by design. The mitigation is the `deployment model <deployment-model.html>`__: keep the control port private to the launching user or platform.                                                                                                            |
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Resource exhaustion**                                                                                                                                 | Out of scope under the threat model. Mitigated by platform resource limits.                                                                                                                                                                                         |
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Stale or misattributed records**                                                                                                                      | Some CVE records are published by third-party numbering authorities and aren't updated after a fix ships, or match a different product with a similar name. Check the `change log <https://github.com/h2oai/h2o-3/blob/master/Changes.md>`__ for the fixed version. |
++---------------------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
-   -  Each user starts their own H2O cluster.
-   -  H2O only allows access to the embedded web port to the person that
-      started the cluster.
+**Scanner tips**
 
-Data Chain-of-Custody in a Hadoop Data Center Environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-  Scan the version you run. Findings against older releases are often already fixed.
+-  If you only use the Python client against a managed engine, use the ``h2o-client`` package. It doesn't bundle ``h2o.jar``, so the engine's Java dependencies aren't in scope. See `Using H2O-3 only as a client <deployment-model.html#using-h2o-3-only-as-a-client>`__.
+-  Some findings come from copies of a library shaded inside another dependency (for example, inside Hadoop or Parquet). These are fixed by upgrading the parent dependency and are tracked like any other dependency finding.
 
-**Note**: This holds true for all versions of Hadoop (including YARN) supported by H2O.
+Reporting a vulnerability
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Through this sequence, it is shown that a user is only able to access
-the same data from H2O that they could already access from normal Hadoop
-jobs.
+Report suspected vulnerabilities privately to support@h2o.ai rather than in a public GitHub issue, as described in the repository's ``SECURITY.md``. Reports are most actionable when they include the H2O-3 version, how the engine was launched, the startup options in use, and whether the issue requires the caller to already have access to the control port.
 
-1. Data lives in HDFS
-2. The files in HDFS have permissions
-3. An HDFS user has permissions (capabilities) to access certain files
-4. Kerberos (kinit) can be used to authenticate a user in a Hadoop
-   environment
-5. A user's Hadoop MapReduce job inherits the permissions (capabilities)
-   of the user, as well as kinit metadata
-6. H2O is a Hadoop MapReduce job
-7. H2O can only access the files in HDFS that the user has permission to
-   access
-8. Only the user that started the cluster is authenticated for access to
-   the H2O cluster
-9. The authenticated user can access the same data in H2O that he could
-   access via HDFS
+Hardening by launch mode
+------------------------
 
-What is Being Secured Today
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Python or R on a workstation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Standard file permissions security is provided by the Operating
-   System and by HDFS.
+``h2o.init()`` starts a local engine bound to the local machine. Keep ``bind_to_localhost=True``, and don't start the engine as an administrator or ``root``. On a shared host (for example, a multi-user JupyterHub server), other local users can reach ``localhost``, so enable authentication there.
 
-2. The embedded web port in each node of H2O can be secured in two ways:
-
- +------------------+---------------------------------------+
- | Method           | Description                           |
- +==================+=======================================+
- | HTTPS            | Encrypted socket communication between|
- |                  | the user client and the embedded H2O  |
- |                  | web port.                             |
- +------------------+---------------------------------------+
- | Authentication   | An HTTP Basic Auth username and       |
- |                  | password from the user client.        |
- +------------------+---------------------------------------+
-
-**Note**: Embedded web port HTTPS and authentication may be used separately or together.
-
-3. Internal H2O node-to-H2O node communication can be encrypted.
-
-
-Enforcing System-Level Command-Line Arguments in h2odriver.jar
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-System administrators can create a configuration file with implicit arguments of h2odriver and use it to make sure the H2O cluster is started with the specified security settings. 
-
-1. Create the config file in **/etc/h2o/h2odriver.args**.
-2. Specify the default command-line options that you want to enforce. Note that each argument must be on a separate line. For example:
-
- .. code-block:: bash
-
-   h2o_ssl_jks_internal=keystore.jks
-   h2o_ssl_jks_password=password
-   h2o_ssl_jts_internal=truststore.jks
-   h2o_ssl_jts_password=password
-
-3. Start H2O.
-
- .. code-block:: bash
-
-  hadoop jar h2odriver.jar -mapperXmx 3g -nodes 1
-
-File Security in H2O
---------------------
-
-H2O is a normal user program. Nothing specifically needs to be done by
-the user to get file security for H2O. Operating System and HDFS
-permissions "just work".
-
-Standalone H2O
+Standalone jar
 ~~~~~~~~~~~~~~
 
-Since H2O is a regular Java program, the files H2O can access are
-restricted by the user's Operating System permissions (capabilities).
+``java -jar h2o.jar`` is intended for development and for platforms that manage the process. The REST API listens on all interfaces unless you restrict it. For anything other than local development:
 
-H2O on Hadoop
-~~~~~~~~~~~~~
+-  Run as a dedicated, unprivileged user.
+-  Bind to a specific interface with ``-ip`` and ``-web_ip`` (for example, ``-web_ip 127.0.0.1`` when the client runs on the same host).
+-  Enable authentication and TLS.
 
-Since H2O is a regular Hadoop MapReduce program, the files H2O can
-access are restricted by the standard HDFS permissions of the user that
-starts H2O.
+.. code:: bash
 
-Since H2O is a regular Hadoop MapReduce program, Kerberos (kinit) works
-seamlessly. (No code was added to H2O to support Kerberos.)
+   java -jar h2o.jar -web_ip 127.0.0.1 \
+       -jks /secure/h2o.jks -jks_pass "$H2O_JKS_PASSWORD" \
+       -hash_login -login_conf /secure/realm.properties
 
-Sparkling Water on YARN
+Hadoop and YARN
+~~~~~~~~~~~~~~~
+
+Each H2O-3 node runs as a YARN container under the identity of the user who launched it. File access is governed by that user's HDFS permissions, and Kerberos works through the normal Hadoop mechanisms.
+
+**Data chain of custody**
+
+1. Data lives in HDFS, and HDFS files have permissions.
+2. An HDFS user has permission to access certain files. Kerberos (``kinit``) authenticates the user.
+3. The user's YARN job inherits the user's permissions and Kerberos credentials.
+4. H2O-3 runs as that YARN job, so it can access only the HDFS files that the user can access.
+5. With authentication enabled, only the user who started the cluster can use it.
+6. The user can therefore access the same data through H2O-3 that they could access through any other Hadoop job.
+
+Recommended options:
+
+-  Authenticate the control port (``-ldap_login``, ``-kerberos_login``, ``-spnego_login``, ``-pam_login``, or ``-hash_login``).
+-  Encrypt node-to-node traffic with ``-internal_secure_connections``.
+-  Use ``-proxy`` with SPNEGO. When the cluster is launched by a service on the user's behalf, use secure impersonation (``-principal``, ``-keytab``, ``-run_as_user``).
+-  Enforce these options for every user with a system-wide ``h2odriver.args`` file (see below).
+
+**Enforcing system-level command-line arguments in h2odriver.jar**
+
+Administrators can create a file of implicit ``h2odriver`` arguments so that every H2O-3 cluster starts with the required security settings.
+
+1. Create the file **/etc/h2o/h2odriver.args**.
+
+2. Add each argument on its own line. For example:
+
+   .. code:: bash
+
+      h2o_ssl_jks_internal=keystore.jks
+      h2o_ssl_jks_password=password
+      h2o_ssl_jts_internal=truststore.jks
+      h2o_ssl_jts_password=password
+
+3. Start H2O-3 as usual:
+
+   .. code:: bash
+
+      hadoop jar h2odriver.jar -mapperXmx 3g -nodes 1
+
+Every user who launches H2O-3 must be able to read this file, so restrict who can modify it, and avoid storing passwords in it where possible. On YARN, ``-internal_secure_connections`` generates internal TLS material per cluster without shared passwords.
+
+Spark (Sparkling Water)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Similar to H2O on Hadoop, this configuration is H2O on Spark on YARN.
-The YARN job inherits the HDFS permissions of the user.
+H2O-3 runs inside the user's Spark application on YARN and inherits the user's HDFS permissions. Configure authentication and TLS through the ``spark.ext.h2o.*`` properties listed below (set the ``*.login`` properties to ``true``), and apply the same network controls you use for Spark drivers and executors. For example:
 
-Embedded Web Port (by default port 54321) Security
---------------------------------------------------
+.. code:: bash
 
-For the client side, connection options exist.
+   $SPARK_HOME/bin/spark-submit \
+       --conf spark.ext.h2o.hash.login=true \
+       --conf spark.ext.h2o.login.conf=/path/to/realm.properties \
+       --conf spark.ext.h2o.jks=/path/to/h2o.jks \
+       --conf spark.ext.h2o.jks.pass="$H2O_JKS_PASSWORD" \
+       your-application.py
 
-For the server side, startup options exist to facilitate security. These
-are detailed below.
+Kubernetes and containers
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
--------------
+-  Run the container as a non-root user with a read-only root filesystem and no added capabilities.
+-  Use a NetworkPolicy so that only the launching client or platform can reach ports 54321 and 54322.
+-  Don't expose the control port through a public Ingress, Route, or load balancer. If users need to reach the engine from outside the cluster, put it behind an authenticating proxy with TLS.
+
+See `Using H2O-3 on Kubernetes <getting-started/kubernetes-users.html#security>`__ for an example.
+
+H2O AI Cloud and H2O Driverless AI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The platform launches and isolates H2O-3 engines, authenticates users, and manages their lifecycle. Follow the platform's own security documentation.
+
+.. _file-security-in-h2o:
+
+File access
+-----------
+
+H2O-3 is a regular user program. The files it can reach are the files its operating-system user (or HDFS user) can reach. This is the primary file-access control:
+
+-  Run the engine as a dedicated, unprivileged user. Never run it as ``root``.
+-  Grant that user access only to the data and output locations the job needs.
+-  On Hadoop and Spark, rely on HDFS permissions for the launching user.
+
+As a defense-in-depth control, ``-file_deny_glob`` sets a `glob <https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob>`__ pattern for paths the REST API won't read or write. A default deny list covers common system directories. Report a bypass of the deny list as a vulnerability. The deny list complements OS permissions; it doesn't replace them.
+
+.. _embedded-web-port-by-default-port-54321-security:
+
+Control port (by default 54321) security
+----------------------------------------
+
+Client connection options and server startup options for each method are described below. With any login method, ``-form_auth`` enables form-based login for Flow, and ``-session_timeout <minutes>`` (requires ``-form_auth``) ends idle sessions.
+
+--------------
 
 HTTPS
 ~~~~~
 
-HTTPS Client Side
+HTTPS client side
 ^^^^^^^^^^^^^^^^^
 
-Flow Web UI Client
+Flow web UI client
 ''''''''''''''''''
 
-When HTTPS is enabled on the server side, the user must provide the
-https URI scheme to the browser. No http access will exist.
+When HTTPS is enabled on the server, use the ``https`` URI scheme in the browser. Plain HTTP isn't available.
 
-R Client
+R client
 ''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with HTTPS:
+.. code:: r
 
-.. code-block:: bash
+   h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
+The R client uses RCurl, and by extension libcurl and OpenSSL.
 
-The underlying HTTPS implementation is provided by RCurl and by
-extension libcurl and OpenSSL.
-
-Python Client
+Python client
 '''''''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with HTTPS:
+.. code:: python
 
-.. code-block:: bash
+   h2o.init(ip="a.b.c.d", port=54321, https=True, insecure=False)
 
-    h2o.init(ip="a.b.c.d", port=54321, https=True, insecure=False)
+The Python client uses the ``requests`` library. Leave ``insecure=False`` so the client verifies the server certificate. Setting ``insecure=True`` disables certificate verification and should be used only for testing. To trust a private certificate authority, pass ``cacert="/path/to/ca-bundle.pem"`` to ``h2o.connect()``.
 
-The underlying HTTPS implementation is provided by RCurl and by
-extension libcurl and OpenSSL.
-
-HTTPS Server Side
+HTTPS server side
 ^^^^^^^^^^^^^^^^^
 
-A `Java Keystore <https://en.wikipedia.org/wiki/Keystore>`_ must be
-provided on the server side to enable HTTPS. Keystores can be
-manipulated on the command line with the
-`keytool <http://docs.oracle.com/javase/6/docs/technotes/tools/solaris/keytool.html>`_
-command.
+Provide a `Java keystore <https://en.wikipedia.org/wiki/Keystore>`__ to enable HTTPS. Create and manage keystores with the JDK ```keytool`` <https://docs.oracle.com/en/java/javase/17/docs/specs/man/keytool.html>`__ command. HTTPS is served by H2O-3's embedded Jetty web server.
 
-The underlying HTTPS implementation is provided by Jetty 9 and the Java
-runtime.
+The following options are available for standalone H2O-3 and for H2O-3 on Hadoop:
 
-Standalone H2O
-''''''''''''''
+.. code:: bash
 
-The following options are available:
+   -jks <filename>
+        Java keystore file
 
-.. code-block:: bash
+   -jks_pass <password>
+        Keystore password. The default is 'h2oh2o'; always set your own.
 
-    -jks <filename>
-         Java keystore file
+   -jks_alias <alias>
+        (Optional) Which certificate from the keystore to use
 
-    -jks_pass <password>
-         (Default is 'h2oh2o')
+Standalone example:
 
-    -jks_alias <alias>
-         (Optional) Which certificate from the keystore to use
+.. code:: bash
 
-Example:
+   java -jar h2o.jar -jks h2o.jks -jks_pass "$H2O_JKS_PASSWORD"
 
-.. code-block:: bash
+Hadoop example:
 
-    java -jar h2o.jar -jks h2o.jks
+.. code:: bash
 
-H2O on Hadoop
-'''''''''''''
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -jks_pass "$H2O_JKS_PASSWORD" -output hdfsOutputDirectory
 
-The following options are available:
+Sparkling Water properties:
 
-.. code-block:: bash
+========================== =========================
+Spark conf property        Description
+========================== =========================
+``spark.ext.h2o.jks``      Path to the Java keystore
+``spark.ext.h2o.jks.pass`` Keystore password
+========================== =========================
 
-    -jks <filename>
-         Java keystore file
+Creating a self-signed Java keystore for testing
+''''''''''''''''''''''''''''''''''''''''''''''''
 
-    -jks_pass <password>
-         (Default is 'h2oh2o')
+Use a certificate from your organization's certificate authority in production. For testing, you can create a self-signed keystore:
 
-    -jks_alias <alias>
-         (Optional) Which certificate from the keystore to use
+.. code:: bash
 
-Example:
+   # Remove any existing keystore.
+   rm -f mykeystore.jks
 
-.. code-block:: bash
+   # Generate a new keystore. keytool prompts for the certificate details.
+   keytool -genkeypair -keyalg RSA -keysize 2048 -keystore mykeystore.jks -storepass mypass
 
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -jks h2o.jks -output hdfsOutputDirectory
+   # Run H2O-3 with the keystore.
+   java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
 
-Sparkling Water
-'''''''''''''''
+--------------
 
-The following Spark conf properties exist for Java Keystore
-configuration:
-
-+--------------------------+-------------------------+
-| Spark conf property      | Description             |
-+==========================+=========================+
-| spark.ext.h2o.jks        | Path to Java Keystore   |
-+--------------------------+-------------------------+
-| spark.ext.h2o.jks.pass   | JKS password            |
-+--------------------------+-------------------------+
-
-Example:
-
-.. code-block:: bash
-
-    $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.jks=/path/to/h2o.jks sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
-Creating your own self-signed Java Keystore
-'''''''''''''''''''''''''''''''''''''''''''
-
-Here is an example of how to create your own self-signed Java Keystore
-(mykeystore.jks) with a custom keystore password (mypass) and how to run
-standalone H2O using your Keystore:
-
-.. code-block:: bash
-
-    # Be paranoid and delete any previously existing keystore.
-    rm -f mykeystore.jks
-
-    # Generate a new keystore.
-    keytool -genkey -keyalg RSA -keystore mykeystore.jks -storepass mypass -keysize 2048
-    What is your first and last name?
-      [Unknown]:  
-    What is the name of your organizational unit?
-      [Unknown]:  
-    What is the name of your organization?
-      [Unknown]:  
-    What is the name of your City or Locality?
-      [Unknown]:  
-    What is the name of your State or Province?
-      [Unknown]:  
-    What is the two-letter country code for this unit?
-      [Unknown]:  
-    Is CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
-      [no]:  yes
-
-    Enter key password for <mykey>
-        (RETURN if same as keystore password):  
-
-    # Run H2O using the newly generated self-signed keystore.
-    java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
-
-----------------
-
-Kerberos Authentication (via HTTP Basic)
+Kerberos authentication (via HTTP Basic)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Kerberos H2O Client Side
-^^^^^^^^^^^^^^^^^^^^^^^^
+Kerberos H2O-3 client side
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Flow Web UI Client
+Flow web UI client
 ''''''''''''''''''
 
-When authentication is enabled, the user will be presented with a
-username and password dialog box when attempting to reach Flow.
+When authentication is enabled, Flow prompts for a username and password.
 
-R Client
+R client
 ''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
+.. code:: r
 
-.. code-block:: bash
+   h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
-
-Python Client
+Python client
 '''''''''''''
 
-For Python, connecting to H2O with authentication is similar:
+.. code:: python
 
-.. code-block:: bash
+   h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
-    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
+HTTP Basic sends credentials with every request. Always combine it with HTTPS.
 
-Kerberos H2O Server Side
-^^^^^^^^^^^^^^^^^^^^^^^^
+Kerberos H2O-3 server side
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You must provide a simple configuration file that specifies the Kerberos
-login module
+Provide a configuration file that specifies the Kerberos login module.
 
 Example **kerb.conf**:
 
-.. code-block:: bash
+.. code:: text
 
-    krb5loginmodule {
-         com.sun.security.auth.module.Krb5LoginModule required
-    };
+   krb5loginmodule {
+        com.sun.security.auth.module.Krb5LoginModule required
+   };
 
-If the default realm and/or KDC cannot be automatically detected (e.g. by resolving KDC using DNS) you might need to
-specify additional system properties ``java.security.krb5.realm`` and/or ``java.security.krb5.kdc`` when starting H2O
-(see example in the **Standalone H2O** section).
+If the default realm or KDC can't be detected automatically (for example, by resolving the KDC through DNS), set the ``java.security.krb5.realm`` and ``java.security.krb5.kdc`` system properties when you start H2O-3.
 
-For more detail about Kerberos configuration:
-`Krb5LoginModule <https://docs.oracle.com/javase/8/docs/jre/api/security/jaas/spec/com/sun/security/auth/module/Krb5LoginModule.html>`__,
-`Jaas note <http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html>`__
+For more detail, see the JDK documentation for `Krb5LoginModule <https://docs.oracle.com/en/java/javase/17/docs/api/jdk.security.auth/com/sun/security/auth/module/Krb5LoginModule.html>`__.
 
-Standalone H2O
-''''''''''''''
+Options for standalone H2O-3 and H2O-3 on Hadoop:
 
-The following options are required for Kerberos authentication:
+.. code:: bash
 
-.. code-block:: bash
+   -kerberos_login
+         Use Jetty KerberosLoginService
 
-    -kerberos_login
-          Use Jetty KerberosLoginService
+   -login_conf <filename>
+         LoginService configuration file
 
-    -login_conf <filename>
-          LoginService configuration file
+   -user_name <username>
+         Name of the user for which access is allowed
 
-    -user_name <username>
-          Override name of user for which access is allowed
+Standalone examples:
 
+.. code:: bash
 
-Example:
+   java -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
-.. code-block:: bash
+   java -Djava.security.krb5.realm="EXAMPLE.COM" -Djava.security.krb5.kdc="kdc.example.com" \
+       -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
-    java -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
+Hadoop example:
 
-Example (with realm and KDC explicitly specified):
+.. code:: bash
 
-.. code-block:: bash
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -kerberos_login -login_conf kerb.conf -output hdfsOutputDirectory -user_name kerb_principal
 
-    java -Djava.security.krb5.realm="0XDATA.LOC" -Djava.security.krb5.kdc="ldap.0xdata.loc" -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
+Sparkling Water properties:
 
-H2O on Hadoop
-'''''''''''''
+================================ ============================================
+Spark conf property              Description
+================================ ============================================
+``spark.ext.h2o.kerberos.login`` Use Jetty Krb5LoginModule
+``spark.ext.h2o.login.conf``     LoginService configuration file
+``spark.ext.h2o.user.name``      Name of the user for which access is allowed
+================================ ============================================
 
-The following options are available:
+--------------
 
-.. code-block:: bash
-
-    -kerberos_login
-          Use Jetty KerberosLoginService
-
-    -login_conf <filename>
-          LoginService configuration file
-
-    -user_name <username>
-          Override name of user for which access is allowed
-
-Example:
-
-.. code-block:: bash
-
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -kerberos_login -login_conf kerb.conf -output hdfsOutputDirectory -user_name kerb_principal
-
-Sparkling Water
-'''''''''''''''
-
-The following Spark conf properties exist for Kerberos configuration:
-
-+--------------------------------+--------------------------------------------+
-| Spark conf property            | Description                                |
-+================================+============================================+
-| spark.ext.h2o.kerberos.login   | Use Jetty Krb5LoginModule                  |
-+--------------------------------+--------------------------------------------+
-| spark.ext.h2o.login.conf       | LoginService configuration file            |
-+--------------------------------+--------------------------------------------+
-| spark.ext.h2o.user.name        | Name of user for which access is allowed   |
-+--------------------------------+--------------------------------------------+
-
-
-Example:
-
-.. code-block:: bash
-
-    $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
-----------------
-
-Kerberos Authentication (via kinit/SPNEGO)
+Kerberos authentication (via kinit/SPNEGO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Kerberos H2O Client Side
-^^^^^^^^^^^^^^^^^^^^^^^^
+SPNEGO client side
+^^^^^^^^^^^^^^^^^^
 
-Flow Web UI Client
+Flow web UI client
 ''''''''''''''''''
 
-Modern browsers support kerberos authentication out of the box.
-When attempting to reach Flow the server will respond with 401 with negotiate header
-and the browser will use last key acquired via kinit on the client machine.
+Modern browsers support Kerberos authentication. When you open Flow, the server responds with ``401`` and a ``Negotiate`` header, and the browser uses the ticket acquired with ``kinit`` on the client machine.
 
-R Client
+R client
 ''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with SPNEGO authentication:
+.. code:: r
 
-.. code-block:: bash
+   h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
 
-    h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
+**Limitation:** The R client uses RCurl, which doesn't let you specify the service principal. The principal is generated from the template ``HTTP/HOSTNAME@DOMAIN``.
 
-**Limitation:** The R client uses the **RCurl** library, which does not allow you to specify service principal and
-is limited to automatic service principal generation via the template http/HOSTNAME@DOMAIN.
-
-Python Client
+Python client
 '''''''''''''
 
-For Python, connecting to H2O with authentication is similar:
+.. code:: python
 
-.. code-block:: bash
+   from h2o.auth import SpnegoAuth
 
-    from h2o.auth import SpnegoAuth
+   h2o.connect(ip="a.b.c.d", port=54321, auth=SpnegoAuth(service_principal="HTTP/h2o_server@EXAMPLE.COM"))
 
-    h2o.connect(ip="a.b.c.d", port=54321, auth=SpnegoAuth(service_principal="HTTP/h2o_server@EXAMPLE.COM"))
+**Limitation:** Connecting to a SPNEGO-configured server is supported only through ``h2o.connect``, not ``h2o.init``.
 
-**Limitation:** Connecting to a SPNEGO-configured H2O server is currently possible only via ``h2o.connect``. (``h2o.init`` not supported). The next section describes how to specify ``service_principal``.
+SPNEGO server side
+^^^^^^^^^^^^^^^^^^
 
-Kerberos H2O Server Side
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-On the machine running the H2O server a keytab file must be created containing the key for
-the service principal used by this server. The same service principal must be used in the client
-code when connecting to the server.
-
-You must provide configuration files for the SPNEGO login module:
+Create a keytab on the server containing the key for the service principal. The client must use the same service principal.
 
 Example **spnego.conf**:
 
-.. code-block:: bash
+.. code:: text
 
-    com.sun.security.jgss.initiate {
-        com.sun.security.auth.module.Krb5LoginModule required
-        principal="HTTP/h2o_server@EXAMPLE.COM"
-        keyTab="/srv/h2o.keytab"
-        useKeyTab=true
-        storeKey=true
-        isInitiator=false;
-    };
+   com.sun.security.jgss.initiate {
+       com.sun.security.auth.module.Krb5LoginModule required
+       principal="HTTP/h2o_server@EXAMPLE.COM"
+       keyTab="/srv/h2o.keytab"
+       useKeyTab=true
+       storeKey=true
+       isInitiator=false;
+   };
 
-    com.sun.security.jgss.accept {
-        com.sun.security.auth.module.Krb5LoginModule required
-        principal="HTTP/h2o_server@EXAMPLE.COM"
-        keyTab="/srv/h2o.keytab"
-        useKeyTab=true
-        storeKey=true
-        isInitiator=false;
-    };
+   com.sun.security.jgss.accept {
+       com.sun.security.auth.module.Krb5LoginModule required
+       principal="HTTP/h2o_server@EXAMPLE.COM"
+       keyTab="/srv/h2o.keytab"
+       useKeyTab=true
+       storeKey=true
+       isInitiator=false;
+   };
 
 Example **spnego.properties**:
 
-.. code-block:: bash
+.. code:: text
 
-    targetName=HTTP/h2o_server@EXAMPLE.COM
+   targetName=HTTP/h2o_server@EXAMPLE.COM
 
+Options for standalone H2O-3 and H2O-3 on Hadoop:
 
-Standalone H2O
-''''''''''''''
+.. code:: bash
 
-The following options are required for SPNEGO authentication:
+   -spnego_login
+         Use Jetty SPNEGO Login Service
 
-.. code-block:: bash
+   -user_name <username>
+         Principal for which access is allowed; must be the full Kerberos name (name/path@DOMAIN)
 
-    -spnego_login
-          Use Jetty SPNEGO Login Service
+   -login_conf <filename>
+         Path to spnego.conf
 
-    -user_name <username>
-          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
+   -spnego_properties <filename>
+         Path to spnego.properties
 
-    -login_conf <filename>
-          path to spnego.conf file, see example above
+Standalone example:
 
-    -spnego_properties <filename>
-          path to spnego.properties file, see example above
+.. code:: bash
 
-Example:
+   java -jar h2o.jar \
+       -spnego_login -user_name principal@DOMAIN \
+       -login_conf /path/to/spnego.conf \
+       -spnego_properties /path/to/spnego.properties
 
-.. code-block:: bash
+Hadoop example:
 
-    java -jar h2o.jar \
-        -spnego_login -user_name pricipal@DOMAIN \
-        -login_conf /path/to/spnego.conf \
-        -spnego_properties /path/to/spnego.properties
+.. code:: bash
 
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
+       -proxy -spnego_login -user_name principal@DOMAIN \
+       -login_conf /path/to/spnego.conf \
+       -spnego_properties /path/to/spnego.properties
 
-H2O on Hadoop
-'''''''''''''
+**Limitation:** A Kerberos service principal is tied to a hostname, so on Hadoop use SPNEGO only with the ``-proxy`` option.
 
-The following options are available:
+--------------
 
-.. code-block:: bash
-
-
-    -spnego_login
-          Use Jetty SPNEGO Login Service
-
-    -user_name <username>
-          Principal for which access is allowed, must be full kerberos name name/path@DOMAIN
-
-    -login_conf <filename>
-          path to spnego.conf file, see example above
-
-    -spnego_properties <filename>
-          path to spnego.properties file, see example above
-
-
-Example:
-
-.. code-block:: bash
-
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
-        -proxy -spnego_login -user_name pricipal@DOMAIN \
-        -login_conf /path/to/spnego.conf \
-        -spnego_properties /path/to/spnego.properties
-
-**Limitation:** Because a Kerberos service principal is tied to a hostname, we recommend that you use SPNEGO authentication only with the ``-proxy`` option.
-
-----------------
-
-LDAP Authentication
+LDAP authentication
 ~~~~~~~~~~~~~~~~~~~
 
-H2O client and server side configuration for LDAP is discussed below.
-Authentication is implemented using `Basic
-Auth <https://en.wikipedia.org/wiki/Basic_access_authentication>`__.
+LDAP authentication uses `HTTP Basic <https://en.wikipedia.org/wiki/Basic_access_authentication>`__. Always combine it with HTTPS.
 
-LDAP H2O Client Side
-^^^^^^^^^^^^^^^^^^^^
+LDAP client side
+^^^^^^^^^^^^^^^^
 
-Flow Web UI Client
+Flow web UI client
 ''''''''''''''''''
 
-When authentication is enabled, the user will be presented with a
-username and password dialog box when attempting to reach Flow.
+When authentication is enabled, Flow prompts for a username and password.
 
-R Client
+R client
 ''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
+.. code:: r
 
-::
+   h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
-
-Python Client
+Python client
 '''''''''''''
 
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
+.. code:: python
 
-::
+   h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
-    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
+LDAP server side
+^^^^^^^^^^^^^^^^
 
-LDAP H2O Server Side
-^^^^^^^^^^^^^^^^^^^^
-
-An ldap.conf configuration file must be provided by the user. As an
-example, this file works for H2O's internal LDAP server. You will
-certainly need help from your IT security folks to adjust this
-configuration file for your environment.
+Provide an **ldap.conf** file. Work with your directory administrators to adapt it to your environment. Use LDAPS, turn off debug output in production, and restrict read access to the file because it contains the bind password.
 
 Example **ldap.conf**:
 
-::
+.. code:: text
 
-    ldaploginmodule {
-        ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
-        debug="true"
-        useLdaps="false"
-        contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
-        hostname="ldap.0xdata.loc"
-        port="389"
-        bindDn="cn=admin,dc=0xdata,dc=loc"
-        bindPassword="0xdata"
-        authenticationMethod="simple"
-        forceBindingLogin="true"
-        userBaseDn="ou=users,dc=0xdata,dc=loc";
-    };
+   ldaploginmodule {
+       ai.h2o.org.eclipse.jetty.plus.jaas.spi.LdapLoginModule required
+       debug="false"
+       useLdaps="true"
+       contextFactory="com.sun.jndi.ldap.LdapCtxFactory"
+       hostname="ldap.example.com"
+       port="636"
+       bindDn="cn=h2o-bind,ou=service,dc=example,dc=com"
+       bindPassword="<bind-password>"
+       authenticationMethod="simple"
+       forceBindingLogin="true"
+       userBaseDn="ou=users,dc=example,dc=com";
+   };
 
+Options for standalone H2O-3 and H2O-3 on Hadoop:
 
-Standalone H2O
-''''''''''''''
+.. code:: bash
 
-The following options are available:
+   -ldap_login
+         Use Jetty LdapLoginService
 
-::
+   -login_conf <filename>
+         LoginService configuration file
 
-    -ldap_login
-          Use Jetty LdapLoginService
+   -user_name <username>
+         Name of the user for which access is allowed
 
-    -login_conf <filename>
-          LoginService configuration file
-         
-    -user_name <username>
-          Override name of user for which access is allowed
+Standalone examples:
 
-Example:
+.. code:: bash
 
-::
+   java -jar h2o.jar -ldap_login -login_conf ldap.conf
 
-    java -jar h2o.jar -ldap_login -login_conf ldap.conf
+   java -jar h2o.jar -ldap_login -login_conf ldap.conf -user_name myLDAPusername
 
-    java -jar h2o.jar -ldap_login -login_conf ldap.conf -user_name myLDAPusername
+Hadoop examples:
 
-H2O on Hadoop
-'''''''''''''
+.. code:: bash
 
-The following options are available:
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -output hdfsOutputDirectory
 
-::
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -user_name myLDAPusername -output hdfsOutputDirectory
 
-    -ldap_login
-          Use Jetty LdapLoginService
+Sparkling Water properties:
 
-    -login_conf <filename>
-          LoginService configuration file
-         
-    -user_name <username>
-          Override name of user for which access is allowed
+============================ ============================================
+Spark conf property          Description
+============================ ============================================
+``spark.ext.h2o.ldap.login`` Use Jetty LdapLoginService
+``spark.ext.h2o.login.conf`` LoginService configuration file
+``spark.ext.h2o.user.name``  Name of the user for which access is allowed
+============================ ============================================
 
-Example:
-
-::
-
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -output hdfsOutputDirectory
-
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -ldap_login -login_conf ldap.conf -user_name myLDAPusername -output hdfsOutputDirectory
-
-Sparkling Water
-'''''''''''''''
-
-The following Spark conf properties exist for Java keystore
-configuration:
-
-+----------------------------+-----------------------------------------------------+
-| Spark conf property        | Description                                         |
-+============================+=====================================================+
-| spark.ext.h2o.ldap.login   | Use Jetty LdapLoginService                          |
-+----------------------------+-----------------------------------------------------+
-| spark.ext.h2o.login.conf   | LoginService configuration file                     |
-+----------------------------+-----------------------------------------------------+
-| spark.ext.h2o.user.name    | Override name of user for which access is allowed   |
-+----------------------------+-----------------------------------------------------+
-
-Example:
-
-::
-
-    $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
-    $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
-
-LDAP Authentication and MapR
+LDAP authentication and MapR
 ''''''''''''''''''''''''''''
 
-The following information is for users who authentication with LDAP on MapR, which uses a proprietary Hadoop configuration property that specifies the configuration file. Additional information is available here: `http://doc.mapr.com/display/MapR/mapr.login.conf <http://doc.mapr.com/display/MapR/mapr.login.conf>`__.
+MapR uses a proprietary Hadoop configuration property to locate the login configuration. Add the ``ldap.conf`` definition to **/opt/mapr/conf/mapr.login.conf**.
 
-In order to make LDAP authentication work, add the ldap.conf definition to the MapR configuration file in **/opt/mapr/conf/mapr.login.conf**.  
-
-Debugging Server-side LDAP issues
+Debugging server-side LDAP issues
 '''''''''''''''''''''''''''''''''
 
-To get detailed output from Jetty for LDAP debugging, you need to create the **jetty-logging.properties** file and add it to your classpath.
+To get detailed Jetty output, create a **jetty-logging.properties** file and add it to the classpath. Remove it when you're done, because debug output can include sensitive details.
 
-Example **jetty-logging.properties**:
+.. code:: text
 
-::
+   org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+   org.eclipse.jetty.LEVEL=DEBUG
 
-    org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
-    org.eclipse.jetty.LEVEL=DEBUG
+Standalone (with **jetty-logging.properties** in the current directory):
 
-Standalone H2O example (with **jetty-logging.properties** in the current directory):
+.. code:: bash
 
-::
+   java -cp h2o.jar:. water.H2OApp
 
-    java -cp h2o.jar:. water.H2OApp
+Hadoop (with **jetty-logging.properties** in the current directory):
 
-H2O on Hadoop example (with **jetty-logging.properties** in the current directory):
+.. code:: bash
 
-::
+   hadoop jar h2odriver.jar -libjars jetty-logging.properties -n 1 -mapperXmx 5g -output hdfsOutputDirectory
 
-    hadoop jar h2odriver.jar -libjars jetty-logging.properties -n 1 -mapperXmx 5g -output hdfsOutputDirectory
+--------------
 
--------------
-
-Pluggable Authentication Module (PAM) Authentication
+Pluggable Authentication Module (PAM) authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section describes H2O client and server side configuration for `PAM authentication <https://en.wikipedia.org/wiki/Pluggable_authentication_module>`__. 
+PAM client side
+^^^^^^^^^^^^^^^
 
-PAM H2O Client Side
-^^^^^^^^^^^^^^^^^^^
+When PAM authentication is enabled, Flow prompts for a username and password. The R and Python clients pass ``username`` and ``password`` to ``h2o.init()``, as shown for LDAP. Always combine PAM with HTTPS.
 
-Flow UI Client
-''''''''''''''
+PAM server side
+^^^^^^^^^^^^^^^
 
-When PAM authentication is enabled, the user will be presented with a username and password dialog box when attempting to reach Flow. 
+Provide a configuration file that specifies the PAM login module.
 
+Example **pam.conf**:
 
-R Client
-''''''''
+.. code:: text
 
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
+   pamloginmodule {
+        de.codedo.jaas.PamLoginModule required
+        service = h2o;
+   };
 
-::
+The service name is configurable and must match the PAM service you created for H2O-3.
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+Options for standalone H2O-3 and H2O-3 on Hadoop:
 
-Python Client
-'''''''''''''
+.. code:: bash
 
-For Python, connecting to H2O with authentication is similar:
+   -pam_login
+         Use PAM LoginService
 
-::
+   -login_conf <filename>
+         LoginService configuration file
 
-    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
+   -user_name <username>
+         Name of the user for which access is allowed
 
+   -form_auth
+         (Optional) Enable form-based authentication for Flow
 
-PAM H2O Server Side
-^^^^^^^^^^^^^^^^^^^
+   -session_timeout <minutes>
+         (Optional, requires -form_auth) Minutes a session can stay idle before the server requires a new login
 
-You must provide a simple configuration file that specifies the PAM login module.
+Standalone example:
 
-**Example pam.conf**
+.. code:: bash
 
-::
+   java -jar h2o.jar -pam_login -login_conf pam.conf -user_name myusername
 
-  pamloginmodule {
-       de.codedo.jaas.PamLoginModule required
-       service = h2o;
-  };
+Hadoop example:
 
-Note that the name of the service is user configurable, and this name must match the name of the PAM authentication module that you created for the "h2o service".
+.. code:: bash
 
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -pam_login -login_conf pam.conf -output hdfsOutputDirectory -user_name myusername
 
-Standalone H2O
-''''''''''''''
+--------------
 
-The following options are required for PAM authentication:
-
-::
-
-  -pam_login
-      Use PAM LoginService
-
-  -login_conf <filename>
-        LoginService configuration file
-       
-  -user_name <username>
-        Override name of user for which access is allowed
-
-  -form_auth
-        Optionally enable form-based authentication for Flow
-
-  -session_timeout
-        If form_auth is enabled, optionally specify the number of minutes 
-        that a session can remain idle before the server invalidates the 
-        session and requests a new login
-
-**Example**
-
-::
-
-  java -jar h2o.jar -pam_login -login_conf pam.conf -user_name
-
-H2O on Hadoop
-'''''''''''''
-
-The following options are available:
-
-::
-
-  -pam_login
-      Use PAM LoginService
-
-  -login_conf <filename>
-        LoginService configuration file
-       
-  -user_name <username>
-        Override name of user for which access is allowed
-
-  -form_auth
-        Optionally enable form-based authentication for Flow
-
-  -session_timeout
-        If form_auth is enabled, optionally specify the number of minutes 
-        that a session can remain idle before the server invalidates the 
-        session and requests a new login
-
-
-**Example**
-
-::
-
-  hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -pam_login -login_conf pam.conf -output hdfsOutputDirectory -user_name
-
--------------
-
-Hash File Authentication
+Hash file authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-H2O client and server side configuration for a hardcoded hash file is
-discussed below. Authentication is implemented using `Basic
-Auth <https://en.wikipedia.org/wiki/Basic_access_authentication>`__.
+Hash file authentication checks credentials against a local **realm.properties** file and uses `HTTP Basic <https://en.wikipedia.org/wiki/Basic_access_authentication>`__. It's suited to single-user and test deployments. Always combine it with HTTPS.
 
-Hash File H2O Client Side
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Hash file client side
+^^^^^^^^^^^^^^^^^^^^^
 
-Flow Web UI Client
-''''''''''''''''''
+Flow prompts for a username and password. The R and Python clients pass ``username`` and ``password`` to ``h2o.init()``, as shown for LDAP.
 
-When authentication is enabled, the user will be presented with a
-username and password dialog box when attempting to reach Flow.
-
-R Client
-''''''''
-
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
-
-::
-
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
-
-Python Client
-'''''''''''''
-
-The following code snippet demonstrates connecting to an H2O cluster
-with authentication:
-
-::
-
-    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
-
-Hash File H2O Server Side
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-A **realm.properties** configuration file must be provided by the user.
+Hash file server side
+^^^^^^^^^^^^^^^^^^^^^
 
 Example **realm.properties**:
 
-::
+.. code:: text
 
-    # See https://wiki.eclipse.org/Jetty/Howto/Secure_Passwords
-    # java -cp h2o.jar org.eclipse.jetty.util.security.Password
-    username1: password1
-    username2: MD5:6cb75f652a9b52798eb6cf2201057c73
+   username1: MD5:6cb75f652a9b52798eb6cf2201057c73
 
-Generate secure passwords using the Jetty secure password generation
-tool:
+Generate the hashed entry with Jetty's password tool:
 
-::
+.. code:: bash
 
-    java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
+   java -cp h2o.jar org.eclipse.jetty.util.security.Password username password
 
-See the `Jetty 9 HashLoginService
-documentation <http://wiki.eclipse.org/Jetty/Tutorial/Realms#HashLoginService>`_
-and `Jetty 9 Secure Password
-HOWTO <http://wiki.eclipse.org/Jetty/Howto/Secure_Passwords>`_ for more
-information.
+Don't store plain-text passwords in this file, and restrict read access to it.
 
-Standalone H2O
-''''''''''''''
+Options for standalone H2O-3 and H2O-3 on Hadoop:
 
-The following options are available:
+.. code:: bash
 
-::
+   -hash_login
+         Use Jetty HashLoginService
 
-    -hash_login
-          Use Jetty HashLoginService
-              
-    -login_conf <filename>
-          LoginService configuration file
+   -login_conf <filename>
+         LoginService configuration file
 
-Example:
+Standalone example:
 
-::
+.. code:: bash
 
-    java -jar h2o.jar -hash_login -login_conf realm.properties
+   java -jar h2o.jar -hash_login -login_conf realm.properties
 
-H2O on Hadoop
-'''''''''''''
+Hadoop example:
 
-The following options are available:
+.. code:: bash
 
-::
+   hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -hash_login -login_conf realm.properties -output hdfsOutputDirectory
 
-    -hash_login
-          Use Jetty HashLoginService
-              
-    -login_conf <filename>
-          LoginService configuration file
+Sparkling Water properties:
 
-Example:
+============================ ===============================
+Spark conf property          Description
+============================ ===============================
+``spark.ext.h2o.hash.login`` Use Jetty HashLoginService
+``spark.ext.h2o.login.conf`` LoginService configuration file
+============================ ===============================
 
-::
+.. _ssl-internode-security:
 
-    hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -hash_login -login_conf realm.propertes -output hdfsOutputDirectory
+Internal (node-to-node) TLS
+---------------------------
 
-Sparkling Water
-'''''''''''''''
-
-The following Spark conf properties exist for hash login service
-configuration:
-
-+----------------------------+-----------------------------------+
-| Spark conf property        | Description                       |
-+============================+===================================+
-| spark.ext.h2o.hash.login   | Use Jetty HashLoginService        |
-+----------------------------+-----------------------------------+
-| spark.ext.h2o.login.conf   | LoginService configuration file   |
-+----------------------------+-----------------------------------+
-
-Example:
-
-::
-
-    $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.hash.login=true --conf spark.ext.h2o.login.conf=/path/to/realm.properties sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
-
-SSL Internode Security
-----------------------
-
-By default, communication between H2O nodes is not encrypted for performance reasons. H2O currently support SSL/TLS authentication (basic handshake authentication) and data encryption for internode communication.
+Node-to-node traffic isn't encrypted by default, for performance. H2O-3 supports TLS for authentication (handshake) and encryption of internal communication.
 
 Usage
 ~~~~~
@@ -1038,112 +749,93 @@ Usage
 Hadoop
 ^^^^^^
 
-The easiest way to enable SSL while running H2O via h2odriver is to pass the ``-internal_secure_connections`` flag. This will tell h2odriver to automatically generate all the necessary files and distribute them to all mappers. This distribution may be secure depending on your YARN configuration.
+The simplest option is the ``-internal_secure_connections`` flag. ``h2odriver`` generates the required keystore, truststore, and properties file and distributes them to the mappers. Whether that distribution is protected depends on your YARN configuration.
 
-::
+.. code:: bash
 
-  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_secure_connections
+   hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_secure_connections
 
+You can also generate the files yourself, as described in `Standalone <#standalone>`__, and pass them with ``-internal_security_conf``. In that case you must distribute the certificates and properties file to every mapper node.
 
-The user can also manually generate keystore/truststore and properties file as described in the `Standalone/AWS`_ section that follows and run the following command to use them instead. In this case, all the files (certificates and properties) have to be distributed to all the mapper nodes by the user.
+.. code:: bash
 
-::
+   hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security_conf security.properties
 
-  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security_conf security.properties
+Standalone
+^^^^^^^^^^
 
+1. Generate and distribute the keys. See `Keystore and truststore generation <#keystore-and-truststore-generation>`__.
 
-Standalone/AWS
-^^^^^^^^^^^^^^
+2. Create the security properties file. See `Configuration <#configuration>`__.
 
-In this case, the user has to generate the keystores, truststores, and properties file manually.
+   .. code:: text
 
-1. Generate public/private keys and distributed them. (Refer to the `Keystore/Truststore Generation`_ section for more information).
+      h2o_ssl_jks_internal=keystore.jks
+      h2o_ssl_jks_password=password
+      h2o_ssl_jts_internal=truststore.jks
+      h2o_ssl_jts_password=password
 
-2. Create the security properties file. (Refer to the `Configuration`_ section for a full list of parameters.)
+3. Start each node with ``-internal_security_conf``:
 
- ::
+   .. code:: bash
 
-    h2o_ssl_jks_internal=keystore.jks
-    h2o_ssl_jks_password=password
-    h2o_ssl_jts_internal=truststore.jks
-    h2o_ssl_jts_password=password
-
-3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security_conf`` flag
-
- ::
-
-  java -jar h2o.jar -internal_security_conf security.properties
+      java -jar h2o.jar -internal_security_conf security.properties
 
 Configuration
 ~~~~~~~~~~~~~
 
-To enable this feature, set the ``-internal_security_conf`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
+Pass ``-internal_security_conf <file>`` when you start each node. The file uses ``key=value`` format:
 
-- ``h2o_ssl_jks_internal`` (required): The path (absolute or relative) to the key-store file used for internal SSL communication
-- ``h2o_ssl_jks_password`` (required): The password for the internal key-store
-- ``h2o_ssl_jts_internal`` (optional): The path (absolute or relative) to the trust-store file used for internal SSL communication. If not present, then ``h2o_ssl_jks_internal`` will be used.
-- ``h2o_ssl_jts_password`` (optional): The password to the internal trust-store. If not present, then ``h2o_ssl_jks_password`` will be used.
-- ``h2o_ssl_protocol`` (optional): The protocol name used during encrypted communication (supported by JVM). This defaults to TSLv1.2.
-- ``h2o_ssl_enabled_algorithms`` (optional): A comma separated list of enabled cipher algorithms. Include only those that are supported by JVM.
+-  ``h2o_ssl_jks_internal`` (required): Path to the keystore used for internal TLS.
+-  ``h2o_ssl_jks_password`` (required): Keystore password.
+-  ``h2o_ssl_jts_internal`` (optional): Path to the truststore. Defaults to ``h2o_ssl_jks_internal``.
+-  ``h2o_ssl_jts_password`` (optional): Truststore password. Defaults to ``h2o_ssl_jks_password``.
+-  ``h2o_ssl_protocol`` (optional): Protocol name supported by the JVM. Defaults to ``TLSv1.2``.
+-  ``h2o_ssl_enabled_algorithms`` (optional): Comma-separated list of enabled cipher suites supported by the JVM.
 
-This must be set for every node in the cluster. Every node needs to have access to both Java keystore and Java truststore containing appropriate keys and certificates.
+Every node needs the same configuration and access to a keystore and truststore with the appropriate keys and certificates. Restrict read access to the properties file, because it contains passwords.
 
+Keystore and truststore generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Keystore/Truststore Generation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Creating and distributing keystores is deployment specific. Use the JDK ```keytool`` <https://docs.oracle.com/en/java/javase/17/docs/specs/man/keytool.html>`__. Generate a key pair on each node and import all public certificates into one truststore that every node uses:
 
-Keystore/truststore creation and distribution are deployment specific and have to be handled by the end user.
+1. On each node, generate a key pair:
 
-Basic keystore/truststore generation can be done using the keytool program, which ships with Java, documentation can be found `here <https://docs.oracle.com/javase/7/docs/technotes/tools/solaris/keytool.html>`__. Each node should have a key pair generated, and all public keys should be imported into a single truststore, which should be distributed to all the nodes.
+   .. code:: bash
 
-The simplest (though not recommended) way would be to call:
+      keytool -genkeypair -keyalg RSA -keysize 2048 -keystore h2o-internal.jks -alias h2o-internal
 
-::
+2. On each node, export the certificate:
 
-  keytool -genkeypair -keystore h2o-internal.jks -alias h2o-internal
+   .. code:: bash
 
-Then distribute the ``h2o-internal.jks`` file to all the nodes, and set it as both the keystore and truststore in ``ssl.config``. 
+      keytool -export -keystore h2o-internal.jks -alias h2o-internal -file node<number>.cer
 
-A more secure way would be to:
+3. Import every certificate into a truststore and distribute it to all nodes:
 
-1. Run the same command on each node:
-  
- ::
+   .. code:: bash
 
-  keytool -genkeypair -keystore h2o-internal.jks -alias h2o-internal
+      keytool -importcert -file node<number>.cer -keystore truststore.jks -alias node<number>
 
-2. Extract the certificate on each node:
-
- ::
-
-  keytool -export -keystore h2o-internal.jks -alias h2o-internal -file node<number>.cer
-
-3. Distribute all of the above certificates to each node, and on each node create a truststore containing all of them (or put all certificates on one node, import to truststore and distribute that truststore to each node):
-
- ::
-
-  keytool -importcert -file node<number>.cer -keystore truststore.jks -alias node<number>
-
+A single shared keystore that serves as both keystore and truststore on every node also works, but it isn't recommended.
 
 Performance
 ~~~~~~~~~~~
 
-Turning on SSL may result in performance overhead for settings and algorithms that exchange data between nodes due to encryption/decryption time. Some algorithms might also slower because of this.
+TLS adds encryption overhead for algorithms that exchange data between nodes. Example benchmark on a 5-node cluster (6 GB per node) with a 5.8 million row (580 MB) dataset:
 
-Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8mln row dataset (580MB):
+========= =========== =========
+\         Without TLS With TLS
+========= =========== =========
+Parsing   4.908 s     5.304 s
+GLM model 01:39.446   01:49.634
+========= =========== =========
 
-+------------+---------------------+------------------------+
-|            | Non SSL             | SSL                    |
-+============+=====================+========================+
-| Parsing:   | 4.908s              | 5.304s                 |
-+------------+---------------------+------------------------+
-| GLM model: | 01:39.446           | 01:49.634              |
-+------------+---------------------+------------------------+
+Caveats
+~~~~~~~
 
-Caveats and Missing Pieces
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
- - Should you start a mixed cloud of SSL and nonSSL nodes, the SSL ones will fail to bootstrap, while the nonSSL ones will become unresponsive.
- - H2O does not provide in-memory data encryption. This might spill data to disk in unencrypted form should swaps to disk occur. As a workaround, an encrypted drive is advised.
- - H2O does not support encryption of data saved to disk, should appropriate flags be enabled. Similar to the previous caveat, the user can use an encrypted drive to work around this issue.
- - H2O supports only SSL and does not support SASL.
+-  A cluster that mixes TLS and non-TLS nodes won't form: TLS nodes fail to bootstrap, and non-TLS nodes become unresponsive.
+-  H2O-3 doesn't encrypt data in memory. Memory swapped to disk is unencrypted, so use encrypted volumes.
+-  H2O-3 doesn't encrypt data it writes to disk (for example, ``ice_root`` spill files, exports, and logs). Use encrypted volumes.
+-  H2O-3 supports TLS only. It doesn't support SASL.

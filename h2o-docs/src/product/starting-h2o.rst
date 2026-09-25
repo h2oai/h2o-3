@@ -3,6 +3,10 @@ Starting H2O-3
 
 There are a variety of ways to start H2O-3 depending on which client you would like to use. The instructions below assume that you already downloaded and installed H2O-3. If you have not, then please refer to the `Downloading & Installing H2O <downloading.html>`__ section.
 
+.. note::
+
+   Starting H2O-3 launches a compute engine for your session. The engine's REST API is the control channel between your client code and the engine, and anyone who can reach it can run code and access files with the engine's permissions. The defaults below keep a locally started engine private to your machine. For other deployments, see `Deployment model and responsibilities <deployment-model.html>`__ and `Security <security.html>`__.
+
 From Python
 -----------
 
@@ -42,7 +46,7 @@ This function accepts the following options:
 - ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O-3 from Python.
 - ``kwargs``: (All other deprecated attributes.)
 - ``jvm_custom_args``: User-defined arguments for the JVM H2O-3 is instantiated in. Ignored if there is an instance of H2O-3 already running and the client connects to it.
-- ``bind_to_localhost``: A flag indicating whether access to the H2O-3 instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
+- ``bind_to_localhost``: A flag indicating whether access to the H2O-3 instance should be restricted to the local machine (default) or if it can be reached from other computers on the network. Keep the default unless the engine runs inside a platform that restricts network access to it.
 
 Example
 ~~~~~~~
@@ -250,7 +254,11 @@ You can use Terminal (Mac) or Command Prompt (Windows) to launch H2O-3.
 
 When you launch from the command line, you can include additional instructions to H2O-3 such as how many nodes to launch, how much memory to allocate for each node, that you can assign names to the nodes in the cluster, and more.
 
-.. note:: 
+.. warning::
+
+  Launching ``h2o.jar`` directly is intended for development and for platforms that manage the H2O-3 process. The REST API listens on all network interfaces unless you restrict it with ``-ip`` or ``-web_ip``. Run the engine as an unprivileged user, bind it to a specific interface, and enable authentication and TLS when it's reachable from other machines. See `Security <security.html#standalone-jar>`__.
+
+.. note::
 
   H2O-3 requires some space in the ``/tmp`` directory to launch. If you cannot launch H2O-3, try freeing up some space in the ``/tmp`` directory, then try launching H2O-3 again.
 
@@ -305,7 +313,7 @@ The following are the available H2O options:
 - ``-log_dir <fileSystemPath>``: Specify the directory where H2O-3 writes logs to disk. (This usually has a good default that you need not change.
 - ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
 - ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
-- ``-file_deny_glob <GLOB pattern>``: Specify the `glob <https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob>`__ pattern to deny access to certain directories. This parameter is added to remove vulnerabilities CVE-2023-6038, CVE-2023-6569 and CVE-2024-5986. The default is ``{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}``.
+- ``-file_deny_glob <GLOB pattern>``: Specify the `glob <https://docs.oracle.com/javase/tutorial/essential/io/fileOps.html#glob>`__ pattern to deny access to certain directories. This is a defense-in-depth control for paths reached through the REST API; run the engine as an unprivileged user to control file access. See `File access <security.html#file-access>`__. The default is ``{/bin/*,/etc/*,/var/*,/usr/*,/proc/*,**/.**}``.
 - ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 
 - ``-client``: Launch H2O-3 node in client mode (this is used mostly for running Sparkling Water).
 - ``-notify_local <fileSystemPath>``: Specifies a file to write to when the node is up. The file system path contains a single line with the IP and port of the embedded web server. For example, 192.168.1.100:54321. 
@@ -319,7 +327,7 @@ The following are the available H2O options:
 Authentication options
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The following are the available authentication options:
+The following are the available authentication options. Use them when the launching platform doesn't already restrict access to the control port. See `Security <security.html>`__ for configuration details.
 
 -  ``-jks <filename>``: Specify a Java keystore file.
 -  ``-jks_pass <password>``: Specify the Java keystore password.
@@ -432,7 +440,7 @@ The flatfile contains a list of nodes in the form ``IP:PORT`` that are going to 
 Web server
 ^^^^^^^^^^
 
-By default, the web server IP is auto-configured in the same way as the internal communication IP. Nevertheless, the created socket listens on all available interfaces. A specific IP can be specified with the ``-web_ip`` option.
+By default, the web server IP is auto-configured in the same way as the internal communication IP. Nevertheless, the created socket listens on all available interfaces. A specific IP can be specified with the ``-web_ip`` option. Unless the engine runs inside a platform that restricts network access to it, set ``-web_ip`` (for example, ``-web_ip 127.0.0.1`` when the client runs on the same host).
 
 Options
 '''''''
