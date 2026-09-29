@@ -133,7 +133,7 @@ class H2OFrame(Keyed, H2ODisplay):
                               column_names=None, column_types=None, na_strings=None, skipped_columns=None, force_col_types=False):
         assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         if is_type(python_obj, scipy_sparse):
-            self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
+            self._upload_sparse_matrix(python_obj, destination_frame=destination_frame, column_names=column_names)
             return
         # TODO: all these _handlers should really belong to this class, not to shared_utils.
         processor = (_handle_pandas_data_frame if is_type(python_obj, pandas_dataframe) else
@@ -162,10 +162,13 @@ class H2OFrame(Keyed, H2ODisplay):
                            skipped_columns, force_col_types)
         os.remove(tmp_path)  # delete the tmp file
 
-    def _upload_sparse_matrix(self, matrix, destination_frame=None):
+    def _upload_sparse_matrix(self, matrix, destination_frame=None, column_names=None):
         import scipy.sparse as sp
         if not sp.issparse(matrix):
             raise H2OValueError("A sparse matrix expected, got %s" % type(matrix))
+        if column_names and len(column_names) != matrix.shape[1]:
+            raise H2OValueError("The number of column names (%d) does not match the number of columns "
+                                "in the sparse matrix (%d)" % (len(column_names), matrix.shape[1]))
 
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
         out = os.fdopen(tmp_handle, 'wt', **H2OFrame.__fdopen_kwargs)
@@ -198,10 +201,19 @@ class H2OFrame(Keyed, H2ODisplay):
         os.remove(tmp_path)
         rawkey = ret["destination_frame"]
 
-        p = {"source_frames": [rawkey], "destination_frame": destination_frame}
+        # the SVMLight parser always names the columns C1, C2, ...: when custom names are requested,
+        # parse into a temporary frame first, then publish it under `destination_frame` with those names.
+        parse_dest = py_tmp_key(h2o.connection().session_id) if column_names else destination_frame
+        p = {"source_frames": [rawkey], "destination_frame": parse_dest}
         H2OJob(h2o.api("POST /3/ParseSVMLight", data=p), "Parse").poll()
-        self._ex._cache._id = destination_frame
+        self._ex._cache._id = parse_dest
         self._ex._cache.fill()
+        if column_names:
+            self.set_names(column_names[:self.ncol])
+            h2o.assign(self, destination_frame)
+            # only drop the temporary frame itself: its columns are now owned by `destination_frame`
+            h2o.api("DELETE /3/DKV/%s" % parse_dest, data=dict(cascade=False))
+            self._ex._cache.fill()
 
     @staticmethod
     def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):

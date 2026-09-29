@@ -5,6 +5,7 @@ from tests import pyunit_utils as pu
 import h2o
 from h2o.utils.typechecks import assert_is_type
 from h2o.frame import H2OFrame
+from h2o.exceptions import H2OValueError
 
 
 data = [
@@ -77,8 +78,8 @@ def H2OFrame_from_scipy():
         assert fr.key == dest
         assert fr.nrows == len(nostr_data)
         assert fr.ncols == len(nostr_data[0])
-        assert fr.columns == ["C%i"%i for i in range(1, fr.ncols+1)]  # BUG! construction with scipy matrix ignores `column_names` param: see issue https://github.com/h2oai/h2o-3/issues/15946
-        assert fr.types == dict(C1='int', C2='real', C3='int', C4='int') # enum types are also ignored, but it makes sense for sparse matrices, we could add a warning though.
+        assert fr.columns == col_names
+        assert fr.types == dict(num1='int', num2='real', str1='int', enum1='int') # enum types are also ignored, but it makes sense for sparse matrices, we could add a warning though.
         for i, row in enumerate(data):
             for j, value in enumerate(row):
                 assert fr[i, j] == nostr_data[i][j], "expected value at [%s, %s] = %s, but got %s" % (i, j, fr[i, j], nostr_data[i][j])
@@ -94,6 +95,18 @@ def H2OFrame_from_scipy():
                       column_names=col_names, column_types=col_types)
     assert_is_type(fr, H2OFrame)
     check_sparse_frame(fr, "from_sparse_column_matrix")
+
+    fr = h2o.H2OFrame(csr_matrix(nostr_data))
+    assert fr.columns == ["C%i"%i for i in range(1, fr.ncols+1)]
+
+    fr = h2o.H2OFrame(csr_matrix(nostr_data), column_names=["col 1", "it's", "(c3)", "c4"])
+    assert fr.columns == ["col 1", "it's", "(c3)", "c4"]
+
+    try:
+        h2o.H2OFrame(csr_matrix(nostr_data), column_names=col_names[:-1])
+        assert False, "expected an error when the number of column names doesn't match the number of columns"
+    except H2OValueError as e:
+        assert "number of column names" in str(e)
 
 def H2OFrame_from_H2OFrame():
     fr = h2o.H2OFrame(python_obj=data, destination_frame="h2oframe_ori",
