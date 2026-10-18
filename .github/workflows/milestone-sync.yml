@@ -1,0 +1,28 @@
+# Per-repo workflow: forwards milestone and issue-milestone events to the shared
+# h2o-shared-workflows/misc/monday-milestone-sync action. Must be on the
+# repo's DEFAULT branch to trigger. Needs the MONDAY_API_TOKEN secret.
+name: Sync milestone to Monday
+
+on:
+  milestone:
+    types: [created, edited, closed, opened]
+  issues:
+    types: [milestoned, demilestoned]
+
+permissions:
+  issues: read
+
+# One run at a time per milestone (milestone events: the only ones that can
+# create a Version) and per issue (issue events: only link existing Versions).
+concurrency:
+  group: milestone-to-monday-${{ github.event_name }}-${{ github.event.issue.number || github.event.milestone.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: h2oai/h2o-shared-workflows/misc/monday-milestone-sync@d702fceb6a3732d951f460dbe757741fc670a609 # misc-monday-milestone-sync-v1.0.0
+        with:
+          monday-api-token: ${{ secrets.MONDAY_API_TOKEN }}
