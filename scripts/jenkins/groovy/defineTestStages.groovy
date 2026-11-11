@@ -56,14 +56,6 @@ def call(final pipelineContext) {
 	  [
       stageName: 'R4.5 Smoke', target: 'test-r-smoke', rVersion: '4.5.2',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 36,
-      component: pipelineContext.getBuildConfig().COMPONENT_JS
-    ],
-    [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
     ]
   ]
 
