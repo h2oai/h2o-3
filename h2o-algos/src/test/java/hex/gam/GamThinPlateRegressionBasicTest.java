@@ -84,17 +84,17 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       params._lambda_search = false;
       GAMModel gam = new GAM(params).trainModel().get();
       // check starT is of size k x M
-      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == params._M[0]));
+      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == gam._parms._M[0]));
       // check penalty_CS is size k x k
-      assertTrue((gam._output._penaltyMatCS[0].length == (k-params._M[0])) &&
-              (gam._output._penaltyMatCS[0][0].length == (k-params._M[0])));
+      assertTrue((gam._output._penaltyMatCS[0].length == (k-gam._parms._M[0])) &&
+              (gam._output._penaltyMatCS[0][0].length == (k-gam._parms._M[0])));
       Scope.track_generic(gam);
     } finally {
       Scope.exit();
     }
   }
 
-  // test with Gaussian with only thin plate regression smoothers with two predictors.  
+  // test with Gaussian with only thin plate regression smoothers with two predictors.
   @Test
   public void testTP2D() {
     Scope.enter();
@@ -117,15 +117,15 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       GAMModel gam = new GAM(params).trainModel().get();
       Scope.track_generic(gam);
       // check starT is of size k x M
-      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == params._M[0]));
+      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == gam._parms._M[0]));
       // check penalty_CS is size k x k
-      assertTrue((gam._output._penaltyMatCS[0].length == (k-params._M[0])) &&
-              (gam._output._penaltyMatCS[0][0].length == (k-params._M[0])));
+      assertTrue((gam._output._penaltyMatCS[0].length == (k-gam._parms._M[0])) &&
+              (gam._output._penaltyMatCS[0][0].length == (k-gam._parms._M[0])));
     } finally {
       Scope.exit();
     }
   }
-  
+
   // test with binomial for thin plate regression smoothers with three predictors and check that the polynomials
   // are generated correctly by checking starT values
   @Test
@@ -151,10 +151,10 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       GAMModel gam = new GAM(params).trainModel().get();
       Scope.track_generic(gam);
       // check starT is of size k x M
-      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == params._M[0]));
+      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == gam._parms._M[0]));
       // check penalty_CS is size k x k
-      assertTrue((gam._output._penaltyMatCS[0].length == (k - params._M[0])) &&
-              (gam._output._penaltyMatCS[0][0].length == (k - params._M[0])));
+      assertTrue((gam._output._penaltyMatCS[0].length == (k - gam._parms._M[0])) &&
+              (gam._output._penaltyMatCS[0][0].length == (k - gam._parms._M[0])));
       // check and make sure polynomials are generated correctly by checking starT
       for (int gamInd = 0; gamInd < gamCols.length; gamInd++) {
         assertCorrectStarT(gam._output, gamInd, gamCols[gamInd]);
@@ -288,11 +288,11 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       GAMModel gamStandardize = new GAM(params).trainModel().get();
       Scope.track_generic(gamStandardize);
       // check CS smoother penalty matrix has correct dimension
-      assertTrue((params._num_knots_sorted[0]-1) == gamStandardize._output._penaltyMatricesCenter[0][0].length);
+      assertTrue((gamStandardize._parms._num_knots_sorted[0]-1) == gamStandardize._output._penaltyMatricesCenter[0][0].length);
       // check TP smoother penalty matrices have correct dimension
-      assertTrue((params._num_knots_sorted[1]-1) == gamStandardize._output._penaltyMatricesCenter[1][0].length); // for smoother {"C13", "C14", "C16"}
-      assertTrue((params._num_knots_sorted[2]-1) == gamStandardize._output._penaltyMatricesCenter[2][0].length); // for smoother {"C11", "C17"}
-      assertTrue((params._num_knots_sorted[3]-1) == gamStandardize._output._penaltyMatricesCenter[3][0].length); // for smoother {"C16"}
+      assertTrue((gamStandardize._parms._num_knots_sorted[1]-1) == gamStandardize._output._penaltyMatricesCenter[1][0].length); // for smoother {"C13", "C14", "C16"}
+      assertTrue((gamStandardize._parms._num_knots_sorted[2]-1) == gamStandardize._output._penaltyMatricesCenter[2][0].length); // for smoother {"C11", "C17"}
+      assertTrue((gamStandardize._parms._num_knots_sorted[3]-1) == gamStandardize._output._penaltyMatricesCenter[3][0].length); // for smoother {"C16"}
     } finally {
       Scope.exit();
     }
@@ -353,10 +353,10 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       params._lambda = new double[]{10};
       GAMModel gam = new GAM(params).trainModel().get();
       // check starT is of size k x M
-      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == params._M[0]));
+      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == gam._parms._M[0]));
       // check penalty_CS is size k x k
-      assertTrue((gam._output._penaltyMatCS[0].length == (k-params._M[0])) &&
-              (gam._output._penaltyMatCS[0][0].length == (k-params._M[0])));
+      assertTrue((gam._output._penaltyMatCS[0].length == (k-gam._parms._M[0])) &&
+              (gam._output._penaltyMatCS[0][0].length == (k-gam._parms._M[0])));
       Scope.track_generic(gam);
     } finally {
       Scope.exit();
@@ -406,10 +406,10 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       params._savePenaltyMat = true;
       GAMModel gam = new GAM(params).trainModel().get();
       // check starT is of size k x M
-      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == params._M[0]));
+      assertTrue((gam._output._starT[0].length == k) && (gam._output._starT[0][0].length == gam._parms._M[0]));
       // check penalty_CS is size k x k
-      assertTrue((gam._output._penaltyMatCS[0].length == (k-params._M[0])) &&
-              (gam._output._penaltyMatCS[0][0].length == (k-params._M[0])));
+      assertTrue((gam._output._penaltyMatCS[0].length == (k-gam._parms._M[0])) &&
+              (gam._output._penaltyMatCS[0][0].length == (k-gam._parms._M[0])));
       Scope.track_generic(gam);
     } finally {
       Scope.exit();
@@ -510,7 +510,7 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       Frame dataFrame = DKV.getGet(gam._output._gamTransformedTrainCenter); // transformed GAM columns from gam model
       Scope.track(dataFrame);
       for (int gamInd = 0; gamInd < gamCols.length; gamInd++)
-        assertCorrectTransform(train, dataFrame, 0.2, gamInd, params, gam._output);
+        assertCorrectTransform(train, dataFrame, 0.2, gamInd, gam._parms, gam._output);
     } finally {
       Scope.exit();
     }
