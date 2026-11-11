@@ -116,7 +116,10 @@ public class DeeplearningMojoModel extends MojoModel {
         preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, dataRow, _defaultThreshold);
       } else {
         if (_normrespmul != null) //either both are null or none
-          preds[0] = (out[0] / _normrespmul[0] + _normrespsub[0]);
+          // remove_offset_effects: in-cluster the offset-free prediction is out/mul (the zero offset is pushed
+          // through DL's ((offset - sub) * mul) term, which cancels the response-mean). This MOJO never applies
+          // an offset at all, so it must drop the same _normrespsub term to agree. GH-16851.
+          preds[0] = (out[0] / _normrespmul[0] + (_offsetRemoved ? 0 : _normrespsub[0]));
         else
           preds[0] = out[0];
         // transform prediction to response space

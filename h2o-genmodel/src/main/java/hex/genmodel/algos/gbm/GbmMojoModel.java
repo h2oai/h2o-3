@@ -36,7 +36,9 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
         super.scoreAllTrees(row, preds);
-        return unifyPreds(row, offset, preds);
+        // remove_offset_effects: this model scores as if the offset were 0, so ignore one a caller supplies -
+        // otherwise the MOJO would silently disagree with in-cluster predictions (GH-16851).
+        return unifyPreds(row, _offsetRemoved ? 0 : offset, preds);
     }
 
     @Override

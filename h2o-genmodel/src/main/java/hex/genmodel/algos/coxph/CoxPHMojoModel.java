@@ -78,14 +78,16 @@ public class CoxPHMojoModel extends MojoModel  {
   @Override
   public double[] score0(double[] row, double offset, double[] predictions) {
     int[] enumOffset = null;
-    
+    // remove_offset_effects: score as if the offset were 0, ignoring one a caller supplies (GH-16851)
+    final double lpOffset = _offsetRemoved ? 0 : offset;
+
     if (_nums == -1) {
-      predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row) + offset;
+      predictions[0] = forCategories(row) + forOtherColumns(row) - forStrata(row) + lpOffset;
     } else {
       if (_interaction_targets != null) {
         enumOffset = evaluateInteractions(row);
       }
-      predictions[0] = forCategories(row) + forOtherColumns(row, enumOffset) - forStrata(row) + offset; 
+      predictions[0] = forCategories(row) + forOtherColumns(row, enumOffset) - forStrata(row) + lpOffset;
     }
     return predictions;
   }

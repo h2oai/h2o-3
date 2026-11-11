@@ -115,7 +115,9 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     parms._response_column = _model.responseColumn;
     parms._max_runtime_secs = _maxRuntimeSecs;
     parms._weights_column = _model._parms._weights_column;
-    parms._offset_column = _model._parms._offset_column;
+    // remove_offset_effects: the level-one frame deliberately carries no offset column (see
+    // StackedEnsemble.addNonPredictorsToLevelOneFrame), so the metalearner must not ask for one. GH-16851.
+    parms._offset_column = _model._parms._remove_offset_effects ? null : _model._parms._offset_column;
     parms._main_model_time_budget_factor = _model._parms._main_model_time_budget_factor;
     parms._custom_metric_func = _model._parms._custom_metric_func;
     parms._gainslift_bins = _model._parms._gainslift_bins;

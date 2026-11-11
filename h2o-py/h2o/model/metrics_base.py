@@ -93,8 +93,13 @@ class MetricsBase(h2o_meta(H2ODisplay)):
         items = [
             "{mtype}: {algo}".format(mtype=metric_type, algo=self._algo),
             "** Reported on {} data. **".format(self._on),
-            "",
         ]
+        # Without this, a metrics object and its `remove_offset_effects` offset-applied twin print byte-identical
+        # headers over different numbers (GH-16851). R already renders `description`; this brings Python in line.
+        description = self._metric_json.get("description") if self._metric_json else None
+        if description:
+            items.append("** {} **".format(description))
+        items.append("")
         if self.custom_metric_name():  # adding on top: if users specifies a custom metric, it needs to be highlighted.
             items.append("{name}: {value}".format(name=self.custom_metric_name(),
                                                   value=self.custom_metric_value()))

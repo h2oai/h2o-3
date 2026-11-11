@@ -96,7 +96,9 @@ public class Score extends CMetricScoringTask<Score> {
       if( _oob && chks[oobColIdx].atd(row)==0 ) continue;
       double weight = weightsChunk!=null?weightsChunk.atd(row):1;
       if (weight == 0) continue; //ignore holdout rows
-      double offset = offsetChunk!=null?offsetChunk.atd(row):0;
+      // remove_offset_effects (GH-16851): in-training metrics and scoring history use the same offset-free
+      // view as BigScore, so the model's primary metrics stay consistent with its predictions
+      double offset = (offsetChunk!=null && m.applyOffsetAtScoreTime())?offsetChunk.atd(row):0;
       if( _is_train ) // Passed in the model-specific columns
         _bldr.score2(chks, weight, offset, cdists, row); // Use the training data directly (per-row predictions already made)
       else if (_sii != null)
