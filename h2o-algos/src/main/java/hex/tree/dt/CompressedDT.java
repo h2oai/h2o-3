@@ -35,18 +35,18 @@ public class CompressedDT extends Keyed<CompressedDT> {
      */
     public DTPrediction predictRowStartingFromNode(final double[] rowValues, final int actualNodeIndex, String ruleExplanation) {
         boolean isALeaf = _nodes[actualNodeIndex] instanceof CompressedLeaf;
-        // first value 1 means that the node is list, return prediction for the list
+        // first value 1 means that the node is a leaf, return prediction for the leaf
         if (isALeaf) {
             double decisionValue = ((CompressedLeaf) _nodes[actualNodeIndex]).getDecisionValue();
-            double probability = ((CompressedLeaf) _nodes[actualNodeIndex]).getProbabilities();
-            return new DTPrediction((int) decisionValue, probability, ruleExplanation + " -> (" 
-                    + decisionValue + ", probabilities: " + probability + ", " + (1 - probability) + ")");
+            double[] probabilities = ((CompressedLeaf) _nodes[actualNodeIndex]).getProbabilities();
+            return new DTPrediction((int) decisionValue, probabilities, 
+                    ruleExplanation + " -> " + _nodes[actualNodeIndex].toString());
         }
         if (!ruleExplanation.isEmpty()) {
             ruleExplanation += " and ";
         }
         AbstractSplittingRule splittingRule = ((CompressedNode) _nodes[actualNodeIndex]).getSplittingRule();
-        // splitting rule is true - left, false - right
+        // splitting rule is: true - left, false - right
         if(splittingRule.routeSample(rowValues)) {
             return predictRowStartingFromNode(rowValues, 2 * actualNodeIndex + 1, 
                     ruleExplanation + splittingRule.toString());
@@ -65,7 +65,7 @@ public class CompressedDT extends Keyed<CompressedDT> {
         if (_nodes[nodeIndex] instanceof CompressedLeaf) {
             // if node is a leaf, add the rule to the list of rules at index given by the nextFreeSpot parameter
             _listOfRules[nextFreeSpot] = actualRule + " -> (" + ((CompressedLeaf) _nodes[nodeIndex]).getDecisionValue()
-                    + ", " + ((CompressedLeaf) _nodes[nodeIndex]).getProbabilities() + ")";
+                    + ", " + Arrays.toString(((CompressedLeaf) _nodes[nodeIndex]).getProbabilities()) + ")";
             // move nextFreeSpot to the next index and return it to be used for other branches
             nextFreeSpot++;
             return nextFreeSpot;

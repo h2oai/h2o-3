@@ -15,7 +15,7 @@ public class Histogram {
     private final List<FeatureBins> _featuresBins;
     private final BinningStrategy _binningStrategy;
 
-    public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy) {
+    public Histogram(Frame originData, DataFeaturesLimits conditionLimits, BinningStrategy binningStrategy, int nclass) {
         _binningStrategy = binningStrategy;
         // get real features limits where the conditions are fulfilled
         DataFeaturesLimits featuresLimitsForConditions = getFeaturesLimitsForConditions(originData, conditionLimits);
@@ -23,7 +23,7 @@ public class Histogram {
         _featuresBins = IntStream
                 .range(0, originData.numCols() - 1/*exclude the last prediction column*/)
                 .mapToObj(i -> new FeatureBins(
-                        _binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i),
+                        _binningStrategy.createFeatureBins(originData, featuresLimitsForConditions, i, nclass),
                         originData.vec(i).cardinality()))
                 .collect(Collectors.toList());
     }
@@ -57,12 +57,12 @@ public class Histogram {
         return new DataFeaturesLimits(task._realFeatureLimits);
     }
 
-    public List<SplitStatistics> calculateSplitStatisticsForNumericFeature(int feature) {
-        return _featuresBins.get(feature).calculateSplitStatisticsForNumericFeature();
+    public List<SplitStatistics> calculateSplitStatisticsForNumericFeature(int feature, int nclass) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForNumericFeature(nclass);
     }
 
-    public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature(int feature) {
-        return _featuresBins.get(feature).calculateSplitStatisticsForCategoricalFeature();
+    public List<SplitStatistics> calculateSplitStatisticsForCategoricalFeature(int feature, int nclass) {
+        return _featuresBins.get(feature).calculateSplitStatisticsForCategoricalFeature(nclass);
     }
 
     public boolean isConstant(int featureIndex) {

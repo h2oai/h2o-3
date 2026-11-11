@@ -31,7 +31,7 @@ public class CategoricalSplittingRule extends AbstractSplittingRule {
   // true for left, false for right
   public boolean routeSample(double[] sample) {
     int category = (int) sample[_featureIndex];
-    assert category < _mask.length; // todo: new values in the train set are not supported yet - will be treated as missing values
+    assert category < _mask.length; // new values in the train set are not supported yet - will be treated as missing values
     return _mask[category];
   }
 }
