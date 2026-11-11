@@ -1,7 +1,7 @@
 ``k``
 -----
 
-- Available in: K-Means, PCA, GLRM
+- Available in: K-Means, PCA, GLRM, KNN
 - Hyperparameter: yes
 
 Description
@@ -18,6 +18,11 @@ PCA
 '''
 
 In PCA, ``k`` specifies the rank of matrix approximation. This can be a value from 1 to 9 and defaults to 1.
+
+KNN
+'''
+
+In KNN, ``k`` specifies the number of nearest neighbors to be found for every data point. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
