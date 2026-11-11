@@ -300,13 +300,13 @@ try {
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
                                 # Publish the output to S3.
-                                aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ --acl public-read
+                                aws s3 sync target/ ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/ ${env.S3_ACL}
                             """
                             if (params.UPDATE_LATEST) {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
-                                    aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ --acl public-read
-                                    aws s3 sync target/Python/ ${env.S3_ROOT}/latest_stable_Py/ --acl public-read
+                                    aws s3 sync target/R/ ${env.S3_ROOT}/latest_stable_R/ ${env.S3_ACL}
+                                    aws s3 sync target/Python/ ${env.S3_ROOT}/latest_stable_Py/ ${env.S3_ACL}
                                 """
                             }
                             sh """
@@ -338,9 +338,9 @@ try {
                                     cd ${env.BUILD_NUMBER_DIR}
                                     tmpdir=./buildh2odev.tmp
 
-                                    aws s3 cp \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest --acl public-read
-                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html --acl public-read
-                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html --acl public-read
+                                    aws s3 cp \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest ${env.S3_ACL}
+                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html ${env.S3_ACL}
+                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html ${env.S3_ACL}
                                 """
                             }
                             pipelineContext.getBuildSummary().markStageSuccessful(this, UPDATE_BRANCH_LATEST_STAGE_NAME)
@@ -362,9 +362,9 @@ try {
                                     cd ${env.BUILD_NUMBER_DIR}
                                     tmpdir=./buildh2odev.tmp
 
-                                    aws s3 cp \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest --acl public-read
-                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html --acl public-read
-                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html --acl public-read
+                                    aws s3 cp \${tmpdir}/latest ${env.S3_ROOT}/${env.BRANCH_NAME}/latest ${env.S3_ACL}
+                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/latest.html ${env.S3_ACL}
+                                    aws s3 cp \${tmpdir}/latest.html ${env.S3_ROOT}/${env.BRANCH_NAME}/index.html ${env.S3_ACL}
 
                                     LINKS="latest_stable:index.html
 latest_stable_doc:docs-website/h2o-docs/index.html
@@ -398,9 +398,9 @@ EOF
 
                                     # Upload
                                     # Upload first stable link
-                                    aws s3 cp \${tmpdir}/latest_stable ${env.S3_ROOT}/latest_stable --acl public-read
+                                    aws s3 cp \${tmpdir}/latest_stable ${env.S3_ROOT}/latest_stable ${env.S3_ACL}
                                     echo "\$LINKS" | while IFS=":" read link dest; do
-                                    aws s3 cp \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html --acl public-read
+                                    aws s3 cp \${tmpdir}/\${link}.html ${env.S3_ROOT}/\${link}.html ${env.S3_ACL}
                                     done
                                 """
                             }
@@ -431,7 +431,7 @@ EOF
                                             cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
                                             python setup.py sdist
 
-                                            s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
+                                            s3cmd put ${env.S3CMD_ACL} dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
 
                                             if [ "\$UPLOAD_TO_PYPI" = true ]; then
                                                 if [ "\$TEST_RELEASE" = true ]; then
@@ -486,9 +486,9 @@ EOF
                                                     # Convert conda package for all other platforms
                                                     conda convert \$CONDA_PKG_CURRENT_ARCH_PATH -p all
 
-                                                    s3cmd --acl-public put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
-                                                    s3cmd --acl-public put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
-                                                    s3cmd --acl-public put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
+                                                    s3cmd ${env.S3CMD_ACL} put osx-64/\${PKG_NAME} ${condaS3Dir}/osx-64/\${PKG_NAME}
+                                                    s3cmd ${env.S3CMD_ACL} put linux-64/\${PKG_NAME} ${condaS3Dir}/linux-64/\${PKG_NAME}
+                                                    s3cmd ${env.S3CMD_ACL} put win-64/\${PKG_NAME} ${condaS3Dir}/win-64/\${PKG_NAME}
 
                                                     if [ "\$UPLOAD_TO_ANACONDA" = true ]; then
                                                         if [ "\$TEST_RELEASE" = true ]; then
@@ -632,8 +632,8 @@ EOF
                             insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                    aws s3 cp h2o-3/${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl public-read
-                                    aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl public-read
+                                    aws s3 cp h2o-3/${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl bucket-owner-full-control
+                                    aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl bucket-owner-full-control
                                 """
                             }
     
@@ -798,8 +798,15 @@ private setReleaseJobProperties(final pipelineContext) {
 
     if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
+        // Release artifacts are public through their object ACLs
+        env.S3_ACL = '--acl public-read'
+        env.S3CMD_ACL = '--acl-public'
     } else {
         env.S3_ROOT = TEST_RELEASE_BUCKET
+        // The test bucket has ACLs disabled (BucketOwnerEnforced) and is served through https://test-0xdata-com.cdn.h2o.dev,
+        // so public ACLs are rejected there. --acl-private makes s3cmd send no ACL.
+        env.S3_ACL = '--acl bucket-owner-full-control'
+        env.S3CMD_ACL = '--acl-private'
     }
     echo "Release will be pushed to ${env.S3_ROOT}"
 
