@@ -37,6 +37,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/col_sample_rate_per_tree
    data-science/algo-params/compute_metrics
    data-science/algo-params/compute_p_values
+   data-science/algo-params/control_variables
    data-science/algo-params/custom_distribution_func
    data-science/algo-params/custom_metric_func
    data-science/algo-params/data_leakage_handling
@@ -122,6 +123,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/rate_annealing
    data-science/algo-params/rate_decay
    data-science/algo-params/remove_collinear_columns
+   data-science/algo-params/remove_offset_effects
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
    data-science/algo-params/sample_size

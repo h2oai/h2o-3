@@ -100,6 +100,8 @@ reference:
       - h2o.createFrame
       - h2o.cross_validation_fold_assignment
       - h2o.cross_validation_holdout_predictions
+      - h2o.cross_validation_metrics_summary_unrestricted_model
+      - h2o.cross_validation_metrics_unrestricted_model
       - h2o.cross_validation_models
       - h2o.cross_validation_predictions
       - h2o.cummax
@@ -352,6 +354,7 @@ reference:
       - h2o.scale
       - h2o.scoreHistory
       - h2o.scoring_history
+      - h2o.scoring_history_unrestricted_model
       - h2o.scoring_history_valid
       - h2o.scoreHistoryGAM
       - h2o.screeplot
