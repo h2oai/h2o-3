@@ -3092,6 +3092,13 @@ def _get_leaderboard(
     leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.make_leaderboard(models, frame,
                                                                                        extra_columns="ALL" if frame is not None else None)
     leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
+
+    # Round numeric metric columns to 5 decimal places for cleaner display
+    # (addresses visual improvement sub-task from GH-7836)
+    for col, col_type in leaderboard.types.items():
+        if col_type in ("real", "double", "float"):
+            leaderboard[col] = leaderboard[col].round(5)
+
     if row_index is not None:
         model_ids = [m[0] for m in
                      leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
@@ -3740,5 +3747,3 @@ def disparate_analysis(models, frame, protected_columns, reference, favorable_cl
         additional_columns["p.value_median"].append(np.median(pvalue))
         additional_columns["p.value_max"].append(np.max(pvalue))
     return leaderboard.cbind(h2o.H2OFrame(additional_columns))
-
-
