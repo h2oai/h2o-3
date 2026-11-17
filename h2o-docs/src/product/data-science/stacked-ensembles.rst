@@ -135,7 +135,7 @@ Common parameters
 
 -  `seed <algo-params/seed.html>`__: Seed for random numbers; passed through to the metalearner algorithm. This option defaults to ``-1`` (time-based random number).
 
--  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retreive the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. In a Stacked Ensemble model, the training frame is used only to retrieve the response column (needed for training the metalearner) and also to compute training metrics for the ensemble model.  
 
 -  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset to use for tuning the model. The validation frame will be passed through to the metalearner for tuning.
 
