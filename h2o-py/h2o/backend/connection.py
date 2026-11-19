@@ -273,8 +273,9 @@ class H2OConnection(h2o_meta()):
 
     """
     Defines pattern matching URL in the following form ``schema://ip:port/context_path``.
+    IPv6 addresses must be enclosed in square brackets, e.g. ``http://[2001:db8::1]:54321``.
     """
-    url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?((/[\w-]+)+)?$"
+    url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+|\[[0-9A-Fa-f:.]+\]):(\d+)/?((/[\w-]+)+)?$"
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None,
