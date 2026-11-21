@@ -216,6 +216,22 @@ When you launch H2O-3 on Hadoop using the ``hadoop jar`` command, YARN allocates
 	
 	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g -output hdfsOutputDirName
 
+YARN CPU requests and vcore contention
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``-nthreads`` controls H2O worker thread/CPU usage; it does not by itself
+change the YARN container request. Worker containers use
+``mapreduce.map.cpu.vcores`` and the ApplicationMaster uses
+``yarn.app.mapreduce.am.resource.cpu-vcores``. Hadoop defaults apply when these
+properties are absent.
+
+For example, 5 workers at 4 vcores each plus an ApplicationMaster at 6 vcores
+require an estimated ``5 * 4 + 6 = 26`` vcores. Reducing ``-nthreads`` alone
+does not necessarily reduce YARN allocation requests. If memory is available
+but H2O times out, inspect estimated queue vcore availability and review both
+vcore properties, worker count, and current queue utilization with the YARN
+administrator. These values are estimates, not scheduling guarantees.
+
 Troubleshoot YARN
 '''''''''''''''''
 
