@@ -19,16 +19,19 @@ def call(final pipelineContext, final stageConfig) {
             fi
 
             if [ "11" = "${stageConfig.javaVersion}" ]; then
-              echo "Installing Java 11 (OpenJDK)"
-              curl -j -k -L https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz > jdk-linux-x64.tar.gz
-              tar xfz jdk-linux-x64.tar.gz
-              export JAVA_HOME=\$(cd jdk* && pwd)
+              echo "Using the patched Java 11 staged in the build image"
+              export JAVA_HOME=/usr/lib/jvm/java-11-oracle
               export PATH=\$JAVA_HOME/bin:\$PATH
-              echo "Creating symlinks (substituting Java 8 for Java 11)"
-              rm /usr/lib/jvm/java-8-oracle
-              rm /usr/lib/jvm/java-current-oracle
-              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-oracle
-              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-current
+              test -x \$JAVA_HOME/bin/java
+              test -x \$JAVA_HOME/bin/keytool
+              test -r \$JAVA_HOME/lib/security/cacerts
+              listing=\$(\$JAVA_HOME/bin/keytool -list -keystore \$JAVA_HOME/lib/security/cacerts -storepass changeit)
+              for alias in 'emsignrootcag1 [jdk]' 'emsignrootcag2 [jdk]' 'emsigneccrootcag3 [jdk]' 'comodoaaaca [jdk]'; do
+                if printf '%s\\n' "\$listing" | grep -Fq -- "\$alias"; then
+                  echo "Compromised CA alias remains in \$JAVA_HOME/lib/security/cacerts: \$alias" >&2
+                  exit 1
+                fi
+              done
               echo "\$LDAP_USERNAME: \$LDAP_PASSWORD" > /tmp/hash.login
             fi
 

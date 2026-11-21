@@ -15,6 +15,7 @@ else
 fi
 
 apt-get install -y \
-    wget gcc python3.5-dev git python3-pip python-virtualenv \
+    ca-certificates wget gcc python3.5-dev git python3-pip python-virtualenv \
     mariadb-client \
     unzip tar nodejs nodejs-dev node-gyp npm libkrb5-dev libffi-dev
+update-ca-certificates

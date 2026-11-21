@@ -2,13 +2,17 @@ ARG FROM_VERSION
 FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-base:${FROM_VERSION}
 
 ENV JAVA_VERSION=8
-COPY scripts/install_java_version_local scripts/java-${JAVA_VERSION}-vars.sh jdk-8u311-linux-x64.tar.gz /tmp/
+COPY scripts/install_java_version_local scripts/java-${JAVA_VERSION}-vars.sh jdk-8u513-linux-x64.tar.gz /tmp/
 RUN \
     chmod +x /tmp/install_java_version_local /tmp/java-${JAVA_VERSION}-vars.sh && \
     sync && \
     /tmp/install_java_version_local ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh && \
-    rm /tmp/install_java_version_local /tmp/java-${JAVA_VERSION}-vars.sh /tmp/jdk-8u311-linux-x64.tar.gz && \
+    rm /tmp/install_java_version_local /tmp/java-${JAVA_VERSION}-vars.sh /tmp/jdk-8u513-linux-x64.tar.gz && \
     chmod a+w /usr/lib/jvm/
+
+COPY scripts/java_trust_store_common.sh scripts/verify_java_trust_store /usr/local/bin/
+RUN chmod 755 /usr/local/bin/java_trust_store_common.sh /usr/local/bin/verify_java_trust_store \
+    && JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle /usr/local/bin/verify_java_trust_store
 
 ENV \
   JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle \

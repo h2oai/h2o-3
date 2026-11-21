@@ -3,10 +3,16 @@ FROM ubuntu:22.04
 # Universal image used to run both H2O or python scripts used for clustering and testing
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-	&& apt-get install default-jdk curl python3 python-is-python3 python3-pip -y \
-    && pip3 install kubernetes requests argparse \
+	&& apt-get install ca-certificates default-jdk curl python3 python-is-python3 python3-pip -y \
+    && update-ca-certificates \
+    && pip3 install 'certifi>=2026.10.19' kubernetes requests argparse \
+    && python3 -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()" \
     && curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" \
     && chmod +x ./kubectl && mv ./kubectl /usr/local/bin/kubectl
+
+COPY scripts/java_trust_store_common.sh scripts/verify_java_trust_store /usr/local/bin/
+RUN chmod 755 /usr/local/bin/java_trust_store_common.sh /usr/local/bin/verify_java_trust_store \
+    && /usr/local/bin/verify_java_trust_store
 
 
 RUN rm /var/lib/apt/lists -rf

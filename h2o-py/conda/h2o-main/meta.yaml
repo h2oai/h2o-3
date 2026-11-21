@@ -14,11 +14,13 @@ requirements:
     - setuptools
     - tabulate >=0.7.5
     - requests >=2.10
+    - certifi >=2026.10.19
 
   run:
     - python
     - tabulate >=0.7.5
     - requests >=2.10
+    - certifi >=2026.10.19
 
 about:
   home: https://github.com/h2oai/h2o-3.git

@@ -7,6 +7,24 @@ unzip ${JDK_FILE}
 rm ${JDK_FILE}
 
 cd /usr/local/lib/jdk*
+KEYTOOL="$(pwd)/jre/bin/keytool"
+CACERTS="$(pwd)/jre/lib/security/cacerts"
+test -x "$KEYTOOL"
+test -r "$CACERTS"
+test -w "$CACERTS"
+listing="$($KEYTOOL -list -keystore "$CACERTS" -storepass changeit)"
+for alias in 'emsignrootcag1 [jdk]' 'emsignrootcag2 [jdk]' 'emsigneccrootcag3 [jdk]' 'comodoaaaca [jdk]'; do
+    if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then
+        "$KEYTOOL" -delete -keystore "$CACERTS" -storepass changeit -alias "$alias" -noprompt
+    fi
+done
+listing="$($KEYTOOL -list -keystore "$CACERTS" -storepass changeit)"
+for alias in 'emsignrootcag1 [jdk]' 'emsignrootcag2 [jdk]' 'emsigneccrootcag3 [jdk]' 'comodoaaaca [jdk]'; do
+    if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then
+        echo "Compromised CA alias remains in $CACERTS: $alias" >&2
+        exit 1
+    fi
+done
 mkdir -p /usr/lib/jvm/
 chmod a+w /usr/lib/jvm
 ln -sf $(pwd) /usr/lib/jvm/java-8-oracle

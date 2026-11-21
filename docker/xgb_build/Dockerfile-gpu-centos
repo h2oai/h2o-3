@@ -8,11 +8,31 @@ ARG H2O_BRANCH='h2o3'
 RUN \
     curl -s https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo | sed 's/\$releasever/7/g' > /etc/yum.repos.d/epel-apache-maven.repo && \
     yum install -y centos-release-scl && \
-    yum install -y devtoolset-8-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make
+    yum install -y ca-certificates devtoolset-8-toolchain python3 zip java-1.8.0-openjdk-devel apache-maven wget git unzip make && \
+    update-ca-trust
 
 # Install virtualenv
 RUN \
     pip3 install virtualenv
+
+RUN \
+    pip3 install 'certifi>=2026.10.19' requests && \
+    python3 -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()"
+
+# Verify the Java 8 trust store supplied by the OS package.  This image is a
+# build environment and does not use the private Oracle JDK 8u171 archive.
+RUN \
+    JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")" && \
+    JAVA_BIN="$JAVA_HOME/bin/java" && \
+    KEYTOOL="$JAVA_HOME/bin/keytool" && \
+    CACERTS="$JAVA_HOME/jre/lib/security/cacerts" && \
+    test -x "$JAVA_BIN" && \
+    test -x "$KEYTOOL" && \
+    test -r "$CACERTS" && \
+    listing="$("$KEYTOOL" -list -keystore "$CACERTS" -storepass changeit)" && \
+    for alias in 'emsignrootcag1 [jdk]' 'emsignrootcag2 [jdk]' 'emsigneccrootcag3 [jdk]' 'comodoaaaca [jdk]'; do \
+      if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then echo "Compromised CA alias remains in $CACERTS: $alias" >&2; exit 1; fi; \
+    done
 
 # Install deps for pythons and cmake
 RUN \

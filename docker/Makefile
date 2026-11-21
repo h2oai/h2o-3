@@ -1,12 +1,19 @@
 SHELL := /bin/bash
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
-.PHONY : all
+.PHONY : all security-tests
 
 VERSION ?= dev
 PUSH ?= 0
 H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 NO_CACHE ?= --no-cache
 BASE_FROM_IMAGE := nvidia/cuda:12.1.0-devel-ubuntu22.04
+
+security-tests:
+	@set -e; test_dir=$$(mktemp -d); trap 'rm -rf "$${test_dir}"' EXIT; \
+		bash scripts/test_java_trust_store.sh; \
+		python3 -m venv "$${test_dir}/venv"; \
+		"$${test_dir}/venv/bin/python" -m pip install --disable-pip-version-check 'certifi>=2026.10.19' requests; \
+		"$${test_dir}/venv/bin/python" scripts/test_python_certifi.py
 
 dev-base:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-base:$(VERSION) \
@@ -17,6 +24,9 @@ dev-base:
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-base:$(VERSION)
 endif
+
+validate-java-version-%:
+	@case "$*" in 8|11|17) ;; *) echo "Unsupported Java $*: only patched Java 8, 11, and 17 image targets are supported" >&2; exit 1 ;; esac
 
 ifneq ($(CI), 1)
 dev-jdk-8-base: dev-base
@@ -72,7 +82,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.6-jdk-%: dev-python-3.6
+dev-python-3.6-jdk-%: dev-python-3.6 validate-java-version-%
 endif
 dev-python-3.6-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.6-jdk-$*:$(VERSION) \
@@ -88,7 +98,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.7-jdk-%: dev-python-3.7
+dev-python-3.7-jdk-%: dev-python-3.7 validate-java-version-%
 endif
 dev-python-3.7-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.7-jdk-$*:$(VERSION) \
@@ -104,7 +114,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.8-jdk-%: dev-python-3.8
+dev-python-3.8-jdk-%: dev-python-3.8 validate-java-version-%
 endif
 dev-python-3.8-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.8-jdk-$*:$(VERSION) \
@@ -120,7 +130,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.9-jdk-%: dev-python-3.9
+dev-python-3.9-jdk-%: dev-python-3.9 validate-java-version-%
 endif
 dev-python-3.9-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.9-jdk-$*:$(VERSION) \
@@ -136,7 +146,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.10-jdk-%: dev-python-3.10
+dev-python-3.10-jdk-%: dev-python-3.10 validate-java-version-%
 endif
 dev-python-3.10-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.10-jdk-$*:$(VERSION) \
@@ -152,7 +162,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-3.11-jdk-%: dev-python-3.11
+dev-python-3.11-jdk-%: dev-python-3.11 validate-java-version-%
 endif
 dev-python-3.11-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.11-jdk-$*:$(VERSION) \
@@ -197,7 +207,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-3.3.3-jdk-%: dev-r-3.3.3
+dev-r-3.3.3-jdk-%: dev-r-3.3.3 validate-java-version-%
 endif
 dev-r-3.3.3-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.3.3-jdk-$*:$(VERSION) \
@@ -213,7 +223,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-3.4.1-jdk-%: dev-r-3.4.1
+dev-r-3.4.1-jdk-%: dev-r-3.4.1 validate-java-version-%
 endif
 dev-r-3.4.1-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.4.1-jdk-$*:$(VERSION) \
@@ -229,7 +239,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-3.5.3-jdk-%: dev-r-3.5.3
+dev-r-3.5.3-jdk-%: dev-r-3.5.3 validate-java-version-%
 endif
 dev-r-3.5.3-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.5.3-jdk-$*:$(VERSION) \
@@ -245,7 +255,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-3.6.2-jdk-%: dev-r-3.6.2
+dev-r-3.6.2-jdk-%: dev-r-3.6.2 validate-java-version-%
 endif
 dev-r-3.6.2-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-3.6.2-jdk-$*:$(VERSION) \
@@ -261,7 +271,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-4.0.2-jdk-%: dev-r-4.0.2
+dev-r-4.0.2-jdk-%: dev-r-4.0.2 validate-java-version-%
 endif
 dev-r-4.0.2-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.0.2-jdk-$*:$(VERSION) \
@@ -277,7 +287,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-4.4.0-jdk-%: dev-r-4.4.0
+dev-r-4.4.0-jdk-%: dev-r-4.4.0 validate-java-version-%
 endif
 dev-r-4.4.0-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.4.0-jdk-$*:$(VERSION) \
@@ -293,7 +303,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-4.5.2-jdk-%: dev-r-4.5.2
+dev-r-4.5.2-jdk-%: dev-r-4.5.2 validate-java-version-%
 endif
 dev-r-4.5.2-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-r-4.5.2-jdk-$*:$(VERSION) \
@@ -324,7 +334,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-jdk-%: dev-jdk-others-base
+dev-jdk-%: dev-jdk-others-base validate-java-version-%
 endif
 dev-jdk-%:
 	docker build -t 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-jdk-$*:$(VERSION) \

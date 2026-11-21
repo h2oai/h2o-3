@@ -10,4 +10,20 @@ RUN \
     rm graalvm-ce-java17-linux-amd64-22.2.0.tar.gz && \
     mkdir /usr/opt/java-17-22.2.0/ && \
     mv graalvm-ce-java17-22.2.0 /usr/opt/java-17-22.2.0/ && \
+    export GRAALVM_HOME=/usr/opt/java-17-22.2.0/graalvm-ce-java17-22.2.0 && \
+    export KEYTOOL="$GRAALVM_HOME/bin/keytool" && \
+    export CACERTS="$GRAALVM_HOME/lib/security/cacerts" && \
+    test -x "$KEYTOOL" && test -r "$CACERTS" && test -w "$CACERTS" && \
+    /bin/bash -c '\
+        set -euo pipefail; \
+        listing="$($KEYTOOL -list -keystore "$CACERTS" -storepass changeit)"; \
+        for alias in "emsignrootcag1 [jdk]" "emsignrootcag2 [jdk]" "emsigneccrootcag3 [jdk]" "comodoaaaca [jdk]"; do \
+          if grep -Fq -- "$alias" <<<"$listing"; then \
+            "$KEYTOOL" -delete -keystore "$CACERTS" -storepass changeit -alias "$alias" -noprompt; \
+          fi; \
+        done; \
+        listing="$($KEYTOOL -list -keystore "$CACERTS" -storepass changeit)"; \
+        for alias in "emsignrootcag1 [jdk]" "emsignrootcag2 [jdk]" "emsigneccrootcag3 [jdk]" "comodoaaaca [jdk]"; do \
+          if grep -Fq -- "$alias" <<<"$listing"; then echo "Compromised CA alias remains: $alias" >&2; exit 1; fi; \
+        done' && \
     ln -s /usr/opt/java-17-22.2.0/graalvm-ce-java17-22.2.0 /usr/lib/jvm/java-17-graalvm

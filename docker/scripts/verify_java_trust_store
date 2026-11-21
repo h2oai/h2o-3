@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=java_trust_store_common.sh
+source "$SCRIPT_DIR/java_trust_store_common.sh"
+
+resolve_java
+listing="$(trust_store_listing)"
+for alias in "${COMPROMISED_ALIASES[@]}"; do
+  if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then
+    echo "Compromised CA alias remains in $JAVA_CACERTS: $alias" >&2
+    exit 1
+  fi
+done
+
+echo "Verified Java $JAVA_MAJOR trust store: $JAVA_CACERTS"

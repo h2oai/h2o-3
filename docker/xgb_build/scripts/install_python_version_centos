@@ -19,5 +19,8 @@ for python_version in "${array[@]}"; do
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
   source /opt/rh/rh-python${YUM_PY_VERSION}/enable
-  pip install pip wheel setuptools --upgrade
+  PYTHON_BIN="$(command -v python)"
+  "$PYTHON_BIN" -m pip install pip wheel setuptools --upgrade
+  "$PYTHON_BIN" -m pip install 'certifi>=2026.10.19' requests
+  "$PYTHON_BIN" -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()"
 done

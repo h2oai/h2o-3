@@ -18,6 +18,7 @@ ln -s /usr/local/python${VERSION_NO_DOT}/bin/*${VERSION_SHORT}* /usr/local/bin
 cd ..
 rm -rf Python-${VERSION_FULL}*
 virtualenv --python=python${VERSION_SHORT} /envs/h2o_env_python${VERSION_SHORT}
-source /envs/h2o_env_python${VERSION_SHORT}/bin/activate
-pip install pip wheel setuptools --upgrade
-deactivate
+ENV_PYTHON="/envs/h2o_env_python${VERSION_SHORT}/bin/python"
+"$ENV_PYTHON" -m pip install pip wheel setuptools --upgrade
+"$ENV_PYTHON" -m pip install 'certifi>=2026.10.19' requests
+"$ENV_PYTHON" -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()"

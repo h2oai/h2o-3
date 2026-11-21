@@ -21,6 +21,7 @@ properties(
 node (NODE_LABEL) {
     final String stageName = 'Checkout and Prepare'
     stage (stageName) {
+        error('XGBoost image publication is disabled: the pipeline still stages legacy JDK 8u171. Enable publication only after a verified JDK 8u513 archive is staged and installed. Registry-level enforcement is outside this repository.')
         def scmEnv = git credentialsId: 'c6bab81a-6bb5-4497-9ec9-285ef5db36ea',
                 poll: false,
                 url: 'https://github.com/h2oai/h2o-3',

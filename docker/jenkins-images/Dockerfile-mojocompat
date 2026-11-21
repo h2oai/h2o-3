@@ -1,6 +1,9 @@
 ARG FROM_VERSION
 FROM 353750902984.dkr.ecr.us-east-1.amazonaws.com/h2o-3/dev-python-3.7:${FROM_VERSION}
 
+# Legacy CI-only compatibility image. Java 7u75 is unsupported and this image
+# is intentionally excluded from the supported Jenkins image build matrix.
+# Do not treat it as remediated or publish it as a supported runtime.
 # Install Java 7 (and make it default) next to the Java contained in the Python 3.6 image
 ENV JAVA_VERSION='1.7.0'
 RUN \

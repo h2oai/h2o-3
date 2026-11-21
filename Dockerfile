@@ -21,6 +21,7 @@ RUN \
   apt-get clean && \
   rm -rf /var/cache/apt/* && \
   DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates wget unzip openjdk-8-jdk software-properties-common && \
+  update-ca-certificates && \
   add-apt-repository ppa:deadsnakes/ppa -y && \
   apt-get update -q -y && \
   apt-get install -y python3.11 python3.11-distutils python3.11-dev && \
@@ -28,8 +29,13 @@ RUN \
   python3.11 get-pip.py && \
   rm get-pip.py && \
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
-  python3.11 -m pip install scikit-learn pandas numpy matplotlib requests tabulate && \
+  python3.11 -m pip install 'certifi>=2026.10.19' scikit-learn pandas numpy matplotlib requests tabulate && \
+  python3.11 -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()" && \
   apt-get clean
+
+COPY docker/scripts/java_trust_store_common.sh docker/scripts/verify_java_trust_store /usr/local/bin/
+RUN chmod 755 /usr/local/bin/java_trust_store_common.sh /usr/local/bin/verify_java_trust_store \
+  && /usr/local/bin/verify_java_trust_store
 
 # Fetch h2o latest_stable
 RUN \

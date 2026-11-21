@@ -11,11 +11,10 @@ COPY scripts/install_java_version scripts/install_java_version_local \
      jdk1.${JAVA_VERSION}*.zip \
      /tmp/
 RUN \
+    case "${JAVA_VERSION}" in 8|11|17) ;; *) echo "Unsupported Java ${JAVA_VERSION}; only patched Java 8, 11, and 17 images are supported" >&2; exit 1 ;; esac && \
     chmod +x /tmp/install_java_version /tmp/java-${JAVA_VERSION}-vars.sh && \
     sync && \
-    if [ "${JAVA_VERSION}" = '8' ] || [ "${JAVA_VERSION}" = '10' ] || [ "${JAVA_VERSION}" = '11' ] || \
-        [ "${JAVA_VERSION}" = '12' ] || [ "${JAVA_VERSION}" = '13' ] || [ "${JAVA_VERSION}" = '14' ] || \
-        [ "${JAVA_VERSION}" = '15' ] || [ "${JAVA_VERSION}" = '16' ] || [ "${JAVA_VERSION}" = '17' ]; then \
+    if [ "${JAVA_VERSION}" = '8' ] || [ "${JAVA_VERSION}" = '11' ] || [ "${JAVA_VERSION}" = '17' ]; then \
         /tmp/install_java_version_local ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
     else \
         /tmp/install_java_version ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
@@ -24,6 +23,10 @@ RUN \
         /tmp/java-${JAVA_VERSION}-vars.sh \
         /tmp/jdk* && \
     chmod a+w /usr/lib/jvm/
+
+COPY scripts/java_trust_store_common.sh scripts/verify_java_trust_store /usr/local/bin/
+RUN chmod 755 /usr/local/bin/java_trust_store_common.sh /usr/local/bin/verify_java_trust_store \
+    && JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle /usr/local/bin/verify_java_trust_store
 
 ENV \
   JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle \

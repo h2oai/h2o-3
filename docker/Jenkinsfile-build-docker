@@ -111,18 +111,13 @@ ansiColor('xterm') {
                 dir('docker') {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'H2O-AWS_CT-JENKINS-SHARED-SERVICE-PROD', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                         docker.image('d3fk/s3cmd').inside("--entrypoint='' -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}") {
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u311-linux-x64.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-13/x64-linux/jdk-13.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-14/x64-linux/jdk-14.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-15/x64-linux/jdk-15.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-16/x64-linux/jdk-16.0.2_linux-x64_bin.tar.gz"
-                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.0_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk-8u513-linux-x64.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.33.1_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-17/x64-linux/jdk-17.0.21.1_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'
+                    sh 'make security-tests'
                 }
             }
         }
@@ -148,7 +143,8 @@ ansiColor('xterm') {
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
-        componentImages += "dev-mojocompat"
+        // Mojocompat requires an unpatched Java 7 compatibility runtime and
+        // is intentionally excluded from the supported image build matrix.
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])

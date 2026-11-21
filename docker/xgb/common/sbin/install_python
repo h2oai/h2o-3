@@ -8,6 +8,8 @@ chmod a+w -R /envs/h2o_env_python3.7
 source /envs/h2o_env_python3.7/bin/activate
 pip install --upgrade pip
 pip install --upgrade setuptools
+pip install 'certifi>=2026.10.19'
 wget https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/test-requirements.txt
 pip install -r test-requirements.txt
+python -c "import certifi, requests; assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19); assert requests.certs.where() == certifi.where()"
 rm test-requirements.txt

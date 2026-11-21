@@ -87,7 +87,9 @@ setup(
     ]},
 
     # run-time dependencies
-    install_requires=["requests", "tabulate"],
+    # GHSA-6q48-6c7w-9gw2: certifi versions before 2026.10.19 bundle
+    # compromised emSign CA material.
+    install_requires=["requests", "tabulate", "certifi>=2026.10.19"],
 
     # optional dependencies
     extras_require={

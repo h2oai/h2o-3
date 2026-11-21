@@ -1,6 +1,11 @@
 FROM ubuntu:22.04
 
 RUN apt-get update \
-	&& apt-get install default-jdk -y
+	&& apt-get install ca-certificates default-jdk -y \
+    && update-ca-certificates
+
+COPY scripts/java_trust_store_common.sh scripts/verify_java_trust_store /usr/local/bin/
+RUN chmod 755 /usr/local/bin/java_trust_store_common.sh /usr/local/bin/verify_java_trust_store \
+    && /usr/local/bin/verify_java_trust_store
 
 CMD ls -lah && java -jar h2o.jar

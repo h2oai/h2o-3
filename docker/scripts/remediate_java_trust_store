@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=java_trust_store_common.sh
+source "$SCRIPT_DIR/java_trust_store_common.sh"
+
+resolve_java
+[[ -w "$JAVA_CACERTS" ]] || { echo "Java trust store is not writable: $JAVA_CACERTS" >&2; exit 1; }
+password="${JAVA_TRUST_STORE_PASSWORD:-changeit}"
+listing="$(trust_store_listing)"
+
+for alias in "${COMPROMISED_ALIASES[@]}"; do
+  if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then
+    "$JAVA_KEYTOOL" -delete -keystore "$JAVA_CACERTS" -storepass "$password" -alias "$alias" -noprompt
+  fi
+done
+
+listing="$(trust_store_listing)"
+for alias in "${COMPROMISED_ALIASES[@]}"; do
+  if printf '%s\n' "$listing" | grep -Fq -- "$alias"; then
+    echo "Compromised CA alias remains in $JAVA_CACERTS: $alias" >&2
+    exit 1
+  fi
+done

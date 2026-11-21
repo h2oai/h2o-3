@@ -10,9 +10,10 @@ LABEL "summary"="H2O Open Source Machine Learning platform"
 LABEL "description"="H2O is an Open Source, Distributed, Fast & Scalable Machine Learning Platform: Deep Learning, Gradient Boosting (GBM) & XGBoost, Random Forest, Generalized Linear Modeling (GLM with Elastic Net), K-Means, PCA, Generalized Additive Models (GAM), RuleFit, Support Vector Machine (SVM), Stacked Ensembles, Automatic Machine Learning (AutoML), etc."
 
 # Install libgomp - to enable XGBoost multithreading
-RUN microdnf install wget tar gzip \
+RUN microdnf install ca-certificates wget tar gzip \
     && microdnf install libgomp
-RUN microdnf clean all
+RUN update-ca-trust \
+    && microdnf clean all
 
 # Install Java 17 (GraalVM Community Edition 22.2.0)
 RUN wget -O /tmp/graalvm-ce.tar.gz https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.2.0/graalvm-ce-java17-linux-amd64-22.2.0.tar.gz \
@@ -21,7 +22,26 @@ RUN wget -O /tmp/graalvm-ce.tar.gz https://github.com/graalvm/graalvm-ce-builds/
     && tar xfz /tmp/graalvm-ce.tar.gz \
     && mkdir /opt/java/ \
     && cp -r graalvm-ce-* /opt/java/ \
-    && cd /opt/java/graalvm-ce-* \
+    && export GRAALVM_HOME="$(find /opt/java -mindepth 1 -maxdepth 1 -type d -name 'graalvm-ce-*' -print -quit)" \
+    && export KEYTOOL="$GRAALVM_HOME/bin/keytool" \
+    && export CACERTS="$GRAALVM_HOME/lib/security/cacerts" \
+    && test -x "$KEYTOOL" \
+    && test -r "$CACERTS" \
+    && test -w "$CACERTS" \
+    && TRUST_STORE="$CACERTS" KEYTOOL="$KEYTOOL" /bin/bash -c '\
+         set -euo pipefail; \
+         listing="$($KEYTOOL -list -keystore "$TRUST_STORE" -storepass changeit)"; \
+         for alias in "emsignrootcag1 [jdk]" "emsignrootcag2 [jdk]" "emsigneccrootcag3 [jdk]" "comodoaaaca [jdk]"; do \
+           if grep -Fq -- "$alias" <<<"$listing"; then \
+             "$KEYTOOL" -delete -keystore "$TRUST_STORE" -storepass changeit -alias "$alias" -noprompt; \
+           fi; \
+         done; \
+         listing="$($KEYTOOL -list -keystore "$TRUST_STORE" -storepass changeit)"; \
+         for alias in "emsignrootcag1 [jdk]" "emsignrootcag2 [jdk]" "emsigneccrootcag3 [jdk]" "comodoaaaca [jdk]"; do \
+           if grep -Fq -- "$alias" <<<"$listing"; then \
+             echo "Compromised CA alias remains in $TRUST_STORE: $alias" >&2; exit 1; \
+           fi; \
+         done' \
     && /bin/bash -c 'for cmd in $(ls bin/); do alternatives --install /usr/bin/$cmd $cmd $PWD/bin/$cmd 1; done' \
     && rm -r /tmp/graalvm-ce.tar.gz /tmp/graalvm/
 
