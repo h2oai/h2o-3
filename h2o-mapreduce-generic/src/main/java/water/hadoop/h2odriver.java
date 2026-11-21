@@ -1932,7 +1932,7 @@ public class h2odriver extends Configured implements Tool {
         Class clazz = Class.forName("water.hadoop.H2OYarnDiagnostic");
         if (clazz != null) {
           @SuppressWarnings("all")
-          Method method = clazz.getMethod("diagnose", String.class, String.class, int.class, int.class, int.class);
+          Method method = clazz.getMethod("diagnose", String.class, String.class, int.class, int.class, int.class, Configuration.class);
           String queueName;
           queueName = conf.get("mapreduce.job.queuename");
           if (queueName == null) {
@@ -1941,7 +1941,7 @@ public class h2odriver extends Configured implements Tool {
           if (queueName == null) {
             queueName = "default";
           }
-          method.invoke(null, applicationId, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get());
+          method.invoke(null, applicationId, queueName, numNodes, (int)processTotalPhysicalMemoryMegabytes, numNodesStarted.get(), conf);
         }
 
         return rv;

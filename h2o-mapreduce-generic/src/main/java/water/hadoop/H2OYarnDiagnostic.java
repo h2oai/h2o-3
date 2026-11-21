@@ -19,19 +19,48 @@ import java.util.Date;
 import java.util.List;
 
 public class H2OYarnDiagnostic {
+    static long totalRequestedVirtualCores(int numNodes, Configuration conf) {
+        long worker = conf.getInt("mapreduce.map.cpu.vcores", 1);
+        long am = conf.getInt("yarn.app.mapreduce.am.resource.cpu-vcores", 1);
+        return (long) numNodes * worker + am;
+    }
+
+    static long availableMemory(List<NodeReport> reports) {
+        long result = 0;
+        if (reports != null) for (NodeReport node : reports) {
+            if (node != null && node.getNodeState() == NodeState.RUNNING && node.getCapability() != null) {
+                Resource used = node.getUsed();
+                result += Math.max(0, (long) node.getCapability().getMemory() - (used == null ? 0 : used.getMemory()));
+            }
+        }
+        return result;
+    }
+
+    static long availableVirtualCores(List<NodeReport> reports) {
+        long result = 0;
+        if (reports != null) for (NodeReport node : reports) {
+            if (node != null && node.getNodeState() == NodeState.RUNNING && node.getCapability() != null) {
+                Resource used = node.getUsed();
+                result += Math.max(0, (long) node.getCapability().getVirtualCores() - (used == null ? 0 : used.getVirtualCores()));
+            }
+        }
+        return result;
+    }
+
     // These are known up front.
     Configuration conf;
     String applicationId;
     String queueName;
     int numNodes;
     int nodeMemoryMb;
-    int nodeVirtualCores;
+    long nodeVirtualCores;
+    long applicationMasterVirtualCores;
     int numNodesStarted;
 
     // Fill these in as we process the queue information, and remember the
     // answers for printing helpful diagnostics.
-    int queueAvailableMemory;
-    int queueAvailableVirtualCores;
+    long queueAvailableMemory;
+    long queueAvailableVirtualCores;
 
     public static void main(String[] args) throws Exception {
         if (args.length != 5) {
@@ -39,7 +68,7 @@ public class H2OYarnDiagnostic {
             System.exit(1);
         }
 
-        diagnose(args[0], args[1], Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4]));
+        diagnose(args[0], args[1], Integer.valueOf(args[2]), Integer.valueOf(args[3]), Integer.valueOf(args[4]), new YarnConfiguration());
     }
 
     /**
@@ -52,12 +81,19 @@ public class H2OYarnDiagnostic {
      * @throws Exception
      */
 	public static void diagnose(String applicationId, String queueName, int numNodes, int nodeMemoryMb, int numNodesStarted) throws Exception {
+        diagnose(applicationId, queueName, numNodes, nodeMemoryMb, numNodesStarted, new YarnConfiguration());
+    }
+
+    /** Uses the same effective Hadoop configuration as the submitting driver. */
+    public static void diagnose(String applicationId, String queueName, int numNodes, int nodeMemoryMb, int numNodesStarted, Configuration conf) throws Exception {
         H2OYarnDiagnostic client = new H2OYarnDiagnostic();
+        client.conf = conf;
         client.applicationId = applicationId;
         client.queueName = queueName;
         client.numNodes = numNodes;
         client.nodeMemoryMb = nodeMemoryMb;
-        client.nodeVirtualCores = 1;
+        client.nodeVirtualCores = conf.getInt("mapreduce.map.cpu.vcores", 1);
+        client.applicationMasterVirtualCores = conf.getInt("yarn.app.mapreduce.am.resource.cpu-vcores", 1);
         client.numNodesStarted = numNodesStarted;
         client.run();
     }
@@ -112,6 +148,10 @@ public class H2OYarnDiagnostic {
         return prettyPrintMb(mb, true);
     }
 
+    private String prettyPrintMb(long mb) {
+        return prettyPrintMb(mb, true);
+    }
+
     private String prettyPrintMb(int mb, boolean printUnits) {
         double gb = (double)mb / 1024.0;
         String s = String.format("%.1f", gb);
@@ -119,6 +159,12 @@ public class H2OYarnDiagnostic {
             s += " GB";
         }
         return s;
+    }
+
+    private String prettyPrintMb(long mb, boolean printUnits) {
+        double gb = (double)mb / 1024.0;
+        String s = String.format("%.1f", gb);
+        return printUnits ? s + " GB" : s;
     }
 
     private String prettyPrintCapacity(float cap) {
@@ -271,64 +317,60 @@ public class H2OYarnDiagnostic {
         throw new RuntimeException("Diagnostic failed, please contact support@h2o.ai");
 	}
 
-	private int calcUsedMemory(QueueInfo queueInfo) {
+    static long calcUsedMemory(QueueInfo queueInfo) {
 		if (queueInfo == null) {
 			return 0;
 		}
 
-		int memory = 0;
-		for (ApplicationReport ar : queueInfo.getApplications()) {
-			memory += ar.getApplicationResourceUsageReport().getUsedResources().getMemory();
+        long memory = 0;
+        if (queueInfo.getApplications() != null) for (ApplicationReport ar : queueInfo.getApplications()) {
+            if (ar.getApplicationResourceUsageReport() != null && ar.getApplicationResourceUsageReport().getUsedResources() != null) {
+                memory += ar.getApplicationResourceUsageReport().getUsedResources().getMemory();
+            }
 		}
-		for (QueueInfo qi : queueInfo.getChildQueues()) {
+        if (queueInfo.getChildQueues() != null) for (QueueInfo qi : queueInfo.getChildQueues()) {
 			memory += calcUsedMemory(qi);
 		}
 		return memory;
 	}
 
-	private int calcUsedVirtualCores(QueueInfo queueInfo) {
+    static long calcUsedVirtualCores(QueueInfo queueInfo) {
 		if (queueInfo == null) {
 			return 0;
 		}
 
-		int vc = 0;
-		for (ApplicationReport ar : queueInfo.getApplications()) {
-			vc += ar.getApplicationResourceUsageReport().getUsedResources().getVirtualCores();
+        long vc = 0;
+        if (queueInfo.getApplications() != null) for (ApplicationReport ar : queueInfo.getApplications()) {
+            if (ar.getApplicationResourceUsageReport() != null && ar.getApplicationResourceUsageReport().getUsedResources() != null) {
+                vc += ar.getApplicationResourceUsageReport().getUsedResources().getVirtualCores();
+            }
 		}
-		for (QueueInfo qi : queueInfo.getChildQueues()) {
-			vc += calcUsedMemory(qi);
+        if (queueInfo.getChildQueues() != null) for (QueueInfo qi : queueInfo.getChildQueues()) {
+            vc += calcUsedVirtualCores(qi);
 		}
 		return vc;
 	}
 
 	private void printQueueCapacity(List<NodeReport> clusterNodeReports, QueueInfo queueInfo, List<QueueInfo> rootQueues) throws IOException, YarnException {
-		int clusterMemory = 0;
-		int clusterVirtualCores = 0;
-		for (NodeReport node : clusterNodeReports) {
-			if (node.getNodeState() == NodeState.RUNNING) {
-				Resource capability = node.getCapability();
-				clusterMemory += capability.getMemory();
-				clusterVirtualCores += capability.getVirtualCores();
-			}
-		}
-
+        long clusterMemory = availableMemory(clusterNodeReports);
+        long clusterVirtualCores = availableVirtualCores(clusterNodeReports);
 		String queueToFind = queueInfo.getQueueName();
 
         double queueCapacityMemory = calcFractionalCapability(clusterMemory, rootQueues, queueToFind);
         double queueCapacityVirtualCores = calcFractionalCapability(clusterVirtualCores, rootQueues, queueToFind);
-        int queueUsedMemory = calcUsedMemory(queueInfo);
-        int queueUsedVirtualCores = calcUsedVirtualCores(queueInfo);
+        long queueUsedMemory = calcUsedMemory(queueInfo);
+        long queueUsedVirtualCores = calcUsedVirtualCores(queueInfo);
         System.out.println("Queue '" + queueInfo.getQueueName() + "' approximate utilization: "
                 + prettyPrintMb(queueUsedMemory, false) + " / " + prettyPrintMb((int)queueCapacityMemory, false) + " GB used, "
                 + queueUsedVirtualCores + " / " + (int)queueCapacityVirtualCores + " vcores used");
 
-        int queueAvailableMemory = (int)queueCapacityMemory - queueUsedMemory;
+        long queueAvailableMemory = (long)queueCapacityMemory - queueUsedMemory;
         if (queueAvailableMemory < 0) {
             queueAvailableMemory = 0;
         }
         this.queueAvailableMemory = queueAvailableMemory;
 
-        int queueAvailableVirtualCores = (int)queueCapacityVirtualCores - queueUsedVirtualCores;
+        long queueAvailableVirtualCores = (long)queueCapacityVirtualCores - queueUsedVirtualCores;
         if (queueAvailableVirtualCores < 0) {
             queueAvailableVirtualCores = 0;
         }
@@ -354,6 +396,13 @@ public class H2OYarnDiagnostic {
     private void printDiagnosis(List<NodeReport> clusterNodeReports) throws IOException, YarnException {
         printBar();
         System.out.println("");
+        System.out.println("Requested worker containers: " + this.numNodes);
+        System.out.println("Worker vcores per container: " + this.nodeVirtualCores);
+        System.out.println("ApplicationMaster vcores: " + this.applicationMasterVirtualCores);
+        System.out.println("Total estimated vcore request: " + ((long) this.numNodes * this.nodeVirtualCores + this.applicationMasterVirtualCores));
+        System.out.println("Estimated queue available vcores: " + this.queueAvailableVirtualCores);
+        System.out.println("Estimated queue available memory: " + prettyPrintMb(this.queueAvailableMemory));
+        System.out.println("");
 
         // Check if the requested container size exceeds the available space on any node.
         {
@@ -361,6 +410,7 @@ public class H2OYarnDiagnostic {
             for (NodeReport node: clusterNodeReports) {
                 if (node.getNodeState() == NodeState.RUNNING) {
                     Resource capability = node.getCapability();
+                    if (capability == null) continue;
                     int m = capability.getMemory();
                     if (m >= this.nodeMemoryMb) {
                         containerFitsOnSomeNode = true;
@@ -376,15 +426,9 @@ public class H2OYarnDiagnostic {
 
         // Check if the requested job cumulative container size exceeds the space in the cluster.
         {
-            int n = 0;
-            for (NodeReport node: clusterNodeReports) {
-                if (node.getNodeState() == NodeState.RUNNING) {
-                    Resource capability = node.getCapability();
-                    n += capability.getMemory();
-                }
-            }
+            long n = availableMemory(clusterNodeReports);
 
-            int jobMb = this.numNodes * this.nodeMemoryMb;
+            long jobMb = (long) this.numNodes * this.nodeMemoryMb;
             if (n < jobMb) {
                 printErrorDiagnosis("Job memory request (" + prettyPrintMb(jobMb) + ") exceeds available YARN cluster memory (" + prettyPrintMb(n) + ")");
             }
@@ -392,15 +436,9 @@ public class H2OYarnDiagnostic {
 
         // Check if there are at least N virtual cores available in the cluster.
         {
-            int n = 0;
-            for (NodeReport node: clusterNodeReports) {
-                if (node.getNodeState() == NodeState.RUNNING) {
-                    Resource capability = node.getCapability();
-                    n += capability.getVirtualCores();
-                }
-            }
+            long n = availableVirtualCores(clusterNodeReports);
 
-            int jobVirtualCores = this.numNodes * this.nodeVirtualCores;
+            long jobVirtualCores = (long) this.numNodes * this.nodeVirtualCores + this.applicationMasterVirtualCores;
             if (n < jobVirtualCores) {
                 printErrorDiagnosis("YARN cluster available virtual cores (" + n + ") < requested H2O containers (" + jobVirtualCores + ")");
             }
@@ -413,7 +451,7 @@ public class H2OYarnDiagnostic {
 
         // Check if the requested job cumulative container size exceeds the space in the queue.
         {
-            int jobMb = this.numNodes * this.nodeMemoryMb;
+            long jobMb = (long) this.numNodes * this.nodeMemoryMb;
             if (this.queueAvailableMemory < jobMb) {
                 printWarningDiagnosis("Job memory request (" + prettyPrintMb(jobMb) + ") exceeds queue available memory capacity (" + prettyPrintMb(this.queueAvailableMemory) + ")");
             }
@@ -421,9 +459,19 @@ public class H2OYarnDiagnostic {
 
         // Check if the requested job cumulative virtual cores exceeds the space in the queue.
         {
-            int jobVirtualCores = this.numNodes * this.nodeVirtualCores;
+            long jobVirtualCores = (long) this.numNodes * this.nodeVirtualCores + this.applicationMasterVirtualCores;
             if (this.queueAvailableVirtualCores < jobVirtualCores) {
-                printWarningDiagnosis("Job virtual cores request (" + jobVirtualCores + ") exceeds queue available virtual cores capacity (" + this.queueAvailableVirtualCores + ")");
+                long jobMb = (long) this.numNodes * this.nodeMemoryMb;
+                String memoryNote = this.queueAvailableMemory >= jobMb
+                        ? "Memory capacity appears sufficient. YARN vcore contention is likely preventing H2O worker containers from starting."
+                        : "Memory and vcore capacity may both be constraining the request.";
+                printWarningDiagnosis("Estimated queue vcore availability is insufficient for the requested H2O containers.\n"
+                        + "Requested worker vcores: " + ((long) this.numNodes * this.nodeVirtualCores) + "\n"
+                        + "Requested ApplicationMaster vcores: " + this.applicationMasterVirtualCores + "\n"
+                        + "Total requested vcores: " + jobVirtualCores + "\n"
+                        + "Estimated queue available vcores: " + this.queueAvailableVirtualCores + "\n\n"
+                        + memoryNote + "\n"
+                        + "Suggested actions: review mapreduce.map.cpu.vcores, yarn.app.mapreduce.am.resource.cpu-vcores, the requested worker count, and queue utilization.");
             }
         }
 
